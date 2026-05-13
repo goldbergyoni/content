@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Backend Testing Skill — PR Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --background: oklch(0.91 0.004 265);
+      --foreground: oklch(0.16 0 0);
+      --card: oklch(1 0 0);
+      --primary: oklch(0.68 0.12 199);
+      --primary-10: oklch(0.68 0.12 199 / 0.10);
+      --primary-20: oklch(0.68 0.12 199 / 0.20);
+      --primary-30: oklch(0.68 0.12 199 / 0.30);
+      --muted: oklch(0.93 0.003 265);
+      --muted-fg: oklch(0.45 0 0);
+      --border: oklch(0.87 0.005 265);
+      --destructive: oklch(0.577 0.245 27.325);
+      --destructive-10: oklch(0.577 0.245 27.325 / 0.10);
+      --destructive-20: oklch(0.577 0.245 27.325 / 0.20);
+      --warn: oklch(0.68 0.16 55);
+      --warn-10: oklch(0.68 0.16 55 / 0.10);
+      --warn-20: oklch(0.68 0.16 55 / 0.20);
+      --radius: 0.75rem;
+      --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--background);
+      color: var(--foreground);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 56px 24px 96px; }
+
+    /* Hero */
+    .hero { margin-bottom: 48px; }
+    .hero-label {
+      display: inline-block;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--primary); background: var(--primary-10);
+      border: 1px solid var(--primary-30); border-radius: 999px;
+      padding: 4px 12px; margin-bottom: 16px;
+    }
+    .hero h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; }
+    .hero p { font-size: 15px; color: var(--muted-fg); max-width: 560px; }
+
+    /* Summary */
+    .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 44px; }
+    .stat {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .stat-num { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-fg); }
+    .stat.c3 .stat-num { color: var(--destructive); }
+    .stat.c2 .stat-num { color: var(--warn); }
+    .stat.c1 .stat-num { color: var(--muted-fg); }
+    .stat.total .stat-num { color: var(--primary); }
+
+    /* Section heading */
+    .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; margin-top: 44px; }
+    .section-head h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+    .section-head .pill { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 10px; border: 1px solid; white-space: nowrap; }
+    .section-head.c3 h2 { color: var(--destructive); }
+    .section-head.c3 .pill { color: var(--destructive); background: var(--destructive-10); border-color: var(--destructive-20); }
+    .section-head.c2 h2 { color: var(--warn); }
+    .section-head.c2 .pill { color: var(--warn); background: var(--warn-10); border-color: var(--warn-20); }
+    .section-head.c1 h2 { color: var(--muted-fg); }
+    .section-head.c1 .pill { color: var(--muted-fg); background: var(--muted); border-color: var(--border); }
+    .section-divider { height: 1px; background: var(--border); flex: 1; }
+
+    /* Finding card */
+    .findings { display: flex; flex-direction: column; gap: 10px; }
+    .finding {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 22px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .finding:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+    .finding.c3 { border-left: 3px solid var(--destructive); }
+    .finding.c2 { border-left: 3px solid var(--warn); }
+    .finding.c1 { border-left: 3px solid var(--border); }
+    .finding-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+    .finding-num { flex-shrink: 0; font-size: 11px; font-weight: 700; color: var(--muted-fg); min-width: 28px; padding-top: 2px; }
+    .finding-title { font-size: 15px; font-weight: 600; line-height: 1.4; flex: 1; }
+    .finding-badge { flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 3px 9px; border: 1px solid; }
+    .finding.c3 .finding-badge { color: var(--destructive); background: var(--destructive-10); border-color: var(--destructive-20); }
+    .finding.c2 .finding-badge { color: var(--warn); background: var(--warn-10); border-color: var(--warn-20); }
+    .finding.c1 .finding-badge { color: var(--muted-fg); background: var(--muted); border-color: var(--border); }
+    .finding-body { padding-left: 40px; }
+    .finding-explainer { font-size: 14px; color: oklch(0.30 0 0); line-height: 1.7; margin-bottom: 12px; }
+    .finding-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .meta-file {
+      font-size: 12px; font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+      color: var(--primary); background: var(--primary-10);
+      border: 1px solid var(--primary-20); border-radius: 6px; padding: 2px 8px;
+    }
+    .meta-line { font-size: 12px; color: var(--muted-fg); font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace; }
+    code {
+      font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88em; background: oklch(0.93 0.003 265);
+      border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px;
+    }
+    footer {
+      margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--muted-fg);
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+    }
+    footer span { font-weight: 600; color: var(--foreground); }
+    @media (max-width: 600px) {
+      .summary { grid-template-columns: repeat(2, 1fr); }
+      .hero h1 { font-size: 24px; }
+      .finding-body { padding-left: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-label">Code Review</div>
+    <h1>Backend Testing Skill — PR Review</h1>
+    <p>22 findings across skill structure, config, agents, and commands. Reviewed against the frontend testing skill and the skill authoring standard.</p>
+  </div>
+
+  <div class="summary">
+    <div class="stat c3"><div class="stat-num">12</div><div class="stat-label">Must fix · C3</div></div>
+    <div class="stat c2"><div class="stat-num">7</div><div class="stat-label">Important · C2</div></div>
+    <div class="stat c1"><div class="stat-num">3</div><div class="stat-label">Minor · C1</div></div>
+    <div class="stat total"><div class="stat-num">22</div><div class="stat-label">Total findings</div></div>
+  </div>
+
+  <!-- C3 -->
+  <div class="section-head c3">
+    <h2>Must Fix</h2><span class="pill">C3 · 12 findings</span><div class="section-divider"></div>
+  </div>
+  <div class="findings">
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#01</span><span class="finding-title">Skill description is not valid front matter</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The YAML front matter <code>description</code> is a single unquoted scalar spanning a very long sentence. Valid, portable YAML requires a quoted string or block scalar (<code>|</code> or <code>&gt;</code>) so parsers and tooling do not mis-tokenize. Refactor to a quoted multiline block or shorten and move detail into the body.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/SKILL.md</span><span class="meta-line">line 3</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#03</span><span class="finding-title">All test commands are hardcoded to <code>tartlet</code> only</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">Every entry in <code>[commands]</code>, plus <code>[paths].test_context_root_folder</code> and <code>[canonical_example].path</code>, hard-codes <code>apps/backend/tartlet</code>. When used against any other microservice the agent runs tests in the wrong directory and writes artifacts to the wrong path. Introduce an <code>[app].service_root</code> config key and replace all hard-coded paths with that variable.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/config.toml</span><span class="meta-line">line 20</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#07</span><span class="finding-title">Command duplicates the test workflow already defined in <code>test-workflow.md</code></span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">Lines 27–37 re-describe the full Double Gate workflow sequence — the same content that lives in <code>test-workflow.md</code>. Two sources of truth will drift. Remove the workflow block from the command and link to the doc instead.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/commands/testskill.plan-backend.md</span><span class="meta-line">line 27</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#08</span><span class="finding-title">Planner agent hardcodes skill paths instead of <code>{{TESTING_SKILL_DIR}}</code> token</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend planner uses the portable <code>{{TESTING_SKILL_DIR}}</code> token throughout. The backend planner hardcodes <code>.cursor/skills/backend-testing/</code> on lines 21–22 and 35. If the skill is ever moved every reference breaks. Replace all hardcoded paths with the token.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/agents/testskill.planner-backend.md</span><span class="meta-line">line 21</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#09</span><span class="finding-title">Planner does not read or enforce <code>workflow.max_amount_of_test_to_plan</code></span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend planner reads this config key in Step 1 and caps the number of proposed scenarios. The backend planner never reads it; Step 5 uses only a vague heuristic (&gt;6 scenarios in lean mode). Without the cap the agent can produce arbitrarily large plans. Add the key to <code>config.toml</code> and enforce it in Step 5.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/agents/testskill.planner-backend.md</span><span class="meta-line">line 37</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#10</span><span class="finding-title">Planner is missing a testing-strategy step before generating scenarios</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend planner has a dedicated Step 4 that reads <code>testing-strategy-and-tooling.md</code> to understand which test types to write and what outcomes to assert on. The backend planner jumps from coverage baseline directly to scenario generation with no strategy step. Add the document and a corresponding step in the agent.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/agents/testskill.planner-backend.md</span><span class="meta-line">line 84</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#11</span><span class="finding-title">Planner agent description doesn't declare its output format</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The repo convention is to declare the output format in the front matter <code>description</code> — e.g. <code>testskill.reviewer-backend.md</code> says "Returns a JSON array." The backend planner omits this. Tooling and agents that invoke the planner cannot reliably know what to expect. Add something like: "Produces <code>endpoint-analysis.md</code> and a <code>test-plan.md</code> in markdown format."</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/agents/testskill.planner-backend.md</span><span class="meta-line">line 3</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#12</span><span class="finding-title">Backend plan command is not a thin wrapper — it duplicates agent logic</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend command is 29 lines: description, arguments, output summary, and one "Invoke the agent" instruction — a true thin wrapper. The backend command is 42 lines and embeds a full Double Gate workflow sequence. Commands should delegate all logic to the agent. Trim it to match the frontend pattern.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/commands/testskill.plan-backend.md</span><span class="meta-line">line 1</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#16</span><span class="finding-title">No <code>testing-strategy-and-tooling.md</code> document</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend skill ships a dedicated doc explaining the test-type hierarchy (page tests first, component tests, unit tests only for heavy logic) and what outcomes to assert on. The backend has no equivalent — guidance is scattered inside <code>the-test-anatomy.md</code> rule A.33. Agents have no principled basis for choosing test types.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/SKILL.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#17</span><span class="finding-title"><code>what-to-test.md</code> never enumerates backend-specific observable outcomes</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend skill lists concrete testable outcomes (UI changes, API mutations, storage writes). The backend equivalent never enumerates: DB writes, outbound HTTP calls, queue messages, audit log entries. Without this list agents default to asserting on implementation details rather than observable side-effects.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/patterns-and-practices/what-to-test.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#18</span><span class="finding-title"><code>stop_when_no_plan</code> defaults to <code>false</code> — silently bypasses the Double Gate</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend skill defaults <code>stop_when_no_plan = true</code>, enforcing that no test is written without a plan. The backend defaults to <code>false</code>, meaning the Double Gate entry gate is opt-in and can be silently skipped. This undermines the core principle of the skill. Flip the default to <code>true</code>.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/config.toml</span><span class="meta-line">line 4</span></div>
+      </div>
+    </div>
+
+    <div class="finding c3">
+      <div class="finding-header"><span class="finding-num">#19</span><span class="finding-title">test-anatomy GOOD/BAD examples are frontend code, not backend</span><span class="finding-badge">C3</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The backend <code>the-test-anatomy.md</code> still uses <code>render(&lt;OrdersReport /&gt;)</code>, <code>userEvent.click</code>, and <code>http.get</code> — pure DOM/MSW patterns that don't apply to NestJS component tests. A backend developer reading these examples will be actively misled. Replace all examples with NestJS <code>supertest</code> + Prisma patterns.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/patterns-and-practices/the-test-anatomy.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- C2 -->
+  <div class="section-head c2">
+    <h2>Important</h2><span class="pill">C2 · 7 findings</span><div class="section-divider"></div>
+  </div>
+  <div class="findings">
+
+    <div class="finding c2">
+      <div class="finding-header"><span class="finding-num">#04</span><span class="finding-title"><code>test_repeat_flag</code> uses a shell loop instead of Vitest's <code>--repeat</code></span><span class="finding-badge">C2</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The current value spins a <code>for i in $(seq ...)</code> shell loop — bash-only, no clean failure aggregation. Vitest's native <code>--repeat &lt;n&gt;</code> flag runs the test N times within a single process with proper per-iteration reporting. Replace with: <code>pnpm test:component run {file} -t "{title}" --repeat {n} --reporter=verbose</code>.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/config.toml</span><span class="meta-line">line 33</span></div>
+      </div>
+    </div>
+
+    <div class="finding c2">
+      <div class="finding-header"><span class="finding-num">#06</span><span class="finding-title">Command hardcodes tartlet default path instead of reading from config</span><span class="finding-badge">C2</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">Line 18 documents that <code>$root_working_folder</code> defaults to <code>apps/backend/tartlet/test/tests/&lt;feature&gt;/</code>, duplicating a path already in <code>config.toml</code>. The default should be derived from <code>[paths].test_context_root_folder</code> so it stays in sync across microservices.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/commands/testskill.plan-backend.md</span><span class="meta-line">line 18</span></div>
+      </div>
+    </div>
+
+    <div class="finding c2">
+      <div class="finding-header"><span class="finding-num">#13</span><span class="finding-title">Step 2 is over-prescriptive — tells the LLM how to explore instead of what it needs</span><span class="finding-badge">C2</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">Step 2 micro-manages how the agent reads DTOs: specific folder paths, which decorators to look for, field-by-field instructions. This locks the agent into one style and breaks when folder layout differs. Specify only the needed outcome — e.g. "understand validation boundaries and required vs optional fields" — and let the LLM explore freely.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/agents/testskill.endpoint-analyzer.md</span><span class="meta-line">line 38</span></div>
+      </div>
+    </div>
+
+    <div class="finding c2">
+      <div class="finding-header"><span class="finding-num">#14</span><span class="finding-title"><code>Apply these principles</code> block duplicates content already in practices docs</span><span class="finding-badge">C2</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">Lines 72–78 inline four testing principles (I.10, I.7, I.11, G.3, G.18) that live in the practices files. Two sources of truth will drift. Replace the block with a single pointer: "Apply the principles in <code>{{TESTING_SKILL_DIR}}/patterns-and-practices/what-to-test.md</code> when generating scenarios."</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/agents/testskill.endpoint-analyzer.md</span><span class="meta-line">line 72</span></div>
+      </div>
+    </div>
+
+    <div class="finding c2">
+      <div class="finding-header"><span class="finding-num">#20</span><span class="finding-title">Mocking rules silently renumbered (E.7→E.4, E.9→E.5)</span><span class="finding-badge">C2</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The backend <code>mocking.md</code> renumbered rules without noting the change. Any agent conversation or PR comment that says "violates E.7" now points to a different rule in the backend skill vs. the frontend. Rule IDs should be stable and shared; new backend-specific rules should get new IDs, not recycle existing ones.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/patterns-and-practices/mocking.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+    <div class="finding c2">
+      <div class="finding-header"><span class="finding-num">#21</span><span class="finding-title"><code>mcp__test-coverage__*</code> tools allowed but never documented in <code>tools-and-agents.md</code></span><span class="finding-badge">C2</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The SKILL.md front matter allows <code>mcp__test-coverage__*</code> but <code>tools-and-agents.md</code> never explains when or how to use them. The frontend skill documents two explicit timing windows. Without this guidance agents either never use coverage tooling or invoke it at the wrong stage.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/tools-and-agents.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+    <div class="finding c2">
+      <div class="finding-header"><span class="finding-num">#22</span><span class="finding-title">Workflow violation list missing the "no final test report" check</span><span class="finding-badge">C2</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend skill flags: "TESTING VIOLATION: A successful workflow must end with the final test report." The backend's violation list omits this entirely. Without it an agent can complete a session without producing a verification report and no violation is flagged.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/communication-and-behavior.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- C1 -->
+  <div class="section-head c1">
+    <h2>Minor</h2><span class="pill">C1 · 3 findings</span><div class="section-divider"></div>
+  </div>
+  <div class="findings">
+
+    <div class="finding c1">
+      <div class="finding-header"><span class="finding-num">#02</span><span class="finding-title">Reference docs not under <code>references/</code> — non-standard skill structure</span><span class="finding-badge">C1</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The skill standard requires supplementary markdown files inside a <code>references/</code> subfolder. This skill has a <code>patterns-and-practices/</code> folder (7 files) and three loose files at the root (<code>tools-and-agents.md</code>, <code>communication-and-behavior.md</code>, <code>test-workflow.md</code>). All should move into a <code>references/</code> tree with SKILL.md paths updated accordingly.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/SKILL.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+    <div class="finding c1">
+      <div class="finding-header"><span class="finding-num">#05</span><span class="finding-title">Command file naming doesn't follow the <code>testbackend.</code> prefix convention</span><span class="finding-badge">C1</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">Five backend command files use <code>testskill.{command}-backend.md</code>. Adopting <code>testbackend.plan.md</code>, <code>testbackend.write-test.md</code>, etc. lets backend and frontend commands coexist cleanly (e.g. <code>testfrontend.plan.md</code>) without the redundant <code>-backend</code> suffix and <code>testskill.</code> coupling. Rename all five and update references.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/commands/testskill.plan-backend.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+    <div class="finding c1">
+      <div class="finding-header"><span class="finding-num">#15</span><span class="finding-title">Session greeting + ASCII logo missing from <code>communication-and-behavior.md</code></span><span class="finding-badge">C1</span></div>
+      <div class="finding-body">
+        <p class="finding-explainer">The frontend skill mandates an ASCII logo + tagline on every skill invocation. The backend <code>communication-and-behavior.md</code> drops this section entirely. Without a consistent greeting there is no visual signal to the user that the skill is active.</p>
+        <div class="finding-meta"><span class="meta-file">.cursor/skills/backend-testing/communication-and-behavior.md</span><span class="meta-line">—</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <div>Backend Testing Skill · PR Review · May 2026</div>
+    <div>Source: <span>pr-review-findings.json</span> · 22 findings</div>
+  </footer>
+
+</div>
+</body>
+</html>
