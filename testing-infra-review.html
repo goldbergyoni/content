@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Testing Infra Review — compliance-ai-service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #28282a; --muted: #6b7280;
+    --primary: #0d9488; --border: #e2e4e8; --radius: 12px;
+    --important-bg: #fef2f2; --important-fg: #b91c1c; --important-border: #fecaca;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .25rem; }
+  header .label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header .subtitle { color: var(--muted); margin-top: .25rem; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); }
+  nav.tabs button { font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer; border: 0; background: none;
+    padding: .65rem 1rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.75rem 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 1.25rem; }
+  h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0; }
+  h3 { font-size: 1.05rem; font-weight: 600; }
+  code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .88em; }
+  pre { background: rgba(0,0,0,.04); padding: 1rem 1.25rem; border-radius: 10px; overflow-x: auto; font-size: .85rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  a { color: var(--primary); }
+  ul, ol { padding-left: 1.25rem; } li { margin: .35rem 0; }
+  .finding-head { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+  .finding-head h2 { margin: 0; }
+  .badge { display: inline-block; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    padding: .2rem .6rem; border-radius: 999px; }
+  .badge.important { background: var(--important-bg); color: var(--important-fg); border: 1px solid var(--important-border); }
+  .badge.discussion { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .disclaimer { background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius);
+    padding: .9rem 1.25rem; margin-bottom: 1.25rem; color: #92400e; font-size: .92rem; font-weight: 500;
+    display: flex; gap: .6rem; align-items: baseline; }
+  .disclaimer .icon { flex: none; }
+  .where { font-size: .82rem; color: var(--muted); margin: 0 0 .75rem; }
+  .where code { font-size: .95em; }
+  details.more-info { margin-top: 1rem; }
+  details.more-info summary { cursor: pointer; list-style: none; user-select: none;
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-weight: 600; font-size: .88rem; color: var(--primary);
+    padding: .5rem 1.1rem; border: 1.5px solid var(--primary); border-radius: 999px;
+    transition: background .15s ease; }
+  details.more-info summary:hover { background: rgba(13, 148, 136, .07); }
+  details.more-info summary::-webkit-details-marker { display: none; }
+  details.more-info summary::before { content: "▸"; transition: transform .15s ease; font-size: .85em; }
+  details.more-info[open] summary::before { transform: rotate(90deg); }
+  details.more-info .details-body { padding: 1.25rem .25rem 0; font-size: .95rem; }
+  .source-note { font-size: .8rem; color: var(--muted); margin-top: .75rem; }
+  .placeholder { text-align: center; padding: 3rem 2rem; color: var(--muted); }
+  .placeholder .big { font-size: 1.1rem; font-weight: 600; color: var(--fg); margin-bottom: .5rem; }
+  .rule-id { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .72rem; font-weight: 600; background: rgba(13,148,136,.08); color: var(--primary);
+    border: 1px solid rgba(13,148,136,.25); padding: .15rem .5rem; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">Code Review</div>
+    <h1>Testing Infra Review</h1>
+    <div class="subtitle">New test suite under <code>tests/</code> in <strong>compliance-ai-service</strong> — citations, workspace artifacts, and the Tartlet mock layer · June 10, 2026</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-tab="yoni-review">Yoni review</button>
+    <button data-tab="test-skill-review">Test skill review</button>
+  </nav>
+
+  <!-- ============ TAB 1: YONI REVIEW ============ -->
+  <section class="panel active" id="yoni-review">
+
+    <div class="disclaimer">
+      <span class="icon">⚠️</span>
+      <span><strong>Warning: shallow review</strong> — based on one single talk and no code read. Treat the findings as discussion starters, not verified conclusions.</span>
+    </div>
+
+    <div class="card">
+      <h2>Overview</h2>
+      <p>The new infra covers three areas: citation processing tests (<code>tests/citations/</code>, 3 files / ~330 lines), a workspace-artifacts validation test, and a 311-line recorded-response HTTP mock router (<code>tests/tartlet_mock/tenant_responses.py</code>) backed by dozens of recorded JSON fixtures per tenant. Nine findings below — expand "More info" on each for the details, code references, and the reasoning, drawn from the
+      <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">Node.js Testing Best Practices</a> guide.</p>
+    </div>
+
+    <!-- Finding 1 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>1. A mock data access layer is used instead of a real database</h2>
+        <span class="badge important">Important</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/tartlet_mock/tenant_responses.py</code> + recorded fixtures under <code>tests/tartlet_mock/tenants/&lt;tenant_id&gt;/</code></p>
+          <p>The suite replays recorded Tartlet HTTP responses through a <code>respx</code> router instead of exercising a real data layer. The mock itself is substantial — 311 lines of routing logic with static entries, batch-endpoint callbacks, and path-filtered callbacks — plus a large tree of recorded JSON files that must be kept in sync via <code>scripts/record_tartlet_responses.py</code>. Every recording miss requires a manual re-record, and the mock's own filtering/lookup logic is now complex enough to harbor bugs of its own.</p>
+          <h3>Why this matters</h3>
+          <p>The best-practices guide ("Database and Infrastructure Setup") recommends testing against <strong>the real database/service technology, optimized for testing</strong> (e.g. spun up with testcontainers or docker-compose), rather than mocks or in-memory substitutes:</p>
+          <ul>
+            <li><strong>Mocks bypass production behavior.</strong> "Using it only for testing will bypass issues that exist in the production technique" — schema mismatches, query-layer bugs, pagination, error semantics and contract drift are all invisible when responses are pre-recorded.</li>
+            <li><strong>Recorded fixtures rot.</strong> When the upstream API changes shape, the tests keep passing against stale recordings — the suite gives green confidence about a contract that no longer exists.</li>
+            <li><strong>The mock becomes a second system to maintain.</strong> Batch-lookup callbacks, volatile-param stripping, and 5xx skipping (all present here) are production-grade logic living inside test infra, with no tests of their own.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a>, Section 2 — Database and Infrastructure Setup.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Finding 2 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>2. Reliance on custom assertion logic instead of native pytest assertions</h2>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: e.g. <code>tests/citations/test_clean_citation_text.py:96-104</code>, <code>tests/citations/test_consecutive_ordering.py:132-139</code></p>
+          <p>Several tests build their own assertion machinery — hand-rolled scanning loops, compound boolean expressions, and custom failure messages — instead of plain, flexible pytest assertions that can be mixed and matched per case. Example:</p>
+          <pre><code>lines = cleaned.split("\n")
+for idx, line in enumerate(lines):
+    if line.strip().startswith("question:"):
+        preceding_non_empty = next((lines[j] for j in range(idx - 1, -1, -1) if lines[j].strip()), "")
+        assert not set(preceding_non_empty.strip()) &lt;= {"-", "=", "*", "_"} \
+            or len(preceding_non_empty.strip()) &lt; 3, f"Found setext underline before paragraph: ..."</code></pre>
+          <p>When this fails, the reader must reverse-engineer the assertion logic before they can even understand what broke. A direct equality assertion against the expected cleaned string would fail with a clear diff.</p>
+          <h3>Why this matters</h3>
+          <p>The guide ("Component tests / test anatomy") recommends relying on the test framework's <strong>native assertion vocabulary</strong> rather than custom helpers:</p>
+          <ul>
+            <li><strong>Consistency.</strong> Custom assertion helpers "promote different assertion syntax" — every bespoke checker is one more dialect teammates must learn before they can read or extend a test.</li>
+            <li><strong>Composability.</strong> Native assertions are small and orthogonal; the author of the next test can mix and match them freely instead of bending a rigid helper to a new scenario.</li>
+            <li><strong>Better failure output.</strong> pytest rewrites plain <code>assert</code> statements to show rich diffs of both sides. Logic buried in loops and set-comparisons collapses to "assert False" plus whatever message the author remembered to write.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a>, Section 4 — Test Anatomy.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Finding 3 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>3. Tests are too long and carry details unrelated to the case</h2>
+        <span class="badge important">Important</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: e.g. <code>tests/citations/test_consecutive_ordering.py:117-142</code> (26 lines), <code>test_consecutive_ordering.py:98-114</code>, <code>tests/citations/test_create_child_reference.py:6-18</code></p>
+          <p>Individual tests run well past a digestible size and include data that has nothing to do with the behavior under test. <code>test_send_citations_events_emits_one_object_ref_per_citation</code> spans 26 lines with ~12 assertions covering event type, sub-type, id, label, params, paragraph data <em>and</em> ordering. The <code>_make_parent</code> factory pins nine fields (<code>homepage_title</code>, <code>public_label</code>, <code>source_url</code>…) even when a test only cares about one of them — so a reader can't tell which inputs actually drive the expected output.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li><strong>Keep tests very small</strong> — the guide's rule of thumb is <strong>no longer than ~7 statements</strong> per test. Anything bigger stops reading as documentation of one behavior.</li>
+            <li><strong>Include only the data that matters.</strong> Extraneous fields and setup noise make it "harder to troubleshoot and understand" — when the test fails, every irrelevant detail is a suspect the reader has to rule out.</li>
+            <li><strong>Tests are executable docs.</strong> A focused, concise test tells the next developer exactly what input produces what outcome; a 26-line test with a dozen assertions tells them to go read the implementation instead.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a>, Section 4 — Test Anatomy.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Finding 4 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>4. Tests are not focused on specific scenarios — titles don't follow when/then</h2>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: e.g. <code>tests/citations/test_clean_citation_text.py:9</code> (<code>test_strips_atx_heading_markers</code>), <code>tests/compliance_assistant/workspace_artifacts/test_artifact_aggregation_validation.py:7</code> (<code>test_validate_aggregations_maps_avg_to_average</code>)</p>
+          <p>Because many tests bundle several behaviors into one body (see finding 3), their titles can only describe the mechanism, not a scenario. Names like <code>test_strips_atx_heading_markers</code> or <code>test_send_citations_events_emits_one_object_ref_per_citation</code> state what the code does, not <em>when</em> a condition holds and <em>then</em> what outcome is expected. A failing test name should read as a spec sentence — e.g. <code>test_when_titles_are_duplicated_then_each_gets_an_incrementing_ordering</code> — so the report alone tells you which business rule broke.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li><strong>One test = one interaction.</strong> The guide prescribes that each test cover "a single interaction" — a single scenario with a single expected outcome — structured with the <strong>AAA pattern</strong> (Arrange, Act, Assert).</li>
+            <li><strong>Three-part / when-then naming.</strong> Titles should encode the unit under test, the <em>scenario</em> ("when…"), and the <em>expectation</em> ("then…"). "Descriptive titles document expected behavior" — the test report becomes a readable spec, even for someone unfamiliar with the codebase.</li>
+            <li><strong>Focused scenarios fail precisely.</strong> When a multi-behavior test fails, the title can't tell you which of its many assertions broke; a when/then-scoped test pinpoints the broken rule from the CI summary alone.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a>, Section 4 — Test Anatomy.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Finding 5 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>5. The Tartlet query tool is not covered besides one/few happy paths</h2>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>src/tools/new_tartlet_client/</code> — <code>filter_tool.py</code>, <code>capabilities.py</code>, and dozens of tool modules under <code>new_tools/</code> (grants, tickets, stakeholders, workflows…) with no dedicated tests under <code>tests/</code></p>
+          <p>The query/filter tool surface is large — dozens of tool modules plus the filtering capabilities layer — yet the only exercise it gets flows through recorded happy-path replays. There are no tests for empty results, malformed filters, unknown IDs, partial batch matches, or pagination edges. The behaviors most likely to break in front of a user are exactly the ones with zero coverage.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li><strong>Go beyond the happy path.</strong> The guide ("Test the five potential outcomes", "Simulate network chaos") requires checking not only successful responses but errored and anomalous ones — that is where resilience is proven or disproven.</li>
+            <li><strong>Happy-path-only suites give false confidence:</strong> they validate the demo scenario while the agent, at runtime, queries arbitrary subsets, bad IDs, and unexpected combinations.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> — "Test the five potential outcomes", "Simulate network chaos".</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Finding 6 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>6. Tools coverage is limited — bad responses are not surfaced</h2>
+        <span class="badge important">Important</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/tartlet_mock/tenant_responses.py:146-152</code> — recorded 5xx entries are <em>deliberately skipped</em> ("server flake at recording time")</p>
+          <p>The mock router doesn't just lack error scenarios — it actively filters them out: any recorded 5xx response is dropped from registration, so in test mode the tools can <em>never</em> receive a server error. Timeouts, slow responses, 4xx validation failures, and malformed bodies are equally unrepresented. How each tool behaves when Tartlet misbehaves — retry, raise, surface a readable message to the agent — is untested everywhere.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li><strong>"Check not only errored responses (e.g., HTTP 500 error) but also network-level anomalies like slow and timed-out responses."</strong> Error handling is part of the contract; it deserves the same coverage as data shape.</li>
+            <li><strong>The five-outcomes framework</strong> includes observability and error handling as first-class outcomes to assert — a suite that physically cannot produce a bad response can never cover them.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> — "Simulate network chaos", "Test the five potential outcomes".</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Finding 7 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>7. No network interception of outgoing calls</h2>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>src/tools/tartlet_client/factory.py</code> — the respx router is injected as an <code>httpx.MockTransport</code> into the Tartlet client only</p>
+          <p>The replay mock works by swapping the transport <em>inside one client</em>. Nothing intercepts or denies network traffic at the process boundary: any other code path — LLM/Vertex calls, other HTTP clients, a new integration someone adds next month — goes straight to the real network during tests, silently. There is no equivalent of a deny-all default.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li><strong>"Deny all outgoing requests by default"</strong> — the guide recommends instructing the interceptor to <em>block and warn</em> on any outgoing HTTP request that was not explicitly mocked.</li>
+            <li><strong>It protects isolation and catches forgotten integrations:</strong> a test that quietly hits a real service is flaky, slow, potentially costly (real LLM calls), and can mutate real data — and you only find out in production or on the bill.</li>
+            <li>In this stack: enable respx's global mock mode (or a conftest-level guard) so any unmatched outgoing request fails the test loudly, instead of intercepting only the one client that was wired for it.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> — "Deny all outgoing requests by default".</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Finding 8 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>8. One god base test setup instead of small per-mission overridable fixtures</h2>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/tartlet_mock/tenant_responses.py:89-118</code> — <code>install_tenant_responses_once</code> is a process-lifetime singleton (module-level <code>_installed</code> globals); there is no <code>conftest.py</code> and no pytest fixtures anywhere in <code>tests/</code></p>
+          <p>The entire mock world is built once per process, from <em>everything</em> recorded for the tenant (~600 fixture files), and is shared by whatever runs afterwards — install-once, never reset, no per-test variation. A test cannot say "for this scenario, this endpoint returns an empty list / a 500 / a different stakeholder"; it inherits the full god-setup or nothing. The opposite of small, mission-scoped fixtures that each test composes and overrides.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li><strong>"Each test should act on its own records only."</strong> The guide reserves global seeding for metadata/context only — scenario data belongs to the test that asserts on it.</li>
+            <li><strong>The Domino effect:</strong> "Understanding why test num #27 failed demands reading the 26 tests before" — a shared world couples every test to every other; one re-recording changes the ground truth under the whole suite at once.</li>
+            <li><strong>Overridability is the feature:</strong> small per-test fixtures (a base router fixture + per-test route overrides) are what make the error-path and edge-case tests of findings 5–6 even possible to write.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> — "Each test should act on its own records only", "Only metadata and context data should get pre-seeded".</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Finding 9 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>9. Some tests assert on a response that comes from a mock — the loop isn't closed</h2>
+        <span class="badge important">Important</span>
+        <span class="badge discussion">Discussion call</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: the overall test loop — recorded fixtures in, assertions on what the mock returned out</p>
+          <p>Some of the tests assert on a response that ultimately originates from a mock we wrote ourselves: the suite records Tartlet's answers, replays them, and then verifies the code returns… those answers. Something is not complete in the overall loop — it's hard to put the finger on exactly where, but the suspicion is that the suite is partly testing the mock rather than the system. <strong>This one is a discussion call for the team</strong>, not a prescribed fix.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li><strong>"When relying on mocking-only — these issues pass unnoticed in testing and might fail in production once they meet the real API."</strong> Asserting against your own canned data validates the replay plumbing, not the contract.</li>
+            <li><strong>Possible directions to discuss:</strong> contract testing or generating the client from an OpenAPI spec, schema-validating recordings against the live API on a schedule, or a thin layer of real-Tartlet smoke tests that anchor the recordings to reality.</li>
+            <li>The guide's "record real outgoing requests for awareness" practice is the constructive half: recordings are valuable for realism, as long as something else keeps them honest.</li>
+          </ul>
+          <p class="source-note">Source: <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> — "Code against a strict API provider contract", "Record real outgoing requests for awareness".</p>
+        </div>
+      </details>
+    </div>
+
+  </section>
+
+  <!-- ============ TAB 2: TEST SKILL REVIEW ============ -->
+  <section class="panel" id="test-skill-review">
+
+    <div class="card">
+      <h2>Overview</h2>
+      <p>This pass reviews the suite against the rulebook in <code>references/</code> — all the rule documents were read in full: <code>the-test-anatomy.md</code> (sections A–B), <code>assertions.md</code> (D), <code>the-test-data.md</code> (C), <code>mocking.md</code> (E), <code>testing-with-database.md</code> (G), and <code>testing-strategy.md</code>. Each finding cites the violated rule by its identifier. Thirteen findings: 1–8 cover the test code and mock infra; 9–13 come from a second, rule-by-rule sweep covering the statement cap, mock specs, data-shape rules, the undeclared test runner, and stray test files outside <code>tests/</code>. Finding 1 is a genuine silent-pass bug, not a style issue.</p>
+      <p class="source-note">Terminology note: what <code>references/</code> calls a <em>flow test</em> is called a <strong>component test</strong> in this project — same definition (entrance door → visible outcome, only external systems mocked). The findings below use "component test".</p>
+    </div>
+
+    <!-- Skill Finding 1 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>1. A conditional expression inside an assertion makes it always pass</h2>
+        <span class="badge important">Important</span>
+        <span class="rule-id">D.7 · A.13</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/citations/test_consecutive_ordering.py:137</code></p>
+          <p>This is the one finding in this review that is an actual bug rather than a convention mismatch:</p>
+          <pre><code>assert emitted_event["label"] == "Dup" if reference_id != "parent_2" else "Other"</code></pre>
+          <p>Python's conditional expression binds <em>looser</em> than <code>==</code>, so this parses as:</p>
+          <pre><code>assert ((emitted_event["label"] == "Dup") if (reference_id != "parent_2") else "Other")</code></pre>
+          <p>For <code>parent_2</code>, the assert evaluates the bare string <code>"Other"</code> — which is truthy — so <strong>the third citation's label is never checked at all</strong>. If the code under test emitted <code>label="Dup"</code> (or garbage) for <code>parent_2</code>, this test would still pass.</p>
+          <h3>Rules violated</h3>
+          <ul>
+            <li><span class="rule-id">D.7</span> "Avoid custom coding, loops and list comprehensions in the assert phase, stick to built-in <code>assert</code> with full-object equality." This bug is precisely <em>why</em> the rule exists — logic inside an assertion can silently change what is being asserted.</li>
+            <li><span class="rule-id">A.13</span> Totally flat: no conditional logic anywhere in a test. A flat <code>assert emitted_event["label"] == expected_label</code> per case, or a full-dict equality check, cannot mis-parse.</li>
+          </ul>
+          <p class="source-note">Sources: <code>references/assertions.md</code> §D.7, <code>references/the-test-anatomy.md</code> §A.13.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 2 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>2. Loops and branching inside test bodies — the totally-flat rule</h2>
+        <span class="rule-id">A.13 · Rule 3</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/citations/test_clean_citation_text.py:101-104</code> (a <code>for</code> + <code>if</code> + generator-expression scan), <code>tests/citations/test_consecutive_ordering.py:35-38</code>, <code>:64-66</code>, <code>:79-80</code>, <code>:101-104</code>, <code>:125-128</code>, <code>:132-139</code> (loops in both Arrange and Assert phases)</p>
+          <p>Rule 3 of the rulebook's "6 Most Important (!) Rules" states: <em>"Anything beside flat statements is not allowed - no if/else, no loops, no try/except, no <code>print</code>."</em> Seven test bodies in the citations suite contain loops; several iterate inside the assert phase (<code>for marker in markers: assert …</code>), and one combines a loop, an <code>if</code>, and a <code>next()</code> generator scan into a single assertion (<code>test_full_bug_repro_does_not_produce_setext_h2</code>).</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li>When a looped assertion fails, pytest reports the failure without telling you <em>which iteration</em> broke — the reader has to re-run with a debugger.</li>
+            <li>Loop-driven arrange phases (<code>test_consecutive_ordering.py:101-104</code>, <code>:125-128</code>) hide how many records exist and what their ids are; flat statements (<code>parent_0 = …</code>, <code>parent_1 = …</code>) make the 🔫 smoking gun visible.</li>
+            <li>Finding 1 is the direct consequence: once logic is allowed into a test, assertion bugs follow. The rulebook's stated goal is keeping test complexity "ridiculously low" so tests never become another system to maintain.</li>
+          </ul>
+          <p>Flat alternatives: assert on a full expected list (<code>assert [r.consecutive_ordering for r in references] == [0, 0, 1, 1, 2]</code> is still a comprehension — better: compare the whole objects list built by a factory), or split per-case into separate tests / <code>pytest.mark.parametrize</code>.</p>
+          <p class="source-note">Sources: <code>references/the-test-anatomy.md</code> Rule 3, §A.13; <code>references/assertions.md</code> §D.7. See also <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> Section 4 — keep each test "a single interaction," not a scripted scan.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 3 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>3. Tests target private internals instead of user-facing behavior</h2>
+        <span class="badge important">Important</span>
+        <span class="rule-id">B.23 · Rule 4</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: every test file — <code>processor._clean_citation_text(…)</code> (<code>test_clean_citation_text.py</code>, all 12 tests), <code>processor._apply_consecutive_ordering(…)</code> / <code>_build_citation_event_entry</code> / <code>_send_citations_events</code> / <code>_build_citation_object_ref_event</code> (<code>test_consecutive_ordering.py</code>), and <code>_validate_aggregations</code> imported directly from <code>artifact_handlers</code> (<code>test_artifact_aggregation_validation.py:4</code>)</p>
+          <p>Nearly the whole suite calls underscore-prefixed private methods, and several tests <em>arrange by mutating private state</em> — e.g. appending directly to <code>processor._pending_citations</code> (<code>test_consecutive_ordering.py:104, :128</code>). Only <code>create_child_reference</code> (a public function) is tested through its real surface.</p>
+          <h3>Rules violated</h3>
+          <ul>
+            <li><span class="rule-id">B.23</span> "Don't test implementation details… check user-facing behavior like response payloads, return values, or external side effects."</li>
+            <li><span class="rule-id">Rule 4</span> of the 6 critical rules: given the test scope, <em>cover all layers of the code under test</em> — never enter through an internal method when the user-visible entrance (the stream-processing call that triggers citation events) exists.</li>
+            <li><code>testing-strategy.md</code> — "What to Test: External Outcomes Only… We test what the user sees and what the system emits — never how the code is structured internally."</li>
+          </ul>
+          <p>Concretely: renaming <code>_apply_consecutive_ordering</code> or moving dedupe logic into the event builder would break a dozen tests while user-visible behavior is unchanged. The observable contract here is the <em>emitted callback events</em> — tests should feed text with citation markers through the processor's public streaming API and assert on what the callback received.</p>
+          <p class="source-note">Sources: <code>references/the-test-anatomy.md</code> Rule 4, §B.23; <code>references/testing-strategy.md</code>. See also <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> Section 1 — test via the component's public API so refactors don't shatter the suite.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 4 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>4. No component test exists — and the heaviest test infra has zero consumers</h2>
+        <span class="rule-id">Strategy</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: the whole <code>tests/</code> tree (4 unit-test files) vs. <code>tests/tartlet_mock/</code> (311-line router + 609 recorded JSON fixtures)</p>
+          <p><code>testing-strategy.md</code> names this type (its "flow test" — a <strong>component test</strong> in this project's vocabulary) — entrance door (webhook, CLI, API) → visible outcome, with only external systems mocked — as <em>"Default and preferred,"</em> and requires at least one before merging any multi-layer change. The new suite contains only unit tests of private functions; there is not a single test that exercises an entrance door.</p>
+          <p>More striking: <strong>no test consumes the Tartlet replay infrastructure at all.</strong> A repo-wide search shows <code>install_tenant_responses_once</code> / <code>TARTLET_TEST</code> are referenced only from <code>src/</code> (the client factory and the evaluation credentials loader) — never from a test. The largest piece of the new testing infra (the router plus 609 recorded fixtures) currently serves manual/eval runs only, while the automated suite it was presumably built for doesn't exist yet.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li>The replay router is exactly the seam a component test needs (E.9-style network interception at the process boundary) — the strategy's preferred test type is one fixture away, yet uncovered.</li>
+            <li>Until a component test exists, the recorded fixtures rot silently: nothing fails when they drift from the live Tartlet contract (this compounds tab-1 finding 1).</li>
+            <li>The unit tests that do exist cover string cleaning and dedupe ordering — none of them would catch a broken end-to-end citation flow.</li>
+          </ul>
+          <p class="source-note">Sources: <code>references/testing-strategy.md</code> ("Supported test types", "When to write each"). See also <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> Section 1 — component/flow tests as the primary strategy, unit tests as the supplement.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 5 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>5. Hand-rolled in-file helpers instead of data factories</h2>
+        <span class="rule-id">C.3 · C.4 · C.5 · A.28</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>_make_parent</code> (<code>test_create_child_reference.py:6-18</code>), <code>_make_reference</code> / <code>_make_processor_with_children</code> (<code>test_consecutive_ordering.py:10-29</code>), <code>_make_processor</code> (<code>test_clean_citation_text.py:5-6</code>)</p>
+          <p>Each test file grew its own private builder, which mismatches the data rules on four axes:</p>
+          <ul>
+            <li><span class="rule-id">A.28</span> 🏗️ The structure principle — helpers belong in a dedicated nearby file (<code>factories.py</code>), "not within the test file itself." Three files now have three diverging ways to build the same <code>Reference</code>.</li>
+            <li><span class="rule-id">C.4</span> Factories must accept per-field overrides. <code>_make_parent(**overrides)</code> does; <code>_make_reference(reference_id, user_facing_title)</code> hard-pins the other five fields, so a test that cares about e.g. <code>source_url</code> can't use it.</li>
+            <li><span class="rule-id">C.5</span> / <span class="rule-id">C.10</span> Universal data should come from <code>faker</code>-style realistic generators; the suite uses fixed strings (<code>"Slice Knowledge"</code>, <code>"excerpt"</code>, id <code>"32"</code>) everywhere, so every test runs against the exact same frozen values.</li>
+            <li><span class="rule-id">C.7</span> Factory params need type hints matching the code under test — <code>**overrides</code> is untyped.</li>
+          </ul>
+          <p>This also produces a 🔫 <span class="rule-id">A.4</span> smoking-gun break: <code>test_child_reference_id_includes_parent_id_and_citation_index</code> asserts <code>child_id == "32_7"</code> (<code>test_create_child_reference.py:59</code>) — the <code>"32"</code> half of that expectation lives in the factory's hidden defaults, not in the test's arrange phase. The reader can't see where the asserted value comes from. <code>assert child_id == f"{parent.reference_id}_7"</code> would close the loop.</p>
+          <p class="source-note">Sources: <code>references/the-test-data.md</code> §C.3–C.10, <code>references/the-test-anatomy.md</code> §A.4, §A.28.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 6 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>6. Test names skip the when/then pattern; AAA phases are invisible</h2>
+        <span class="rule-id">A.1 · A.5</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: all 33 tests across the four files — e.g. <code>test_strips_atx_heading_markers</code>, <code>test_consecutive_ordering_starts_at_zero_for_duplicates</code>, <code>test_validate_aggregations_maps_avg_to_average</code></p>
+          <p><span class="rule-id">A.1</span> prescribes <code>test_when_&lt;case&gt;_then_&lt;expectation&gt;</code>. Zero tests follow it. Most names state a mechanism (<code>test_strips_…</code>) rather than a scenario + expectation (<code>test_when_text_contains_atx_headings_then_markers_are_removed</code>). This is the rule-ID counterpart of tab-1 finding 4.</p>
+          <p><span class="rule-id">A.5</span> requires visible Arrange/Act/Assert phases — either <code>#&nbsp;Arrange</code>/<code>#&nbsp;Act</code>/<code>#&nbsp;Assert</code> comments or blank lines before the 2nd and 3rd phases. The citations tests run arrange, act, and assert together with no separation at all (e.g. <code>test_clean_citation_text.py:9-12</code> — three packed lines). Notably <code>test_artifact_aggregation_validation.py</code> <em>does</em> separate its phases with blank lines — it's the in-repo example the citation tests should match.</p>
+          <h3>Why this matters</h3>
+          <ul>
+            <li>A failing test name should read as a broken spec sentence in the CI summary, pinpointing the rule without opening the file.</li>
+            <li>Phase separation is what makes a 4-line test scannable: which line is the trigger, which lines are the contract.</li>
+          </ul>
+          <p class="source-note">Sources: <code>references/the-test-anatomy.md</code> §A.1, §A.5. See also <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices" target="_blank">nodejs-testing-best-practices</a> Section 4 — "Stick to unit testing best practices": AAA structure, single interaction per test.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 7 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>7. The Tartlet mock is a hidden, process-global singleton that is never reset</h2>
+        <span class="badge important">Important</span>
+        <span class="rule-id">A.15 · E.5 · E.7 · B.28</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/tartlet_mock/tenant_responses.py:89-118</code> (module-level <code>_installed</code> / <code>_installed_router</code> globals), <code>src/tools/tartlet_client/factory.py:20-41</code> (env-var activation + module-level <code>_test_transport</code>), <code>src/tools/tartlet_client/test_mode_env.py</code></p>
+          <p>The replay router violates the mock-hygiene rules in three stacked ways:</p>
+          <ul>
+            <li>🥨 <span class="rule-id">A.15</span> The breadcrumb principle / <span class="rule-id">E.5</span> — "Define mocks directly in the test… Never hide mocks in external files where they mysteriously alter behavior." Here the mock isn't even in a <code>conftest.py</code>: it is activated by an <em>environment variable</em> (<code>TARTLET_TEST=true</code>) read deep inside production code. A test (or a future flow test) that constructs a Tartlet client gives no visible signal that every HTTP response is canned.</li>
+            <li><span class="rule-id">E.7</span> / <span class="rule-id">B.28</span> — mocks must be reset between tests. <code>install_tenant_responses_once</code> is deliberately once-per-process (<code>_installed = True</code>, never unset), and <code>factory.py</code> caches <code>_test_transport</code> in a module global. The first caller's tenant wins for the process lifetime; a second test using a different tenant id silently receives the first tenant's recordings. Nothing cleans up.</li>
+            <li>Structural inversion: <code>src/tools/tartlet_client/factory.py:20</code> does <code>from tests.tartlet_mock.tenant_responses import …</code> — production code importing the test package. Production deploys now depend on <code>tests/</code> being importable, and the test/prod boundary the rules lean on (mock only at external seams, keep test machinery out of the app) is dissolved.</li>
+            <li><span class="rule-id">A.23</span> (in spirit) — <code>install_tenant_responses_once</code> uses bare <code>assert</code> statements inside helper code (<code>tenant_responses.py:98-99</code>); assertions belong in test functions, and these would vanish under <code>python -O</code>.</li>
+          </ul>
+          <p>The compliant shape: a per-test (or per-session, explicitly scoped) pytest fixture that builds the respx router and injects the transport — making the mock a visible breadcrumb in each test that uses it, resettable, and removing the env-var seam plus the <code>src → tests</code> import entirely.</p>
+          <p class="source-note">Sources: <code>references/mocking.md</code> §E.5, §E.7; <code>references/the-test-anatomy.md</code> §A.15, §B.28.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 8 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>8. Membership and fragmented assertions instead of full-output equality</h2>
+        <span class="rule-id">D.11 · D.13 · A.10</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/citations/test_clean_citation_text.py:19-21</code>, <code>:28-30</code>, <code>:37</code>, <code>:44-48</code>, <code>:55</code>; <code>tests/citations/test_consecutive_ordering.py:106-114</code>, <code>:130-142</code></p>
+          <p>Many tests assert with substring membership — <code>assert "---" not in cleaned</code>, <code>assert "before" in cleaned</code> — instead of comparing the full cleaned output:</p>
+          <pre><code># current (5 partial checks, weak failure output)
+assert "***" not in cleaned
+assert "___" not in cleaned
+assert "before" in cleaned
+...
+
+# per D.11 / D.13 (one check, full diff on failure)
+assert cleaned == "before\nmiddle\nafter"</code></pre>
+          <ul>
+            <li><span class="rule-id">D.13</span> — "Prefer assertions that provide full comparison details on failure… not <code>assert expected_value in actual_list</code> which only reports membership." A membership miss prints only the haystack; an equality miss prints a precise diff.</li>
+            <li><span class="rule-id">D.11</span> 🎯 The focused principle — one full equality subsumes the whole batch. It also closes real gaps: <code>test_strips_setext_h1_equals_underline</code> (<code>:37</code>) checks only that <code>"==="</code> disappeared and would pass even if the heading and paragraph text were destroyed along with it.</li>
+            <li><span class="rule-id">A.10</span> — assertion-count cap. <code>test_send_citations_events_emits_one_object_ref_per_citation</code> carries ~12 assertions (plus the looped batch from finding 2); asserting full expected event dicts (built from the factory per <span class="rule-id">D.15</span>) collapses them to one or two.</li>
+          </ul>
+          <p class="source-note">Sources: <code>references/assertions.md</code> §D.7–D.15, <code>references/the-test-anatomy.md</code> §A.10. Complements tab-1 finding 2 (custom assertion logic) with the rulebook's concrete rule IDs.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 9 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>9. 🎯 Two tests blow past the 12-statement cap</h2>
+        <span class="rule-id">A.3 · Rule 1</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/citations/test_consecutive_ordering.py:117-142</code> (~19 statements) and <code>:98-114</code> (~16 statements)</p>
+          <p><span class="rule-id">A.3</span> / Rule 1 of the "6 Most Important (!) Rules" — 🎯 The focused principle: a test may have <strong>no more than 12 statements</strong> (this project's cap). Counting flat statements (a multi-line call counts as one, loop bodies count per statement):</p>
+          <ul>
+            <li><code>test_send_citations_events_emits_one_object_ref_per_citation</code> — ~19 statements: 2 to construct, a 3-statement arrange loop, the act call, then 2 top-level asserts, a 7-statement assert loop, and 3 trailing asserts. Roughly 160% of the cap.</li>
+            <li><code>test_send_citations_events_emits_consecutive_ordering_in_callback</code> — ~16 statements: 2 to construct, a 3-statement arrange loop, the act call, then 9 assert/extract statements.</li>
+          </ul>
+          <p>Every other test in the suite fits the cap (the next-largest are at 11: <code>test_consecutive_ordering_tracks_each_duplicate_group_independently</code> and <code>test_build_citation_object_ref_event_places_metadata_in_data</code> — compliant but worth watching).</p>
+          <h3>How to get under the cap</h3>
+          <ul>
+            <li>The arrange loops collapse to flat factory calls (finding 5) — two statements instead of four.</li>
+            <li>The assert batches collapse to one or two full-object equality checks against expected event dicts (finding 8) — which also removes the loop that hides the finding-1 bug.</li>
+            <li>If a behavior still doesn't fit in 12 statements, it is two behaviors — split the test (each currently checks event shape <em>and</em> ordering <em>and</em> labels).</li>
+          </ul>
+          <p class="source-note">Sources: <code>references/the-test-anatomy.md</code> Rule 1, §A.3 (cap: 12 statements for this project).</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 10 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>10. The test runner is undeclared — pytest is missing from requirements and there is no pytest config</h2>
+        <span class="rule-id">Infra</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: repo root — no <code>pyproject.toml</code>, no <code>pytest.ini</code>, no <code>setup.cfg</code>; <code>requirements.txt</code> pins <code>respx==0.22.0</code> but contains neither <code>pytest</code> nor <code>faker</code></p>
+          <p>The suite's mocking dependency made it into <code>requirements.txt</code> (<code>respx==0.22.0</code>) but the runner itself did not — there is no <code>pytest</code> pin anywhere, and no <code>faker</code> for when the data factories (finding 5) are introduced. There is also no pytest configuration file at all, which has two concrete consequences:</p>
+          <ul>
+            <li><strong>Unreproducible runs.</strong> Whoever runs these tests depends on a globally-installed pytest of unknown version; a teammate or CI image without one can't run the suite from a clean checkout, and version drift between machines changes collection and assertion-rewriting behavior silently.</li>
+            <li><strong>Unbounded collection scope.</strong> With no <code>testpaths</code> setting, pytest discovers <code>test_*.py</code> from the rootdir across the whole repository — which is what turns the stray runner scripts in finding 13 from a naming nitpick into an operational risk.</li>
+          </ul>
+          <p>Fix: add <code>pytest</code> (and <code>faker</code>) to a pinned requirements file, and a minimal <code>pyproject.toml</code> <code>[tool.pytest.ini_options]</code> block with <code>testpaths = ["tests"]</code>.</p>
+          <p class="source-note">Context: <code>references/test-commands.md</code> assumes well-defined, repeatable run commands for the suite; none can exist while the runner itself is undeclared.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 11 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>11. Bare MagicMock() without spec — mocks that survive contract drift</h2>
+        <span class="rule-id">E.3</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/citations/test_consecutive_ordering.py:99</code> and <code>:118</code> — <code>callback = MagicMock()</code></p>
+          <p><span class="rule-id">E.3</span>: "Always use the type hints/interfaces of the mocked code (<code>spec=</code> on <code>MagicMock</code>, real Pydantic models for return values) so that when the real implementation changes, the mock fails and forces updates to match the new contract."</p>
+          <p>The <code>stream_callback</code> seam has a real signature, but the bare <code>MagicMock()</code> accepts any call shape forever. If the processor started invoking the callback with a different arity or keyword args, these tests would keep passing while every real consumer broke. The assertion side compounds it by reaching into <code>call_args.args[0]</code> / <code>call_args_list[i].args[0]</code> — positional coupling that an interface-specced mock (or a small typed fake that appends received events to a list) would make both safer and more readable.</p>
+          <p class="source-note">Source: <code>references/mocking.md</code> §E.3.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 12 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>12. Single-item lists and no surviving counterexample — extra-mile and two-items rules</h2>
+        <span class="rule-id">B.3 · C.20</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>tests/compliance_assistant/workspace_artifacts/test_artifact_aggregation_validation.py:8-11</code>, <code>:20-23</code>, <code>:33-36</code> — every <code>columns</code> and <code>aggregations</code> list holds exactly one item</p>
+          <p>Two data-shape rules are missed together:</p>
+          <ul>
+            <li><span class="rule-id">C.20</span> — "When having list/arrays, by default put two items. Zero and one are a naive choice in terms of finding bugs." All six lists in this file are single-item, so iteration, ordering, and cross-item interference in <code>_validate_aggregations</code> are never exercised.</li>
+            <li><span class="rule-id">B.3</span> 🚀 The extra mile principle — "Testing a grid filter? Also assert an item that should NOT be shown." Both drop-tests assert <code>column_aggregation_functions == {}</code>: nothing was supposed to survive, so an implementation that <em>drops everything unconditionally</em> passes both. Adding one valid aggregation alongside the invalid one — then asserting the valid one is kept while the invalid one is dropped with a warning — is the same shape as the rulebook's good example (<code>completed_order</code> filtered out while <code>active_order</code> remains).</li>
+          </ul>
+          <p>Same pattern applies to the happy-path test: a second column with no aggregation would prove the mapper doesn't invent entries.</p>
+          <p class="source-note">Sources: <code>references/the-test-data.md</code> §C.20, <code>references/the-test-anatomy.md</code> §B.3.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Skill Finding 13 -->
+    <div class="card">
+      <div class="finding-head">
+        <h2>13. Ad-hoc LLM runners named test_*.py sit in scripts/ — inside pytest's collection path</h2>
+        <span class="rule-id">Strategy · A.13</span>
+      </div>
+      <details class="more-info">
+        <summary>More info</summary>
+        <div class="details-body">
+          <p class="where">Where: <code>scripts/test_country_detector.py</code> (196 lines), <code>scripts/test_platform_classifier.py</code> (135 lines)</p>
+          <p>Two manual "test runner" scripts call <strong>real LLM endpoints</strong> (the QUERY_CHECK model on Vertex), loop over hard-coded case tables, count pass/fail, and <code>print</code> markdown result tables. As tests they violate the anatomy rules wholesale (loops, prints, no assertions, no AAA — <span class="rule-id">A.13</span>), and they belong to none of the three sanctioned test types in <code>testing-strategy.md</code> — they are closest to <em>evaluations</em>, which this repo handles elsewhere (<code>src/evaluation/</code>, <code>scripts/run_compliance_evals_xlsx.py</code>).</p>
+          <h3>Why the naming is the real problem</h3>
+          <ul>
+            <li>They match pytest's default <code>test_*.py</code> discovery pattern, and with no pytest config restricting <code>testpaths</code> (finding 10), they sit squarely in collection scope. Today they define no <code>test_</code> functions, so nothing executes — but pytest still <em>imports</em> them at collection time, dragging in <code>pydantic_ai</code> and the provider-factory stack; any module-level env requirement added there will fail the entire suite run.</li>
+            <li>One renamed helper to <code>test_…</code> away from disaster: if either script ever gains a <code>test_</code>-prefixed function, CI starts making real Vertex calls.</li>
+            <li>The name lies to the reader: "the tests" in <code>scripts/</code> are not part of any automated quality gate.</li>
+          </ul>
+          <p>Fix: rename to <code>check_country_detector.py</code> / <code>check_platform_classifier.py</code> (or move under an eval folder), and set <code>testpaths = tests</code> in a pytest config so collection scope is explicit.</p>
+          <p class="source-note">Sources: <code>references/testing-strategy.md</code> (supported test types), <code>references/the-test-anatomy.md</code> §A.13, <code>references/test-commands.md</code> (run commands must be config-defined, not ad-hoc scripts).</p>
+        </div>
+      </details>
+    </div>
+
+  </section>
+
+</div>
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  }));
+</script>
+</body>
+</html>
