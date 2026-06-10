@@ -28,6 +28,17 @@
   .topic p { margin: 0; color: var(--muted); font-size: .92rem; }
   code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .88em; }
   a { color: var(--primary); }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 2rem 0 0; border-bottom: 1px solid var(--border); }
+  nav.tabs button { font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer; border: 0; background: none;
+    padding: .65rem 1rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .agenda-item { display: flex; gap: 1rem; padding: .85rem 0; border-bottom: 1px solid var(--border); align-items: baseline; }
+  .agenda-item:last-child { border-bottom: 0; }
+  .agenda-item .time { flex: 0 0 7.5rem; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--primary); }
+  .agenda-item h3 { font-size: .98rem; }
+  .agenda-item p { margin: 0; color: var(--muted); font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -38,6 +49,12 @@
     <p class="sub">The shortlist of core topics for the SDLC / AI-coding curriculum — names and one-line hooks.</p>
   </header>
 
+  <nav class="tabs">
+    <button class="active" data-tab="shortlist">The Shortlist</button>
+    <button data-tab="agenda">Workshop Agenda</button>
+  </nav>
+
+  <section class="panel active" id="shortlist">
   <div class="card">
     <h2>The Shortlist</h2>
 
@@ -81,6 +98,68 @@
       <p>Fire-and-forget agents: queues of tasks, babysitting many sessions at once, and the new bottleneck — human attention, not typing speed.</p>
     </div></div>
   </div>
+  </section>
+
+  <section class="panel" id="agenda">
+  <div class="card">
+    <h2>Workshop Agenda</h2>
+
+    <div class="agenda-item"><div class="time">Part 1 · 10 min</div><div>
+      <h3>The "Best Fit" Game</h3>
+      <p>Given various scenarios, the audience votes for the best fit for the mission. Back to Practica: choose between MCP, CLI, sub-agent, skill, rule, main agent, command.</p>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Team talk · 5 min</div><div>
+      <h3>What Is a Sub-Agent</h3>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Part 2 · 15 min</div><div>
+      <h3>The "Best Fit" Game — Continued</h3>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Break</div><div>
+      <h3>☕ Break</h3>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Team drill · 20 min</div><div>
+      <h3>Try a Technique You Never Used — Part 1</h3>
+      <p>Experiment with a technique you never tried before (MCP, CLI, sub-agent): make a choice and plan.</p>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Team talk · 5 min</div><div>
+      <h3>Some Topic</h3>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Yoni's talk · 20 min</div><div>
+      <h3>Under the Hood</h3>
+      <p>What's happening under the hood when you ask Cursor "please fix this bug".</p>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Team talk · 5 min</div><div>
+      <h3>Some Topic from the Pool</h3>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Team drill · 30 min</div><div>
+      <h3>Try a Technique You Never Used — Part 2</h3>
+      <p>Continue your plan.</p>
+    </div></div>
+
+    <div class="agenda-item"><div class="time">Day close</div><div>
+      <h3>Show Your Thing</h3>
+      <p>Each participant displays what was coded.</p>
+    </div></div>
+  </div>
+  </section>
 </div>
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  }));
+</script>
 </body>
 </html>
