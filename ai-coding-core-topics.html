@@ -34,11 +34,21 @@
   nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
   .panel { display: none; }
   .panel.active { display: block; }
-  .agenda-item { display: flex; gap: 1rem; padding: .85rem 0; border-bottom: 1px solid var(--border); align-items: baseline; }
-  .agenda-item:last-child { border-bottom: 0; }
-  .agenda-item .time { flex: 0 0 7.5rem; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--primary); }
-  .agenda-item h3 { font-size: .98rem; }
-  .agenda-item p { margin: 0; color: var(--muted); font-size: .9rem; }
+  table.agenda { width: 100%; border-collapse: collapse; }
+  table.agenda th { text-align: left; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); padding: .5rem .75rem; border-bottom: 2px solid var(--border); }
+  table.agenda td { padding: .8rem .75rem; border-bottom: 1px solid var(--border); vertical-align: top; font-size: .92rem; }
+  table.agenda tr:last-child td { border-bottom: 0; }
+  table.agenda td.time { white-space: nowrap; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
+  table.agenda td.dur { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+  table.agenda td.what strong { font-weight: 600; }
+  table.agenda td.what .desc { display: block; color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+  .host { display: inline-block; font-size: .7rem; font-weight: 600; letter-spacing: .04em; border-radius: 999px;
+    padding: .15rem .7rem; white-space: nowrap; }
+  .host.yoni { background: var(--primary); color: #fff; }
+  .host.team { background: rgba(0,0,0,.06); color: var(--fg); }
+  .host.everyone { background: rgba(13,148,136,.12); color: var(--primary); }
+  tr.break-row td { background: var(--bg); color: var(--muted); }
 </style>
 </head>
 <body>
@@ -103,55 +113,78 @@
   <section class="panel active" id="agenda">
   <div class="card">
     <h2>Workshop Agenda</h2>
-
-    <div class="agenda-item"><div class="time">Part 1 · 10 min</div><div>
-      <h3>The "Best Fit" Game</h3>
-      <p>Given various scenarios, the audience votes for the best fit for the mission. Back to Practica: choose between MCP, CLI, sub-agent, skill, rule, main agent, command.</p>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Team talk · 5 min</div><div>
-      <h3>What Is a Sub-Agent</h3>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Team talk · 5 min</div><div>
-      <h3>MCP vs CLI</h3>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Part 2 · 15 min</div><div>
-      <h3>The "Best Fit" Game — Continued</h3>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Break</div><div>
-      <h3>☕ Break</h3>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Team drill · 20 min</div><div>
-      <h3>Try a Technique You Never Used — Part 1</h3>
-      <p>Experiment with a technique you never tried before (MCP, CLI, sub-agent): make a choice and plan.</p>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Team talk · 5 min</div><div>
-      <h3>Some Topic</h3>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Yoni's talk · 20 min</div><div>
-      <h3>Under the Hood</h3>
-      <p>What's happening under the hood when you ask Cursor "please fix this bug".</p>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Team talk · 5 min</div><div>
-      <h3>Some Topic from the Pool</h3>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Team drill · 30 min</div><div>
-      <h3>Try a Technique You Never Used — Part 2</h3>
-      <p>Continue your plan.</p>
-    </div></div>
-
-    <div class="agenda-item"><div class="time">Day close</div><div>
-      <h3>Show Your Thing</h3>
-      <p>Each participant displays what was coded.</p>
-    </div></div>
+    <table class="agenda">
+      <thead>
+        <tr><th>Time</th><th>Duration</th><th>Session</th><th>Held by</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="time">0:00</td><td class="dur">10 min</td>
+          <td class="what"><strong>The "Best Fit" Game — Part 1</strong>
+            <span class="desc">Given various scenarios, the audience votes for the best fit for the mission. Back to Practica: choose between MCP, CLI, sub-agent, skill, rule, main agent, command.</span></td>
+          <td><span class="host yoni">Yoni</span></td>
+        </tr>
+        <tr>
+          <td class="time">0:10</td><td class="dur">5 min</td>
+          <td class="what"><strong>Team talk: What Is a Sub-Agent</strong></td>
+          <td><span class="host team">Team</span></td>
+        </tr>
+        <tr>
+          <td class="time">0:15</td><td class="dur">5 min</td>
+          <td class="what"><strong>Team talk: MCP vs CLI</strong></td>
+          <td><span class="host team">Team</span></td>
+        </tr>
+        <tr>
+          <td class="time">0:20</td><td class="dur">15 min</td>
+          <td class="what"><strong>The "Best Fit" Game — Part 2</strong></td>
+          <td><span class="host yoni">Yoni</span></td>
+        </tr>
+        <tr class="break-row">
+          <td class="time">0:35</td><td class="dur">15 min</td>
+          <td class="what"><strong>☕ Break</strong></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="time">0:50</td><td class="dur">20 min</td>
+          <td class="what"><strong>Stretch Your Toolbox — Part 1</strong>
+            <span class="desc">Experiment with a technique you never tried before (MCP, CLI, sub-agent): make a choice and plan.</span></td>
+          <td><span class="host everyone">Everyone</span></td>
+        </tr>
+        <tr>
+          <td class="time">1:10</td><td class="dur">5 min</td>
+          <td class="what"><strong>Team talk: Some Topic</strong></td>
+          <td><span class="host team">Team</span></td>
+        </tr>
+        <tr>
+          <td class="time">1:15</td><td class="dur">20 min</td>
+          <td class="what"><strong>Under the Hood</strong>
+            <span class="desc">What's happening under the hood when you ask Cursor "please fix this bug".</span></td>
+          <td><span class="host yoni">Yoni</span></td>
+        </tr>
+        <tr class="break-row">
+          <td class="time">1:35</td><td class="dur">15 min</td>
+          <td class="what"><strong>☕ Break</strong></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="time">1:50</td><td class="dur">5 min</td>
+          <td class="what"><strong>Team talk: Some Topic from the Pool</strong></td>
+          <td><span class="host team">Team</span></td>
+        </tr>
+        <tr>
+          <td class="time">1:55</td><td class="dur">30 min</td>
+          <td class="what"><strong>Stretch Your Toolbox — Part 2</strong>
+            <span class="desc">Continue your plan.</span></td>
+          <td><span class="host everyone">Everyone</span></td>
+        </tr>
+        <tr>
+          <td class="time">2:25</td><td class="dur">15 min</td>
+          <td class="what"><strong>Stretch Your Toolbox — Show Your Thing</strong>
+            <span class="desc">Day close: each participant displays what was coded.</span></td>
+          <td><span class="host everyone">Everyone</span></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
   </section>
 </div>
