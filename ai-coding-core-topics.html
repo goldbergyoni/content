@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Coding — Core Topics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #28282a; --muted: #6b7280;
+    --primary: #0d9488; --border: #e2e4e8; --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .25rem; }
+  header .label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header p.sub { color: var(--muted); margin: .5rem 0 0; max-width: 44rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.75rem 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-top: 2rem; }
+  h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 0 0 .2rem; }
+  .topic { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+  .topic:last-child { border-bottom: 0; }
+  .topic .num { flex: 0 0 2rem; font-weight: 800; color: var(--primary); font-size: 1.05rem; }
+  .topic p { margin: 0; color: var(--muted); font-size: .92rem; }
+  code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .88em; }
+  a { color: var(--primary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">Topic Catalog</div>
+    <h1>AI Coding — Core Topics</h1>
+    <p class="sub">The shortlist of core topics for the SDLC / AI-coding curriculum — names and one-line hooks.</p>
+  </header>
+
+  <div class="card">
+    <h2>The Shortlist</h2>
+
+    <div class="topic"><div class="num">1</div><div>
+      <h3>Spec-Driven Development (SDD) &amp; OpenSpec</h3>
+      <p>Writing specs as the primary artifact and letting agents implement them; OpenSpec / spec-kit style workflows, and when a spec beats a prompt.</p>
+    </div></div>
+
+    <div class="topic"><div class="num">2</div><div>
+      <h3>Cursor Auto vs Max Mode</h3>
+      <p>Model-selection strategy: when auto routing is good enough, when to pay for max-mode long context, and the cost/quality trade-offs.</p>
+    </div></div>
+
+    <div class="topic"><div class="num">3</div><div>
+      <h3>Subagents</h3>
+      <p>Delegating scoped work to child agents — explore/plan/review specialists, context isolation, and when fan-out helps vs hurts.</p>
+    </div></div>
+
+    <div class="topic"><div class="num">4</div><div>
+      <h3>CLI vs MCP</h3>
+      <p>Two ways to give agents capabilities: shelling out to CLIs vs structured MCP servers — token cost, discoverability, auth, and composability.</p>
+    </div></div>
+
+    <div class="topic"><div class="num">5</div><div>
+      <h3>Cursor Hooks</h3>
+      <p>Deterministic guardrails around agent actions — pre/post tool-call hooks for formatting, policy enforcement, secrets blocking, and audit.</p>
+    </div></div>
+
+    <div class="topic"><div class="num">6</div><div>
+      <h3>Git Worktrees</h3>
+      <p>Running multiple agents in parallel on isolated checkouts of the same repo — worktree workflows, merge strategy, and cleanup hygiene.</p>
+    </div></div>
+
+    <div class="topic"><div class="num">7</div><div>
+      <h3>Permissions &amp; Sandboxing</h3>
+      <p>What makes "YOLO mode" safe: OS-level sandboxes (Cursor's Seatbelt/Landlock terminal sandbox, deny-by-default network, workspace-scoped writes), allowlists vs approval prompts, and escalation paths.</p>
+    </div></div>
+
+    <div class="topic"><div class="num">8</div><div>
+      <h3>Background &amp; Parallel Agents</h3>
+      <p>Fire-and-forget agents: queues of tasks, babysitting many sessions at once, and the new bottleneck — human attention, not typing speed.</p>
+    </div></div>
+  </div>
+</div>
+</body>
+</html>
