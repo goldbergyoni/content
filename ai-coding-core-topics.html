@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AI Coding — Core Topics</title>
+<title>Slice AI Coding Week</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -14,16 +14,18 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
-  .wrap { max-width: 60rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  .wrap { max-width: 82rem; margin: 0 auto; padding: 3rem 2.5rem 5rem; }
   header h1 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .25rem; }
   header .label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
-  header p.sub { color: var(--muted); margin: .5rem 0 0; max-width: 44rem; }
+  header p.sub { color: var(--muted); margin: .5rem 0 0; max-width: 60rem; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 1.75rem 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-top: 2rem; }
   h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0; }
   h3 { font-size: 1.05rem; font-weight: 600; margin: 0 0 .2rem; }
+  .topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr)); column-gap: 2.5rem; }
   .topic { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
   .topic:last-child { border-bottom: 0; }
+  @media (min-width: 56rem) { .topic-grid .topic:nth-last-child(2) { border-bottom: 0; } }
   .topic .num { flex: 0 0 2rem; font-weight: 800; color: var(--primary); font-size: 1.05rem; }
   .topic p { margin: 0; color: var(--muted); font-size: .92rem; }
   code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .88em; }
@@ -51,18 +53,42 @@
   .host.everyone { background: rgba(13,148,136,.12); color: var(--primary); }
   .host.guest { background: #fff; border: 1px solid var(--primary); color: var(--primary); }
   tr.break-row td { background: var(--bg); color: var(--muted); }
+  .phase { display: flex; gap: 1.25rem; padding: 1.5rem 0; border-bottom: 1px solid var(--border); }
+  .phase:last-child { border-bottom: 0; padding-bottom: 0; }
+  .phase .step { flex: 0 0 2.5rem; height: 2.5rem; border-radius: 999px; background: var(--primary); color: #fff;
+    font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+  .phase .body { flex: 1; }
+  .phase .body h3 { font-size: 1.15rem; }
+  .phase .body p { margin: .35rem 0 0; color: var(--muted); font-size: .92rem; }
+  .crit { list-style: none; margin: .9rem 0 0; padding: 0; counter-reset: crit; }
+  .crit > li { position: relative; padding: .55rem 0 .55rem 2rem; font-size: .92rem; border-top: 1px solid var(--border); }
+  .crit > li::before { counter-increment: crit; content: counter(crit); position: absolute; left: 0; top: .5rem;
+    width: 1.35rem; height: 1.35rem; border-radius: 6px; background: rgba(13,148,136,.12); color: var(--primary);
+    font-size: .78rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .toolbox { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0 0; }
+  .toolbox span { font-size: .8rem; font-weight: 600; background: rgba(13,148,136,.1); color: var(--primary);
+    border: 1px solid rgba(13,148,136,.25); border-radius: 999px; padding: .2rem .7rem; }
+  .note { margin: 1rem 0 0; padding: .85rem 1rem; border-left: 3px solid var(--primary); background: rgba(13,148,136,.06);
+    border-radius: 0 8px 8px 0; font-size: .88rem; color: var(--fg); }
+  .note strong { color: var(--primary); }
+  .split { display: flex; flex-wrap: wrap; gap: 1rem; margin: .9rem 0 0; }
+  .split .box { flex: 1 1 180px; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; }
+  .split .box .pct { font-size: 1.8rem; font-weight: 800; color: var(--primary); line-height: 1; }
+  .split .box .pct-label { display: block; margin-top: .35rem; font-size: .85rem; color: var(--muted); }
+  .prize { display: inline-flex; align-items: center; gap: .4rem; margin-top: .6rem; font-weight: 700; color: var(--primary); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="label">Topic Catalog</div>
-    <h1>AI Coding — Core Topics</h1>
+    <h1>Slice AI Coding Week</h1>
     <p class="sub">Workshop agenda plus the pool of core talk topics for the SDLC / AI-coding curriculum — names and one-line hooks.</p>
   </header>
 
   <nav class="tabs">
     <button class="active" data-tab="agenda">Workshop Agenda</button>
+    <button data-tab="hackathon">Hackathon Agenda</button>
     <button data-tab="shortlist">Talks Pool</button>
   </nav>
 
@@ -70,6 +96,7 @@
   <div class="card">
     <h2>Talks Pool</h2>
 
+    <div class="topic-grid">
     <div class="topic"><div class="num">1</div><div>
       <h3>Spec-Driven Development (SDD) &amp; OpenSpec</h3>
       <p>Writing specs as the primary artifact and letting agents implement them; OpenSpec / spec-kit style workflows, and when a spec beats a prompt.</p>
@@ -109,6 +136,7 @@
       <h3>Background &amp; Parallel Agents</h3>
       <p>Fire-and-forget agents: queues of tasks, babysitting many sessions at once, and the new bottleneck — human attention, not typing speed.</p>
     </div></div>
+    </div>
   </div>
   </section>
 
@@ -123,7 +151,7 @@
         <tr>
           <td class="time">0:00</td><td class="dur">10 min</td>
           <td class="what"><strong>The "Best Fit" Game — Part 1</strong>
-            <span class="desc">Given various scenarios, the audience votes for the best fit for the mission: choose between MCP, CLI, sub-agent, skill, rule, main agent, command, hook and/or script.</span></td>
+            <span class="desc">Show you control the basics and understand the AI primitives: given various scenarios, the audience votes for the best fit for the mission — choose between MCP, CLI, sub-agent, skill, rule, main agent, command, hook and/or script. The winning scenarios carry over into "Stretch Your Toolbox".</span></td>
           <td class="type">Game</td>
           <td><span class="host yoni">Yoni</span></td>
         </tr>
@@ -161,7 +189,7 @@
         <tr>
           <td class="time">1:15</td><td class="dur">20 min</td>
           <td class="what"><strong>Stretch Your Toolbox — Part 1</strong>
-            <span class="desc">Experiment with a technique you never tried before (MCP, CLI, sub-agent, skill, command, hook): make a choice and plan.</span></td>
+            <span class="desc">A hands-on coding exercise on the "How Does Your Harness Work Under the Hood" talk — the hidden internals of Cursor. Picking up from the scenarios the audience voted for, experiment with a technique you never tried before (MCP, CLI, sub-agent, skill, command, hook): make a choice and plan.</span></td>
           <td class="type">Coding</td>
           <td><span class="host everyone">Everyone</span></td>
         </tr>
@@ -173,8 +201,8 @@
         </tr>
         <tr>
           <td class="time">1:40</td><td class="dur">20 min</td>
-          <td class="what"><strong>The Hidden Internals of "Cursor, Code This {feature}"</strong>
-            <span class="desc">What's happening under the hood when you ask Cursor "please code a new feature for me".</span></td>
+          <td class="what"><strong>How Does Your Harness Work Under the Hood</strong>
+            <span class="desc">The hidden internals of Cursor when you ask it to "please code a new feature for me" — understanding the fundamentals and mechanics of this machine will inspire any future decision you make.</span></td>
           <td class="type">Talk</td>
           <td><span class="host yoni">Yoni</span></td>
         </tr>
@@ -206,6 +234,56 @@
         </tr>
       </tbody>
     </table>
+  </div>
+  </section>
+
+  <section class="panel" id="hackathon">
+  <div class="card">
+    <h2>Hackathon Agenda</h2>
+    <p class="sub" style="margin:.25rem 0 0;">For the whole audience — three phases, from picking a real problem to pitching your build.</p>
+
+    <div class="phase">
+      <div class="step">1</div>
+      <div class="body">
+        <h3>Project Selection</h3>
+        <p>Each participant chooses their own personal project. To qualify, the project must meet both criteria:</p>
+        <ol class="crit">
+          <li>Show a real problem in our workflow.</li>
+          <li>Pick a solution that demands involving <strong>at least two</strong> of the following:
+            <div class="toolbox">
+              <span>Skills or sub-agents</span>
+              <span>MCP</span>
+              <span>Hooks</span>
+              <span>Cursor API</span>
+              <span>Configuring a Claude agent</span>
+              <span>Creating a plugin</span>
+            </div>
+          </li>
+        </ol>
+        <div class="note"><strong>Remark:</strong> Want to propose a project that doesn't tick at least two boxes? You'll need special permission — submit your proposal in the <strong>AI coding</strong> channel for approval.</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="step">2</div>
+      <div class="body">
+        <h3>Hackathon Day</h3>
+        <p>Come tuned with vibes. The day splits into building and breathing room:</p>
+        <div class="split">
+          <div class="box"><span class="pct">80%</span><span class="pct-label">Coding your project</span></div>
+          <div class="box"><span class="pct">20%</span><span class="pct-label">Talks &amp; great food</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="step">3</div>
+      <div class="body">
+        <h3>The Election</h3>
+        <p>In the final phase, each participant presents their project in <strong>5 minutes</strong>. The audience votes, and the top three win.</p>
+        <div class="prize">🏆 Top 3 — $100 gift card each</div>
+      </div>
+    </div>
   </div>
   </section>
 </div>
