@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PR Agent Test And Dev Workflow Enhancements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #28282a; --muted: #6b7280;
+    --primary: #0d9488; --primary-soft: #e6f4f2; --border: #e2e4e8; --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
+  .wrap { max-width: 52rem; margin: 0 auto; padding: 3.5rem 1.5rem 6rem; }
+  header .label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .14em; color: var(--primary); }
+  header h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em; margin: .3rem 0 2.5rem; }
+
+  details { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 1.25rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.04); transition: box-shadow .2s ease; }
+  details[open] { box-shadow: 0 6px 22px rgba(0,0,0,.07); }
+
+  summary { cursor: pointer; list-style: none; padding: 1.6rem 1.9rem; display: flex; align-items: flex-start; gap: 1rem; }
+  summary::-webkit-details-marker { display: none; }
+  .chev { color: var(--muted); transition: transform .2s ease; font-size: .85rem; margin-top: .45rem; flex: 0 0 auto; }
+  details[open] .chev { transform: rotate(90deg); color: var(--primary); }
+  .head-text { flex: 1; }
+  .head-text h2 { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  .head-text .one-liner { color: var(--muted); margin: .35rem 0 0; font-size: 1rem; }
+
+  .pill { display: inline-block; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+    padding: .28rem .7rem; border-radius: 999px; white-space: nowrap; margin-top: .25rem; flex: 0 0 auto; }
+  .pill.high { background: #fde8e4; color: #c2410c; }
+  .pill.medium { background: #fef3c7; color: #92400e; }
+  .pill.eval { background: var(--primary-soft); color: var(--primary); }
+  .pill.label { text-transform: none; letter-spacing: .02em; }
+
+  .body { padding: .5rem 2.4rem 2.2rem 4.4rem; border-top: 1px solid var(--border); }
+  .body .tasks-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--primary); margin: 1.6rem 0 1rem; }
+  ul.tasks { margin: 0; padding-left: 1.4rem; }
+  ul.tasks li { font-size: 1.2rem; line-height: 1.7; margin: 1.1rem 0; }
+  ul.tasks li .sub { display: block; font-size: 1.05rem; color: var(--muted); margin: .35rem 0 0; }
+  .owner-tag { display: inline-block; font-size: .8rem; font-weight: 600; color: var(--primary);
+    background: var(--primary-soft); padding: .1rem .55rem; border-radius: 999px; margin-right: .5rem; vertical-align: middle; }
+  code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .88em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">Work Plan</div>
+    <h1>PR Agent Test And Dev Workflow Enhancements</h1>
+  </header>
+
+  <!-- WORK STREAM 1 -->
+  <details>
+    <summary>
+      <span class="chev">&#9654;</span>
+      <span class="head-text">
+        <h2>Fix flow test issues</h2>
+        <p class="one-liner">Flow tests are the primary test type we generate &mdash; making them reliable avoids developer frustration.</p>
+      </span>
+      <span class="pill high">High</span>
+    </summary>
+    <div class="body">
+      <div class="tasks-label">Tasks</div>
+      <ul class="tasks">
+        <li>Set up LLM mocking that properly covers our own tools. <strong>Priority: High</strong></li>
+        <li>CI DX optimization: setup code annotations and test reporters in CI and parallelization.</li>
+        <li>New tests deviate from our template. We need to improve and unify the structure. <strong>Priority: High</strong></li>
+        <li><strong>Finding &mdash; Priority: High:</strong> Our existing mock technique wouldn&rsquo;t catch if the test used the wrong code signature. For example, if production code changes, the mock may not realize this, and the test will keep passing for the wrong reasons.</li>
+        <li>Test additional 2&ndash;3 key flows (description, <code>/ask</code>) for higher confidence in the infrastructure &mdash; it&rsquo;s ready to go the distance.</li>
+        <li>Delete redundant obsolete tests: partial integration tests, unit tests that test impure modules.</li>
+        <li>Create an example for tests that mock and assert on the platform interactions.</li>
+        <li>Create tests that assert on monitoring events, as an example.</li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- WORK STREAM 2 -->
+  <details>
+    <summary>
+      <span class="chev">&#9654;</span>
+      <span class="head-text">
+        <h2>LightGit ready</h2>
+        <p class="one-liner">Prepare our tests for the upcoming LightGit boundary so the migration is safe and verifiable.</p>
+      </span>
+      <span class="pill eval label">Prepare for what&rsquo;s coming</span>
+    </summary>
+    <div class="body">
+      <div class="tasks-label">Tasks</div>
+      <ul class="tasks">
+        <li>Ensure our tests can migrate to work with the new upcoming boundary LightGit.</li>
+        <li>Choose the right technique for how to mock LightGit.</li>
+        <li>Transition tests: write tests against the real Git provider using the existing current codebase, so that once we switch to LightGit we can ensure the same tests keep passing and the transition is successful.</li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- WORK STREAM 3: Test skill improvements -->
+  <details>
+    <summary>
+      <span class="chev">&#9654;</span>
+      <span class="head-text">
+        <h2>Test skill improvements</h2>
+        <p class="one-liner">Developer-driven requests to make the testing skill more controllable, transparent, and context-aware.</p>
+      </span>
+      <span class="pill medium">Medium</span>
+    </summary>
+    <div class="body">
+      <div class="tasks-label">Requests</div>
+      <ul class="tasks">
+        <li><span class="owner-tag">Tomer</span>Add an &lsquo;opt out&rsquo; feature for playground cases when testing is not needed.</li>
+        <li><span class="owner-tag">Amir</span>Amir is forced into playing mode by the skill. Agreed: he will send the JSONL log of the conversation the next time it happens.</li>
+        <li><span class="owner-tag">Bar</span>The test skill should introduce itself, explain, and propose activation &mdash; for developer awareness, to avoid a default behavior that isn&rsquo;t the right flow for a specific case.</li>
+        <li><span class="owner-tag">Husam</span>Long-term memory: a place to leave custom instructions that are concluded over time.
+          <span class="sub">Plus a way to view per-session coverage per folder or command.</span></li>
+        <li><span class="owner-tag">Adam</span>For bigger features, allow overriding the test budget to write more tests than is allowed by default.</li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- WORK STREAM 4: Service workflow -->
+  <details>
+    <summary>
+      <span class="chev">&#9654;</span>
+      <span class="head-text">
+        <h2>Refine the service workflow</h2>
+        <p class="one-liner">An agent flow to bring automatic bug resolution to high success with minimal human involvement.</p>
+      </span>
+      <span class="pill eval label">Opportunity</span>
+    </summary>
+    <div class="body">
+      <div class="tasks-label">Tasks</div>
+      <ul class="tasks">
+        <li>Bring our automatic bug-resolution workflow to high success numbers by cutting and shaving off human-involvement time in the task underneath.</li>
+        <li>Create evaluations that measure this process, run it, and ensure it uses the testing skill efficiently and can prove success.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+</body>
+</html>
