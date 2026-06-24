@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SDLC Review Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card: #fff;
+    --fg: #28282a;
+    --muted: #6b7280;
+    --primary: #0d9488;
+    --border: #e2e4e8;
+    --radius: 12px;
+    --pass: #059669;
+    --fail: #dc2626;
+    --na: #9ca3af;
+    --error-bg: #fef2f2;
+    --error-fg: #b91c1c;
+    --warning-bg: #fffbeb;
+    --warning-fg: #b45309;
+    --info-bg: #f0fdfa;
+    --info-fg: #0f766e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .25rem; }
+  header .label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header .sub { color: var(--muted); font-size: .95rem; margin: .5rem 0 0; }
+
+  nav.tabs {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+    margin: 2rem 0 1.5rem; border-bottom: 1px solid var(--border);
+  }
+  nav.tabs button {
+    font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer;
+    border: 0; background: none; padding: .65rem 1rem; color: var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  nav.tabs button .count { font-weight: 500; opacity: .75; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.75rem 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 1.25rem;
+  }
+  h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 1rem; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.25rem; }
+  .stat {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.25rem 1rem; text-align: center;
+  }
+  .stat .num { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .stat .lbl { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-top: .5rem; }
+  .stat.error .num { color: var(--fail); }
+  .stat.warning .num { color: var(--warning-fg); }
+  .stat.informative .num { color: var(--primary); }
+
+  .artifact-meta { color: var(--muted); font-size: .88rem; margin: 0 0 1.5rem; }
+  .artifact-meta code { background: rgba(0,0,0,.06); padding: .1em .4em; border-radius: 5px; font-size: .88em; color: var(--fg); }
+
+  .section-label {
+    font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em;
+    color: var(--fg); margin: 2.25rem 0 1rem;
+    padding-bottom: .5rem; border-bottom: 2px solid var(--primary);
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  .checklist { list-style: none; margin: 0; padding: 0; }
+  .check-item { border: 1px solid var(--border); border-radius: 10px; margin-bottom: .5rem; background: var(--card); overflow: hidden; }
+  .check-item.pass { border-color: #d1fae5; }
+  .check-item.fail { border-color: #fecaca; }
+  .check-item.na { border-color: var(--border); opacity: .85; }
+
+  .check-header {
+    display: flex; align-items: center; gap: .75rem; width: 100%;
+    padding: .85rem 1rem; border: 0; background: none; cursor: pointer;
+    font: inherit; text-align: left; color: var(--fg);
+  }
+  .check-header:hover { background: rgba(0,0,0,.02); }
+  .check-item.fail .check-header:hover { background: var(--error-bg); }
+
+  .status-icon {
+    flex-shrink: 0; width: 1.35rem; height: 1.35rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 700;
+  }
+  .status-icon.pass { background: #d1fae5; color: var(--pass); }
+  .status-icon.fail { background: #fecaca; color: var(--fail); }
+  .status-icon.na { background: #f3f4f6; color: var(--na); }
+
+  .check-title { flex: 1; font-weight: 600; font-size: .95rem; line-height: 1.4; }
+  .check-badges { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+
+  .sev-badge {
+    font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    padding: .2em .55em; border-radius: 999px;
+  }
+  .sev-error { background: var(--error-bg); color: var(--error-fg); }
+  .sev-warning { background: var(--warning-bg); color: var(--warning-fg); }
+  .sev-informative { background: var(--info-bg); color: var(--info-fg); }
+
+  .chevron {
+    flex-shrink: 0; width: 1rem; height: 1rem; color: var(--muted);
+    transition: transform .15s ease;
+  }
+  .check-item.open .chevron { transform: rotate(180deg); }
+
+  .check-body {
+    display: none; padding: 0 1rem 1rem 3.1rem; font-size: .9rem; color: var(--muted);
+  }
+  .check-item.open .check-body { display: block; }
+  .check-body p { margin: 0 0 .65rem; }
+  .check-body p:last-child { margin-bottom: 0; }
+  .check-body strong { color: var(--fg); font-weight: 600; }
+  .check-body .fail-reason {
+    margin-top: .75rem; padding: .75rem 1rem; border-radius: 8px;
+    background: var(--error-bg); color: var(--error-fg); font-size: .88rem;
+  }
+  .check-body .fail-reason.warning { background: var(--warning-bg); color: var(--warning-fg); }
+  .check-body .fail-reason.informative { background: var(--info-bg); color: var(--info-fg); }
+
+  .artifact-list { list-style: none; margin: 1rem 0 0; padding: 0; }
+  .artifact-list li {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: .65rem 0; border-bottom: 1px solid var(--border); font-size: .92rem;
+  }
+  .artifact-list li:last-child { border-bottom: 0; }
+  .artifact-list .path { font-weight: 500; }
+  .artifact-list .findings { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+  .artifact-list .findings.has-issues { color: var(--fail); font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .summary-grid { grid-template-columns: 1fr; }
+    .check-body { padding-left: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">SDLC Review</div>
+    <h1>Review Report</h1>
+    <p class="sub" id="subtitle"></p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="active" data-tab="summary">Summary</button>
+  </nav>
+  <div id="panels">
+    <section class="panel active" id="summary"></section>
+  </div>
+</div>
+
+<script>
+  // ── Populate ONLY this object. Summary counts are computed from items. ──
+  const reviewData = {
+    generatedAt: "Jun 24, 2026",
+    artifacts: [
+      {
+        type: "skill",
+        file: "compliance-ai-service/.cursor/skills/python-coding/SKILL.md",
+        checklist: "skill-checklist.md (body 1,544 tokens · full 1,630 · reference.md 1,400)",
+        sections: [
+          { name: "Structure & spec", items: [
+            { num: 1, check: "Valid name", severity: "error", result: "PASS",
+              description: "name matches the parent directory: 1-64 chars, lowercase letters/numbers/single hyphens, no leading/trailing or double hyphen.",
+              note: "name 'python-coding' matches the parent directory and is well-formed." },
+            { num: 2, check: "Complete frontmatter", severity: "error", result: "PASS",
+              description: "name and description present; optional fields follow the spec; nothing relies on undocumented client behavior.",
+              note: "name + description present; no undocumented fields." },
+            { num: 3, check: "Explicit allowed-tools", severity: "warning", result: "FAIL",
+              description: "the skill sets allowed-tools explicitly rather than leaning on defaults.",
+              note: "Frontmatter has only name + description; allowed-tools is not declared, so the skill inherits defaults." },
+            { num: 4, check: "Declared version", severity: "warning", result: "FAIL",
+              description: "the skill carries a version field.",
+              note: "No version field in frontmatter." },
+            { num: 5, check: "Actionable description", severity: "warning", result: "PASS",
+              description: "says what the skill does and when to use it with concrete trigger phrases; under ~100 tokens; no internal workflow leakage.",
+              note: "Names triggers (writing/reviewing/refactoring Python) and an explicit non-goal (no testing/CI/deployment)." },
+            { num: 6, check: "Third-person voice", severity: "warning", result: "PASS",
+              description: "directives address the agent; no 'I can…' or 'You can use…'.",
+              note: "Body opens 'Behave as a senior Python engineer…' and uses imperative directives throughout." },
+            { num: 7, check: "Honest scope", severity: "warning", result: "FAIL",
+              description: "no keyword stuffing or 'always use first' language; distinct from sibling skills; states when not to use it if overlap is likely.",
+              note: "Overlaps heavily with the always-applied core-posture.mdc and the developer/* skills (state-and-mutability, naming-and-concepts, code-boundaries) but never differentiates from them or states when to defer." },
+            { num: 8, check: "Calibrated activation", severity: "warning", result: "PASS",
+              description: "the description's pull matches the skill's role.",
+              note: "A Python coding-standards skill firing on Python work is appropriately calibrated; the real issue is duplication, captured under items 7/27 and the guideline pass." },
+            { num: 13, check: "No broken links", severity: "error", result: "PASS",
+              description: "every relative path the skill names exists in the skill directory.",
+              note: "The only link, [reference.md](reference.md), resolves to an existing file." },
+            { num: 14, check: "Clean structure", severity: "error", result: "FAIL",
+              description: "no content duplicated across SKILL.md, frontmatter, and references; descriptive names; no absolute paths or stale claims.",
+              note: "Heavy duplication: SKILL.md 'Core Principles' + 'Preferred Python' restate each other, reference.md '50 Core Principles' largely re-lists the same advice, and the imports rule ('all imports at top…') appears verbatim twice within SKILL.md." },
+            { num: 15, check: "Spec-conformant layout", severity: "warning", result: "FAIL",
+              description: "root holds only SKILL.md (plus config.toml for evals); the only subfolders are references/, scripts/, assets/, evals/.",
+              note: "The reference doc sits at the skill root as reference.md instead of references/reference.md, deviating from the layout spec." }
+          ] },
+          { name: "Progressive disclosure", items: [
+            { num: 9, check: "Lean SKILL.md", severity: "error", result: "PASS",
+              description: "routing, invariants, and first steps only; body under 2,000 tokens (3,000 spec limit).",
+              note: "Measured with js-tiktoken (cl100k_base): body 1,544 tokens, full file 1,630 — under the 2,000 budget." },
+            { num: 10, check: "Real progressive disclosure", severity: "warning", result: "FAIL",
+              description: "long procedures, examples, templates, tables live outside SKILL.md and load on demand.",
+              note: "Most heavy content (full principle lists, refactoring process, good/bad sample, quick checklist) is inlined in SKILL.md while reference.md duplicates it rather than holding the on-demand detail." },
+            { num: 11, check: "No slop, high density", severity: "informative", result: "FAIL",
+              description: "every line earns its tokens; cut hedging, filler, and re-explaining what the model already knows.",
+              note: "Redundant restatements: 'Preferred Python' re-lists Core Principles, the imports rule is repeated, and reference.md echoes SKILL.md." },
+            { num: 12, check: "No emphasis inflation", severity: "warning", result: "PASS",
+              description: "avoid strong attention words like 'important'/'critical' that compete for attention.",
+              note: "Bold labels are used only as section headers; no IMPORTANT/CRITICAL shouting." },
+            { num: 27, check: "Right home, no duplication", severity: "warning", result: "FAIL",
+              description: "instruction detail lives in a reference doc, not in SKILL.md.",
+              note: "Granular coding rules live directly in SKILL.md (and duplicate the existing always-applied rule) instead of being routed to a reference." }
+          ] },
+          { name: "Workflow practices", items: [
+            { num: 16, check: "Tracked multi-step execution", severity: "warning", result: "N/A",
+              description: "a workflow skill backs the run with a tracked to-do list.",
+              note: "Not a workflow skill — it holds a set of guidelines, so the Workflows section does not apply." },
+            { num: 17, check: "Observable steps", severity: "informative", result: "N/A",
+              description: "multi-step skills define visible progress and completion criteria.",
+              note: "Not a workflow skill." },
+            { num: 18, check: "Not over-rigid", severity: "warning", result: "N/A",
+              description: "the workflow guides rather than dictating an inflexible script.",
+              note: "Not a workflow skill." },
+            { num: 19, check: "Progress artifacts", severity: "warning", result: "N/A",
+              description: "the workflow emits durable artifacts as it runs.",
+              note: "Not a workflow skill." },
+            { num: 20, check: "Reviewer in the loop", severity: "warning", result: "N/A",
+              description: "the flow includes a reviewer agent guaranteeing verifiable outcomes.",
+              note: "Not a workflow skill." }
+          ] },
+          { name: "Security", items: [
+            { num: 21, check: "No injection or exfil", severity: "error", result: "PASS",
+              description: "no instruction override, concealment, tool-poisoning, exfil sinks, credential reads, or remote fetch-and-execute.",
+              note: "Content is benign coding advice; no injection or exfil patterns." },
+            { num: 22, check: "Least privilege, honest manifest", severity: "error", result: "PASS",
+              description: "allowed-tools minimal and used; side-effecting skills set disable-model-invocation; declared scope matches behavior.",
+              note: "Read-only advisory skill with no side effects; scope matches behavior. (Missing allowed-tools is tracked separately under item 3.)" }
+          ] },
+          { name: "Test & evals", items: [
+            { num: 23, check: "Evals when behavior matters", severity: "warning", result: "FAIL",
+              description: "trigger evals cover should/should-not-trigger prompts; functional evals assert on output.",
+              note: "No evals/ folder or config.toml, despite the skill broadly shaping Python output." },
+            { num: 24, check: "Discriminating cases", severity: "warning", result: "FAIL",
+              description: "a broken or uninstalled skill fails the evals; realistic, ambiguous prompts.",
+              note: "No evals exist, so nothing discriminates a working skill from a broken one." },
+            { num: 25, check: "Checked token cost", severity: "warning", result: "PASS",
+              description: "measure SKILL.md body and full expanded tokens; confirm references load on demand.",
+              note: "Tokens measured (body 1,544); reference.md is linked on demand, not auto-loaded." },
+            { num: 26, check: "Resource-metric eval", severity: "warning", result: "FAIL",
+              description: "at least one eval tracks a resource budget as a scored threshold.",
+              note: "No evals, so no resource-budget threshold is enforced." }
+          ] }
+        ]
+      },
+      {
+        type: "Rules & guidelines",
+        file: "compliance-ai-service/.cursor/skills/python-coding/ (SKILL.md + reference.md)",
+        checklist: "guideline-rule-checklist.md",
+        sections: [
+          { name: "Rules & guidelines", items: [
+            { num: 1, check: "Not duplicated", severity: "error", result: "FAIL",
+              description: "search everywhere guidelines live; if it already exists or conflicts, reject and point to the existing location.",
+              note: "Many rules duplicate the always-applied core-posture.mdc (type hints on every param/return, imports at top, absolute imports, 'circular import → fix the structure', guard clauses, no bare except / no swallowing, no boolean flags, comments explain why) plus state-and-mutability (no mutable default args) and python-logging.mdc (never log secrets/PII). CONFLICT: this skill mandates 'X | None over Optional[X]' while core-posture.mdc mandates 'Optional[T] for nullables'." },
+            { num: 2, check: "Not lintable", severity: "informative", result: "FAIL",
+              description: "if a rule is enforceable automatically (ESLint/TS/Prettier — here Ruff/Black), prefer that over prose.",
+              note: "Imports-at-top (E402), absolute imports / no wildcard (F403), unused imports/vars (F401/F841), mutable default args (B006), shadowed built-ins (A001), unnecessary comprehensions/lambdas (C4xx) are all Ruff-enforceable yet written as prose — the skill even names Ruff/Black but restates their rules." },
+            { num: 3, check: "Concise", severity: "warning", result: "PASS",
+              description: "one clear rule, minimal example, no prose padding.",
+              note: "Individual bullets are short and single-purpose." },
+            { num: 4, check: "Right home", severity: "warning", result: "FAIL",
+              description: "placed in the correct container; no other container is a better candidate.",
+              note: "Rules duplicating core-posture.mdc belong solely in that always-applied rule, and lint-enforceable rules belong in the Ruff/Black config — not re-stated in a skill." },
+            { num: 5, check: "Imperative", severity: "warning", result: "PASS",
+              description: "verb-first directive, not narration.",
+              note: "Bullets are verb-first ('Use…', 'Avoid…', 'Prefer…')." },
+            { num: 6, check: "Actionable", severity: "warning", result: "FAIL",
+              description: "executable exactly as written; no vague terms the agent must reinterpret.",
+              note: "Vague qualifiers: 'unless context is genuinely obvious', 'use dependency injection lightly and practically', 'make security-sensitive code obvious and easy to audit', 'refactor in the smallest meaningful steps'." },
+            { num: 7, check: "Calibrated force", severity: "informative", result: "PASS",
+              description: "match strictness to risk; reserve MUST/NEVER for unsafe cases.",
+              note: "Uses plain 'Prefer/Avoid' guidance and reserves 'Never' for swallowing errors and logging secrets." },
+            { num: 8, check: "One default, one term", severity: "warning", result: "PASS",
+              description: "recommend a single default with an escape hatch; name each concept consistently.",
+              note: "Defaults are generally singular with escape hatches; terminology is consistent." }
+          ] }
+        ]
+      }
+    ]
+  };
+
+  // ── Rendering (do not edit below) ──
+  const sevClass = { error: "sev-error", warning: "sev-warning", informative: "sev-informative" };
+  const sevLabel = { error: "Error", warning: "Warning", informative: "Info" };
+
+  function computeSummary(artifacts) {
+    const s = { error: 0, warning: 0, informative: 0 };
+    for (const a of artifacts)
+      for (const sec of a.sections)
+        for (const it of sec.items)
+          if (it.result === "FAIL" && s[it.severity] !== undefined) s[it.severity]++;
+    return s;
+  }
+
+  function artifactFindings(a) {
+    let n = 0;
+    for (const sec of a.sections) for (const it of sec.items) if (it.result === "FAIL") n++;
+    return n;
+  }
+
+  function totalChecks(a) {
+    let n = 0;
+    for (const sec of a.sections) n += sec.items.length;
+    return n;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function statusIcon(result) {
+    if (result === "PASS") return { cls: "pass", glyph: "✓" };
+    if (result === "FAIL") return { cls: "fail", glyph: "✗" };
+    return { cls: "na", glyph: "—" };
+  }
+
+  function renderItem(it) {
+    const st = statusIcon(it.result);
+    const itemCls = st.cls === "na" ? "na" : st.cls;
+    const hasBody = it.description || (it.result === "FAIL" && it.note);
+    const chevron = hasBody
+      ? `<svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>`
+      : "";
+
+    let badges = "";
+    if (it.result === "FAIL" && it.severity)
+      badges = `<span class="sev-badge ${sevClass[it.severity] || ""}">${sevLabel[it.severity] || it.severity}</span>`;
+
+    let body = "";
+    if (hasBody) {
+      const parts = [];
+      if (it.description)
+        parts.push(`<p><strong>What this checks</strong> — ${escapeHtml(it.description)}</p>`);
+      if (it.result === "FAIL" && it.note)
+        parts.push(`<div class="fail-reason ${escapeHtml(it.severity || "error")}"><strong>Why it failed</strong> — ${escapeHtml(it.note)}</div>`);
+      else if (it.result === "N/A" && it.note)
+        parts.push(`<p><strong>Note</strong> — ${escapeHtml(it.note)}</p>`);
+      body = `<div class="check-body">${parts.join("")}</div>`;
+    }
+
+    const openByDefault = it.result === "FAIL" && hasBody;
+    const toggle = hasBody ? `onclick="this.closest('.check-item').classList.toggle('open')"` : "";
+    return `<li class="check-item ${itemCls}${openByDefault ? " open" : ""}">
+      <button type="button" class="check-header" ${toggle} aria-expanded="false">
+        <span class="status-icon ${st.cls}">${st.glyph}</span>
+        <span class="check-title">${escapeHtml(it.check)}</span>
+        <span class="check-badges">${badges}${chevron}</span>
+      </button>
+      ${body}
+    </li>`;
+  }
+
+  function renderSection(sec) {
+    if (!sec.items.length) return "";
+    return `<div class="section-label">${escapeHtml(sec.name)}</div>
+      <ul class="checklist">${sec.items.map(renderItem).join("")}</ul>`;
+  }
+
+  function typeLabel(type) {
+    return type.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function tabId(i) { return "artifact-" + i; }
+
+  function renderSummary(artifacts, summary) {
+    const rows = artifacts.map((a, i) => {
+      const findings = artifactFindings(a);
+      const cls = findings ? "has-issues" : "";
+      const label = findings ? findings + " finding" + (findings === 1 ? "" : "s") : "All pass";
+      return `<li>
+        <span class="path">${escapeHtml(typeLabel(a.type))} · <code>${escapeHtml(a.file)}</code></span>
+        <span class="findings ${cls}">${label}</span>
+      </li>`;
+    }).join("");
+
+    return `<div class="card">
+      <h2>Executive Summary</h2>
+      <p>${artifacts.length} artifact${artifacts.length === 1 ? "" : "s"} reviewed against their SDLC checklists.</p>
+      <div class="summary-grid">
+        <div class="stat error"><div class="num">${summary.error}</div><div class="lbl">Errors</div></div>
+        <div class="stat warning"><div class="num">${summary.warning}</div><div class="lbl">Warnings</div></div>
+        <div class="stat informative"><div class="num">${summary.informative}</div><div class="lbl">Info</div></div>
+      </div>
+      <ul class="artifact-list">${rows}</ul>
+    </div>`;
+  }
+
+  function renderArtifactPanel(a) {
+    const checks = totalChecks(a);
+    const findings = artifactFindings(a);
+    const sections = a.sections.map(renderSection).join("");
+    return `<div class="card">
+      <h2>${escapeHtml(typeLabel(a.type))}</h2>
+      <p class="artifact-meta">
+        <code>${escapeHtml(a.file)}</code> · checklist: <code>${escapeHtml(a.checklist)}</code>
+        · ${checks} check${checks === 1 ? "" : "s"} · ${findings} finding${findings === 1 ? "" : "s"}
+      </p>
+      ${sections || '<p style="color:var(--muted)">No checks recorded.</p>'}
+    </div>`;
+  }
+
+  function render() {
+    const { artifacts } = reviewData;
+    document.getElementById("subtitle").textContent =
+      (reviewData.generatedAt || "") + " · " + artifacts.length + " artifact" + (artifacts.length === 1 ? "" : "s");
+
+    const summary = computeSummary(artifacts);
+    document.getElementById("summary").innerHTML = renderSummary(artifacts, summary);
+
+    const tabs = document.getElementById("tabs");
+    const panels = document.getElementById("panels");
+
+    artifacts.forEach((a, i) => {
+      const findings = artifactFindings(a);
+      const id = tabId(i);
+      const btn = document.createElement("button");
+      btn.dataset.tab = id;
+      const shortFile = a.file.split("/").slice(-2).join("/");
+      btn.innerHTML = `${escapeHtml(typeLabel(a.type))} · ${escapeHtml(shortFile)} <span class="count">(${findings})</span>`;
+      btn.addEventListener("click", () => activate(id));
+      tabs.appendChild(btn);
+
+      const panel = document.createElement("section");
+      panel.className = "panel";
+      panel.id = id;
+      panel.innerHTML = renderArtifactPanel(a);
+      panels.appendChild(panel);
+    });
+  }
+
+  function activate(id) {
+    document.querySelectorAll("nav.tabs button").forEach(b => {
+      b.classList.toggle("active", b.dataset.tab === id);
+    });
+    document.querySelectorAll(".panel").forEach(p => {
+      p.classList.toggle("active", p.id === id);
+    });
+  }
+
+  render();
+</script>
+</body>
+</html>
