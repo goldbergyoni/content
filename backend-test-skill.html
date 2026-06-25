@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SDLC Review Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card: #fff;
+    --fg: #28282a;
+    --muted: #6b7280;
+    --primary: #0d9488;
+    --border: #e2e4e8;
+    --radius: 12px;
+    --pass: #059669;
+    --fail: #dc2626;
+    --na: #9ca3af;
+    --error-bg: #fef2f2;
+    --error-fg: #b91c1c;
+    --warning-bg: #fff4ed;
+    --warning-fg: #c2410c;
+    --info-bg: #f0fdfa;
+    --info-fg: #0f766e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .25rem; }
+  header .label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header .sub { color: var(--muted); font-size: .95rem; margin: .5rem 0 0; }
+
+  nav.tabs {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+    margin: 2rem 0 1.5rem; border-bottom: 1px solid var(--border);
+  }
+  nav.tabs button {
+    font: inherit; font-weight: 600; font-size: 1.05rem; cursor: pointer;
+    border: 0; background: none; padding: .65rem 1rem; color: var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  nav.tabs button .count { font-weight: 500; opacity: .75; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.75rem 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 1.25rem;
+  }
+  h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 1rem; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.25rem; }
+  .stat {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.25rem 1rem; text-align: center;
+  }
+  .stat .num { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .stat .lbl { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-top: .5rem; }
+  .stat.error .num { color: var(--fail); }
+  .stat.warning .num { color: var(--warning-fg); }
+  .stat.informative .num { color: var(--primary); }
+
+  .artifact-meta { color: var(--muted); font-size: .88rem; margin: 0 0 1.5rem; }
+  .artifact-meta code { background: rgba(0,0,0,.06); padding: .1em .4em; border-radius: 5px; font-size: .88em; color: var(--fg); }
+
+  .section-label {
+    font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em;
+    color: var(--fg); margin: 2.25rem 0 1rem;
+    padding-bottom: .5rem; border-bottom: 2px solid var(--primary);
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  .checklist { list-style: none; margin: 0; padding: 0; }
+  .check-item { border: 1px solid var(--border); border-radius: 10px; margin-bottom: .5rem; background: var(--card); overflow: hidden; }
+  .check-item.pass { border-color: #d1fae5; }
+  .check-item.fail { border-color: #fecaca; }
+  .check-item.na { border-color: var(--border); opacity: .85; }
+
+  .check-header {
+    display: flex; align-items: center; gap: .75rem; width: 100%;
+    padding: .85rem 1rem; border: 0; background: none; cursor: pointer;
+    font: inherit; text-align: left; color: var(--fg);
+  }
+  .check-header:hover { background: rgba(0,0,0,.02); }
+  .check-item.fail .check-header:hover { background: var(--error-bg); }
+
+  .status-icon {
+    flex-shrink: 0; width: 1.35rem; height: 1.35rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 700;
+  }
+  .status-icon.pass { background: #d1fae5; color: var(--pass); }
+  .status-icon.fail { background: #fecaca; color: var(--fail); }
+  .status-icon.na { background: #f3f4f6; color: var(--na); }
+
+  .check-title { flex: 1; font-weight: 600; font-size: .95rem; line-height: 1.4; }
+  .check-badges { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+
+  .sev-badge {
+    font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    padding: .2em .55em; border-radius: 999px;
+  }
+  .sev-error { background: var(--error-bg); color: var(--error-fg); }
+  .sev-warning { background: var(--warning-bg); color: var(--warning-fg); }
+  .sev-informative { background: var(--info-bg); color: var(--info-fg); }
+
+  .chevron {
+    flex-shrink: 0; width: 1rem; height: 1rem; color: var(--muted);
+    transition: transform .15s ease;
+  }
+  .check-item.open .chevron { transform: rotate(180deg); }
+
+  .check-body {
+    display: none; padding: 0 1rem 1rem 3.1rem; font-size: .9rem; color: var(--muted);
+  }
+  .check-item.open .check-body { display: block; }
+  .check-body p { margin: 0 0 .65rem; }
+  .check-body p:last-child { margin-bottom: 0; }
+  .check-body strong { color: var(--fg); font-weight: 600; }
+  .check-body .fail-reason {
+    margin-top: .75rem; padding: .75rem 1rem; border-radius: 8px;
+    background: var(--error-bg); color: var(--error-fg); font-size: .88rem;
+  }
+  .check-body .fail-reason.warning { background: var(--warning-bg); color: var(--warning-fg); }
+  .check-body .fail-reason.informative { background: var(--info-bg); color: var(--info-fg); }
+
+  .artifact-list { list-style: none; margin: 1rem 0 0; padding: 0; }
+  .artifact-list li {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: .65rem 0; border-bottom: 1px solid var(--border); font-size: .92rem;
+  }
+  .artifact-list li:last-child { border-bottom: 0; }
+  .artifact-list .path { font-weight: 500; }
+  .artifact-list .findings { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+  .artifact-list .findings.has-issues { color: var(--fail); font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .summary-grid { grid-template-columns: 1fr; }
+    .check-body { padding-left: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">SDLC Review</div>
+    <h1>Review Report</h1>
+    <p class="sub" id="subtitle"></p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="active" data-tab="summary">Summary</button>
+  </nav>
+  <div id="panels">
+    <section class="panel active" id="summary"></section>
+  </div>
+</div>
+
+<script>
+  // ── Populate ONLY this object. Summary counts are computed from items. ──
+  const reviewData = {
+    "generatedAt": "2026-06-25T06:49:22Z",
+    "artifacts": [
+        {
+            "type": "skill",
+            "file": ".cursor/skills/backend-testing/SKILL.md and bundled backend-testing references",
+            "checklist": "skill-checklist.md + guideline-rule-checklist.md",
+            "sections": [
+                {
+                    "name": "Structure And Intent",
+                    "kind": "container",
+                    "items": [
+                        {
+                            "num": 1,
+                            "check": "Valid name",
+                            "severity": "error",
+                            "result": "PASS",
+                            "description": "name matches the parent directory and uses the allowed lowercase/hyphen format.",
+                            "note": ""
+                        },
+                        {
+                            "num": 2,
+                            "check": "Complete frontmatter",
+                            "severity": "error",
+                            "result": "PASS",
+                            "description": "name and description are present; optional fields follow the skill spec.",
+                            "note": ""
+                        },
+                        {
+                            "num": 3,
+                            "check": "Explicit allowed-tools",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "The skill declares allowed-tools explicitly rather than relying on defaults.",
+                            "note": ""
+                        },
+                        {
+                            "num": 4,
+                            "check": "Declared version",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "The skill carries a version field.",
+                            "note": "SKILL.md frontmatter has name, description, and allowed-tools, but no version field."
+                        },
+                        {
+                            "num": 5,
+                            "check": "Actionable description",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "The description states what the skill does and when to use it, with concrete triggers.",
+                            "note": ""
+                        },
+                        {
+                            "num": 6,
+                            "check": "Third-person voice",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "Directives address the agent without first-person POV drift.",
+                            "note": ""
+                        },
+                        {
+                            "num": 7,
+                            "check": "Honest scope",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "The description is scoped and distinct, without trigger hijacking or 'always use first' language.",
+                            "note": ""
+                        },
+                        {
+                            "num": 8,
+                            "check": "Calibrated activation",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "The description's pull matches the skill's role and importance.",
+                            "note": ""
+                        },
+                        {
+                            "num": 9,
+                            "check": "Lean SKILL.md",
+                            "severity": "error",
+                            "result": "PASS",
+                            "description": "SKILL.md body should stay under 2,000 tokens, with detail moved out before the 3,000-token limit.",
+                            "note": "Estimated SKILL.md body: about 1.5k tokens, under the 2k target."
+                        },
+                        {
+                            "num": 10,
+                            "check": "Real progressive disclosure",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "Long procedures, examples, templates, and tables should live outside SKILL.md and load on demand.",
+                            "note": "SKILL.md embeds a full test-file template, data-factory example, gate summary, and two reference tables even though those details also live in pattern/workflow docs."
+                        },
+                        {
+                            "num": 11,
+                            "check": "No slop, high density",
+                            "severity": "informative",
+                            "result": "PASS",
+                            "description": "Every line should earn its tokens and avoid filler.",
+                            "note": ""
+                        },
+                        {
+                            "num": 12,
+                            "check": "No emphasis inflation",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "Avoid repeated strong attention words like important or critical.",
+                            "note": "The skill set repeatedly uses bold MUST, IMPORTANT, MANDATORY, Always/Never phrasing across SKILL.md and workflow docs."
+                        },
+                        {
+                            "num": 13,
+                            "check": "No broken links",
+                            "severity": "error",
+                            "result": "PASS",
+                            "description": "Every relative path named by the skill exists in the skill directory or is a stable web URL.",
+                            "note": ""
+                        },
+                        {
+                            "num": 14,
+                            "check": "Clean structure",
+                            "severity": "error",
+                            "result": "FAIL",
+                            "description": "No orphaned files, duplicated content, absolute user paths, stale model names, or unmarked time-sensitive claims.",
+                            "note": "Gate order, auto-flow obligations, lifecycle hooks, createTestSetup guidance, and AAA guidance are duplicated between SKILL.md and reference docs."
+                        },
+                        {
+                            "num": 15,
+                            "check": "Spec-conformant layout",
+                            "severity": "error",
+                            "result": "FAIL",
+                            "description": "The skill root should hold only SKILL.md and optional config.toml; allowed subfolders are references, scripts, assets, and evals.",
+                            "note": "The bundled docs live under patterns-and-practices/, which is not one of the spec-approved skill subfolders."
+                        }
+                    ]
+                },
+                {
+                    "name": "Workflows",
+                    "kind": "container",
+                    "items": [
+                        {
+                            "num": 16,
+                            "check": "Tracked multi-step execution",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "Workflow skills must break work into real tracked steps or an equivalent checklist.",
+                            "note": ""
+                        },
+                        {
+                            "num": 17,
+                            "check": "Observable steps",
+                            "severity": "informative",
+                            "result": "PASS",
+                            "description": "Steps should define visible progress, output, and completion criteria.",
+                            "note": ""
+                        },
+                        {
+                            "num": 18,
+                            "check": "Not over-rigid",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "The workflow should guide while leaving room for reasonable judgment.",
+                            "note": ""
+                        },
+                        {
+                            "num": 19,
+                            "check": "Progress artifacts",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "The workflow should emit durable artifacts for inspection and recovery.",
+                            "note": ""
+                        },
+                        {
+                            "num": 20,
+                            "check": "Reviewer in the loop",
+                            "severity": "warning",
+                            "result": "PASS",
+                            "description": "The flow should include a reviewer agent when outcomes need verification.",
+                            "note": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Security And Trust",
+                    "kind": "container",
+                    "items": [
+                        {
+                            "num": 21,
+                            "check": "No injection or exfil",
+                            "severity": "error",
+                            "result": "PASS",
+                            "description": "No instruction override, concealment, exfil sinks, credential reads, destructive shell, secrets, invisible Unicode, or remote execute instructions.",
+                            "note": ""
+                        },
+                        {
+                            "num": 22,
+                            "check": "Least privilege, honest manifest",
+                            "severity": "error",
+                            "result": "PASS",
+                            "description": "allowed-tools should be minimal and match the skill's actual behavior.",
+                            "note": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Testing And Evaluation",
+                    "kind": "container",
+                    "items": [
+                        {
+                            "num": 23,
+                            "check": "Evals when behavior matters",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "Trigger evals should cover should-trigger and should-not-trigger prompts, including near misses.",
+                            "note": "No evals/ folder or equivalent activation/functional evals are bundled with this high-impact workflow skill."
+                        },
+                        {
+                            "num": 24,
+                            "check": "Discriminating cases",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "Evals should fail when the skill is broken or uninstalled, using realistic prompts and ambiguity.",
+                            "note": "No discriminating eval cases were found."
+                        },
+                        {
+                            "num": 25,
+                            "check": "Checked token cost",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "Measure SKILL.md body tokens and full expanded tokens, and confirm references are genuinely on-demand.",
+                            "note": "No token-cost measurement or budget artifact is recorded; the top-level skill eagerly exposes substantial detail before references are opened."
+                        },
+                        {
+                            "num": 26,
+                            "check": "Resource-metric eval",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "At least one eval should track a resource budget such as tokens, latency, or cost as a threshold.",
+                            "note": "No resource-metric eval exists."
+                        }
+                    ]
+                },
+                {
+                    "name": "Instruction And Rule References",
+                    "kind": "container",
+                    "items": [
+                        {
+                            "num": 27,
+                            "check": "Right home, no duplication",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "Instruction, rule, and guideline detail should live in reference docs, and each rule line should be scored with the guideline checklist.",
+                            "note": "SKILL.md contains detailed test rules and examples such as createTestSetup, getHttpClient, lifecycle cleanup, and AAA requirements instead of only routing to the reference docs."
+                        }
+                    ]
+                },
+                {
+                    "name": "Checks",
+                    "kind": "guideline",
+                    "items": [
+                        {
+                            "num": 1,
+                            "check": "Duplicated auto-test trigger guidance",
+                            "severity": "error",
+                            "result": "FAIL",
+                            "description": "A guideline should not duplicate or conflict with an existing instruction.",
+                            "note": "The 'do not wait for tests / backend behavior changes trigger auto flow' instruction is repeated in SKILL.md, auto-test-flow.md, test-workflow.md, tools-and-agents.md, and skill-ux-and-behaviour.md."
+                        },
+                        {
+                            "num": 1,
+                            "check": "Duplicated Double Gate sequence",
+                            "severity": "error",
+                            "result": "FAIL",
+                            "description": "A guideline should not duplicate or conflict with an existing instruction.",
+                            "note": "Gate 1 -> api-analysis -> implement -> Gate 2 appears in SKILL.md, test-workflow.md, auto-test-flow.md, and tools-and-agents.md, increasing drift risk."
+                        },
+                        {
+                            "num": 1,
+                            "check": "Duplicated createTestSetup/AAA guidance",
+                            "severity": "error",
+                            "result": "FAIL",
+                            "description": "A guideline should not duplicate or conflict with an existing instruction.",
+                            "note": "createTestSetup, setupBeforeEachTest cleanup, and AAA rules are repeated in SKILL.md, file-structure.md, testing-with-database.md, and the-test-anatomy.md."
+                        },
+                        {
+                            "num": 1,
+                            "check": "Conflicting planner agent name",
+                            "severity": "error",
+                            "result": "FAIL",
+                            "description": "A guideline should not duplicate or conflict with an existing instruction.",
+                            "note": "what-to-test.md says to plan scenarios in testskill.planner, while the rest of the backend-testing skill consistently routes Gate 1 to backendtest.planner / /backendtest.plan."
+                        },
+                        {
+                            "num": 3,
+                            "check": "Overlong top-level examples",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "A guideline should be one clear rule with minimal examples; larger explanations belong outside guideline prose.",
+                            "note": "SKILL.md includes a full boilerplate component-test template and data factory snippet instead of concise routing to file-structure.md and the-test-data.md."
+                        },
+                        {
+                            "num": 4,
+                            "check": "Detailed testing rules in the top-level skill",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "A guideline should live in the correct container and no better container should exist.",
+                            "note": "Rules like 'Always use createTestSetup', 'AAA pattern is mandatory', and endpoint/factory guidance belong in the pattern docs that already exist."
+                        },
+                        {
+                            "num": 5,
+                            "check": "Forced language in rule lines",
+                            "severity": "warning",
+                            "result": "FAIL",
+                            "description": "A guideline should avoid dramatic forced language, bold coercion, and exclamation-style pressure.",
+                            "note": "Multiple rule lines use bold all-caps MUST/IMPORTANT/MANDATORY and broad Always/Never phrasing where scoped wording would be enough."
+                        },
+                        {
+                            "num": 2,
+                            "check": "Not lintable",
+                            "severity": "informative",
+                            "result": "N/A",
+                            "description": "If a rule can be enforced automatically, prefer linting over prose guidance.",
+                            "note": "Most findings are workflow and organization guidance rather than TypeScript/ESLint-enforceable style."
+                        },
+                        {
+                            "num": 6,
+                            "check": "Measured phrasing",
+                            "severity": "informative",
+                            "result": "PASS",
+                            "description": "Generalizing words like always/never are not ideal; prefer scoped guidance, but this alone is not a warning.",
+                            "note": "Covered under the calibrated-force finding where phrasing is also bold/coercive."
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+};
+
+  // ── Rendering (do not edit below) ──
+  const sevClass = { error: "sev-error", warning: "sev-warning", informative: "sev-informative" };
+  const sevLabel = { error: "Error", warning: "Warning", informative: "Info" };
+
+  function computeSummary(artifacts) {
+    const s = { error: 0, warning: 0, informative: 0 };
+    for (const a of artifacts)
+      for (const sec of a.sections)
+        for (const it of sec.items)
+          if (it.result === "FAIL" && s[it.severity] !== undefined) s[it.severity]++;
+    return s;
+  }
+
+  function artifactFindings(a) {
+    let n = 0;
+    for (const sec of a.sections) for (const it of sec.items) if (it.result === "FAIL") n++;
+    return n;
+  }
+
+  function sectionFindings(items) {
+    let n = 0;
+    for (const it of items) if (it.result === "FAIL") n++;
+    return n;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function statusIcon(result) {
+    if (result === "PASS") return { cls: "pass", glyph: "✓" };
+    if (result === "FAIL") return { cls: "fail", glyph: "✗" };
+    return { cls: "na", glyph: "—" };
+  }
+
+  function renderItem(it) {
+    const st = statusIcon(it.result);
+    const itemCls = st.cls === "na" ? "na" : st.cls;
+    const hasBody = it.description || (it.result === "FAIL" && it.note);
+    const chevron = hasBody
+      ? `<svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>`
+      : "";
+
+    let badges = "";
+    if (it.result === "FAIL" && it.severity)
+      badges = `<span class="sev-badge ${sevClass[it.severity] || ""}">${sevLabel[it.severity] || it.severity}</span>`;
+
+    let body = "";
+    if (hasBody) {
+      const parts = [];
+      if (it.description)
+        parts.push(`<p><strong>What this checks</strong> — ${escapeHtml(it.description)}</p>`);
+      if (it.result === "FAIL" && it.note)
+        parts.push(`<div class="fail-reason ${escapeHtml(it.severity || "error")}"><strong>Why it failed</strong> — ${escapeHtml(it.note)}</div>`);
+      else if (it.result === "N/A" && it.note)
+        parts.push(`<p><strong>Note</strong> — ${escapeHtml(it.note)}</p>`);
+      body = `<div class="check-body">${parts.join("")}</div>`;
+    }
+
+    const openByDefault = it.result === "FAIL" && hasBody;
+    const toggle = hasBody ? `onclick="this.closest('.check-item').classList.toggle('open')"` : "";
+    return `<li class="check-item ${itemCls}${openByDefault ? " open" : ""}">
+      <button type="button" class="check-header" ${toggle} aria-expanded="false">
+        <span class="status-icon ${st.cls}">${st.glyph}</span>
+        <span class="check-title">${escapeHtml(it.check)}</span>
+        <span class="check-badges">${badges}${chevron}</span>
+      </button>
+      ${body}
+    </li>`;
+  }
+
+  function typeLabel(type) {
+    return type.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function topicOf(a) {
+    const parts = a.file.split("/");
+    const filename = parts[parts.length - 1];
+    // For SKILL.md / context files use the parent directory as the topic
+    return (filename.toUpperCase() === "SKILL.MD" || filename.toUpperCase() === "AGENTS.MD" || filename.toUpperCase() === "CLAUDE.MD")
+      ? parts[parts.length - 2] || filename.replace(/\.[^.]+$/, "")
+      : filename.replace(/\.[^.]+$/, "");
+  }
+
+  function renderContainerTab(a, sec) {
+    const checks = sec.items.length;
+    const findings = sectionFindings(sec.items);
+    return `<div class="card">
+      <h2>${escapeHtml(sec.name)}</h2>
+      <p class="artifact-meta">
+        ${escapeHtml(typeLabel(a.type))} · <code>${escapeHtml(a.file)}</code> · checklist: <code>${escapeHtml(a.checklist)}</code>
+        · ${checks} check${checks === 1 ? "" : "s"} · ${findings} finding${findings === 1 ? "" : "s"}
+      </p>
+      <ul class="checklist">${sec.items.map(renderItem).join("")}</ul>
+    </div>`;
+  }
+
+  function renderGuidelineTab(groups) {
+    return groups.map(g => {
+      const checks = g.items.length;
+      const findings = sectionFindings(g.items);
+      return `<div class="card">
+        <h2>${escapeHtml(topicOf(g.a))}</h2>
+        <p class="artifact-meta">
+          ${escapeHtml(typeLabel(g.a.type))} · <code>${escapeHtml(g.a.file)}</code>
+          · ${checks} guideline line${checks === 1 ? "" : "s"} · ${findings} finding${findings === 1 ? "" : "s"}
+        </p>
+        <ul class="checklist">${g.items.map(renderItem).join("")}</ul>
+      </div>`;
+    }).join("");
+  }
+
+  function renderSummary(artifacts, summary) {
+    const rows = artifacts.map((a, i) => {
+      const findings = artifactFindings(a);
+      const cls = findings ? "has-issues" : "";
+      const label = findings ? findings + " finding" + (findings === 1 ? "" : "s") : "All pass";
+      return `<li>
+        <span class="path">${escapeHtml(typeLabel(a.type))} · <code>${escapeHtml(a.file)}</code></span>
+        <span class="findings ${cls}">${label}</span>
+      </li>`;
+    }).join("");
+
+    return `<div class="card">
+      <h2>Executive Summary</h2>
+      <p>${artifacts.length} artifact${artifacts.length === 1 ? "" : "s"} reviewed against their SDLC checklists.</p>
+      <div class="summary-grid">
+        <div class="stat error"><div class="num">${summary.error}</div><div class="lbl">Errors</div></div>
+        <div class="stat warning"><div class="num">${summary.warning}</div><div class="lbl">Warnings</div></div>
+        <div class="stat informative"><div class="num">${summary.informative}</div><div class="lbl">Info</div></div>
+      </div>
+      <ul class="artifact-list">${rows}</ul>
+    </div>`;
+  }
+
+  function addTab(tabs, panels, id, label, html) {
+    const btn = document.createElement("button");
+    btn.dataset.tab = id;
+    btn.textContent = label;
+    btn.addEventListener("click", () => activate(id));
+    tabs.appendChild(btn);
+
+    const panel = document.createElement("section");
+    panel.className = "panel";
+    panel.id = id;
+    panel.innerHTML = html;
+    panels.appendChild(panel);
+  }
+
+  function render() {
+    const { artifacts } = reviewData;
+    document.getElementById("subtitle").textContent =
+      (reviewData.generatedAt || "") + " · " + artifacts.length + " artifact" + (artifacts.length === 1 ? "" : "s");
+
+    const summary = computeSummary(artifacts);
+    document.getElementById("summary").innerHTML = renderSummary(artifacts, summary);
+
+    const tabs = document.getElementById("tabs");
+    const panels = document.getElementById("panels");
+
+    // Flat tabs: every container category is its own tab; all guideline passes merge into one.
+    const guidelineGroups = [];
+    let idx = 0;
+    artifacts.forEach((a) => {
+      a.sections.forEach((sec) => {
+        if (!sec.items.length) return;
+        if ((sec.kind || "container") === "guideline") {
+          guidelineGroups.push({ a, items: sec.items });
+          return;
+        }
+        addTab(tabs, panels, "tab-" + (idx++), typeLabel(a.type) + " - " + sec.name, renderContainerTab(a, sec));
+      });
+    });
+
+    if (guidelineGroups.length)
+      addTab(tabs, panels, "instruction-rule", "Instruction And Rule", renderGuidelineTab(guidelineGroups));
+  }
+
+  function activate(id) {
+    document.querySelectorAll("nav.tabs button").forEach(b => {
+      b.classList.toggle("active", b.dataset.tab === id);
+    });
+    document.querySelectorAll(".panel").forEach(p => {
+      p.classList.toggle("active", p.id === id);
+    });
+  }
+
+  render();
+</script>
+</body>
+</html>
