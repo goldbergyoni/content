@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rules Marketplace · unhandledRejection handler — Variant 2 (Sidebar)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="qodo-rules.css" rel="stylesheet" />
+<style>
+  /* Variant 2 — content + sticky meta/conformance sidebar (layout-specific only) */
+  .wrap{max-width:1300px;margin:0 auto;padding:42px 31px 116px}
+
+  /* title with "Rule:" kicker */
+  .title-block{margin-bottom:38px}
+  h1{margin-bottom:14px}
+  .rk{color:var(--brand-strong);font-weight:800;margin-right:2px}
+
+  .grid{display:grid;grid-template-columns:1fr 340px;gap:42px;align-items:start}
+
+  aside{position:sticky;top:84px;display:flex;flex-direction:column;gap:20px}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:25px}
+  .panel h3{margin:0 0 18px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .panel .btn{width:100%}
+  .panel .hint{font-size:12px;color:var(--muted);text-align:center;margin:12px 0 0}
+  .stat{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--line)}
+  .stat:first-of-type{border-top:0;padding-top:0}
+  .stat .lbl{font-size:13px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:9px}
+  .stat .lbl .dot{width:8px;height:8px;border-radius:50%}
+  .stat .val{font-size:13.5px;font-weight:700}
+  /* status colors pulled straight from design tokens */
+  .d-crit{background:var(--crit)} .v-crit{color:var(--crit)}
+  .d-ok{background:var(--ok)} .v-ok{color:var(--ok)}
+  .d-pur{background:var(--brand)} .v-pur{color:var(--brand-strong)}
+  .d-amber{background:var(--amber)} .v-amber{color:var(--amber)}
+  .d-mut{background:var(--muted)}
+  .ringbox{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .ringbox .cap{font-size:12.5px;color:var(--muted);text-align:center}
+  .ringbox .cap .up{color:var(--ok);font-weight:800}
+  /* with-rule vs baseline ring pair */
+  .cmp{display:flex;gap:14px;width:100%}
+  .cmp .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:9px}
+  .cmp .ring{width:104px;height:104px}
+  .cmp .ring .in{width:78px;height:78px}
+  .cmp .ring .in b{font-size:23px}
+  .ring.base{--p:41;background:conic-gradient(var(--muted) calc(var(--p)*1%),var(--soft) 0)}
+  .ring.base .in b{color:var(--muted-2)}
+  .cmp .lab{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .cmp .col.r1 .lab{color:var(--brand-strong)}
+  .cmp .col.r0 .lab{color:var(--muted)}
+
+  /* Evaluations dashboard — with rule vs baseline */
+  .dash{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 2px}
+  .dash-card{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--soft)}
+  .dash-card.on{border-color:var(--brand-200);background:var(--soft-brand)}
+  .dc-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:11px}
+  .dc-lab{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .dash-card.on .dc-lab{color:var(--brand-strong)}
+  .dc-big{font-size:27px;font-weight:800;line-height:1;color:var(--ink)}
+  .dash-card.off .dc-big{color:var(--muted-2)}
+  .dc-bar{display:block;height:8px;border-radius:4px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+  .dc-fill{display:block;height:100%;border-radius:4px;background:var(--grad)}
+  .dc-fill.gray,.bar-fill.gray{background:var(--muted)}
+  .dc-sub{display:block;margin-top:9px;font-size:11.5px;color:var(--muted)}
+  .dash-delta{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:7px;
+    font-size:13px;font-weight:700;color:var(--ok);background:var(--soft);border:1px solid var(--line);border-radius:var(--pill);padding:9px}
+  .dash-delta .svi{font-size:15px}
+  .dash-h{margin:20px 0 4px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700}
+
+  /* rule-to-copy accordion */
+  .rule-acc{border-color:var(--brand-100)!important}
+  .rule-acc>.head{background:var(--soft-brand)}
+  .rule-acc>.head:hover{background:#ece9fe}
+  .rule-acc .ic{background:var(--grad);color:#fff}
+  .rule-acc .ttl{color:var(--brand-strong)}
+  .rule-panel{background:var(--soft-brand);border:1px solid var(--brand-100);border-radius:var(--r);padding:22px 24px;color:var(--ink-2);font-size:15.5px;line-height:1.7}
+  .rule-panel code{background:#fff;border:1px solid var(--brand-100);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--brand-strong)}
+  .rule-foot{display:flex;justify-content:flex-end;margin-top:16px}
+
+  .getit{margin:0}
+  .getit.open{margin-top:18px}
+  /* compact the card so it sits neatly inside the 340px sidebar panel */
+  aside .getit-card{padding:18px}
+  aside .getit-card::before{border-radius:var(--r-lg) var(--r-lg) 0 0}
+
+  /* included-in-packages label row */
+  .pkgs{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0}
+  /* package chips ~30% smaller than the standard chip */
+  .pkgs .chip{font-size:14px;padding:6px 12px;gap:7px}
+  .pkgs .chip .dot{width:7px;height:7px}
+  .getit-grid{grid-template-columns:1fr;gap:9px}
+  .opt{flex-direction:row;align-items:center;gap:11px;padding:10px 12px}
+  .opt .o-ic{width:30px;height:30px;font-size:16px;margin-bottom:0;flex:none}
+  .opt .o-body{flex:1;min-width:0}
+  .opt h4{margin:0 0 2px;font-size:13.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .opt p{margin:0;font-size:11.5px;line-height:1.3}
+  .opt .btn{width:auto;flex:none}
+
+  /* ---- Executive Summary strip — bold brand-gradient ---- */
+  .xs-judge{margin:0 0 22px}
+  .xs-kw{font-weight:800}
+  .xsC{position:relative;overflow:hidden;background:var(--grad);border-radius:var(--r);padding:18px 22px;box-shadow:var(--shadow)}
+  .xsC::after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.10)}
+  .xsC .xs-eyebrow{position:relative;display:inline-flex;align-items:center;gap:8px;font-size:14.7px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-bottom:9px}
+  .xsC .xs-eyebrow .svi{font-size:18px}
+  .xsC p{position:relative;margin:0;font-size:15px;line-height:1.6;color:#fff;font-weight:500}
+  .xsC .xs-kw{color:#fff;font-weight:800;border-bottom:2px solid rgba(255,255,255,.55)}
+  .xsC .xs-suffix{position:relative;display:inline-block;margin-top:9px;font-size:11.5px;font-weight:500;
+    color:rgba(255,255,255,.82);text-decoration:underline;text-underline-offset:2px}
+
+  .sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-xs);overflow:hidden;margin-bottom:17px;transition:box-shadow .18s ease}
+  .sec.open{box-shadow:var(--shadow)}
+  .sec>.head{display:flex;align-items:center;gap:14px;width:100%;border:0;background:none;cursor:pointer;padding:21px 23px;font:inherit;text-align:left;color:var(--ink)}
+  .sec>.head:hover{background:#fafafb}
+  .sec .ttl{font-weight:700;font-size:15.5px;flex:1;letter-spacing:-.01em}
+  .sec .meta-r{font-size:12.5px;color:var(--muted);font-weight:600}
+  .sec .chev{color:var(--muted);transition:transform .22s ease;font-size:18px}
+  .sec.open .chev{transform:rotate(180deg)}
+  .body{max-height:0;overflow:hidden;transition:max-height .24s ease}.sec.open .body{max-height:3000px}
+  .body-in{padding:4px 24px 28px;color:var(--ink-2);line-height:1.65}.body-in p{margin:0 0 15px}.body-in p:last-child{margin-bottom:0}
+  .body-in code{background:var(--soft);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:.86em;color:var(--brand-strong)}
+  .nested .sec{box-shadow:none;border-radius:var(--r);margin-bottom:14px}
+
+  /* emphasized section — Evidence & consensus (it's the trust anchor) */
+  .sec.emph{border-color:var(--brand-200);box-shadow:0 0 0 1px var(--brand-100),var(--shadow)}
+  .sec.emph>.head{background:linear-gradient(90deg,var(--soft-brand),rgba(242,240,254,0))}
+  .sec.emph>.head:hover{background:linear-gradient(90deg,#ece9fe,rgba(242,240,254,0))}
+  .sec.emph .ic{background:var(--grad);color:#fff}
+  .sec.emph .ttl{color:var(--brand-strong)}
+  .sec.emph .meta-r{display:inline-flex;align-items:center;gap:5px;color:var(--brand-strong);font-weight:700;
+    background:var(--surface);border:1px solid var(--brand-100);padding:4px 10px;border-radius:var(--pill)}
+  .sec.emph .meta-r .svi{font-size:14px}
+
+  /* ---- Evidence & consensus — Variant A (authority rows) ---- */
+  /* consensus reading, shown first as a compact slider/meter */
+  .cons{background:linear-gradient(180deg,var(--soft-brand),#fff);border:1px solid var(--brand-100);border-radius:var(--r);padding:14px 16px;margin-bottom:20px}
+  .cons-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .cons-k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .cons-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:#fff;background:var(--grad);padding:4px 11px;border-radius:var(--pill)}
+  .cons-pill .svi{font-size:13px}
+  .cons-slider{padding:0 1px}
+  .cons-slider .track{position:relative;display:block;height:6px;border-radius:3px;background:var(--soft);border:1px solid var(--line)}
+  .cons-slider .fill{position:absolute;left:0;top:-1px;bottom:-1px;width:86%;border-radius:3px;background:var(--grad)}
+  .cons-slider .thumb{position:absolute;top:50%;left:86%;transform:translate(-50%,-50%);width:15px;height:15px;border-radius:50%;background:#fff;border:3px solid var(--brand);box-shadow:0 1px 3px rgba(9,10,11,.18)}
+  .cons-slider .ticks{display:flex;justify-content:space-between;margin-top:8px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .cons-slider .ticks .hi{color:var(--brand-strong)}
+
+  /* community sentiment meter — doubtful ↔ subjective ↔ positive */
+  .senti{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:22px}
+  .senti-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .senti-k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .senti-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:#fff;background:var(--ok);padding:4px 11px;border-radius:var(--pill)}
+  .senti-pill .svi{font-size:13px}
+  .senti-meter{padding:0 1px}
+  .senti-meter .track{position:relative;display:block;height:8px;border-radius:4px;
+    background:linear-gradient(90deg,var(--crit) 0%,var(--amber) 50%,var(--ok) 100%)}
+  .senti-meter .thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:17px;height:17px;border-radius:50%;
+    background:#fff;border:3px solid var(--ok);box-shadow:0 1px 4px rgba(9,10,11,.22)}
+  .senti-meter .ticks{display:flex;justify-content:space-between;margin-top:9px;font-size:10px;font-weight:700;
+    letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .senti-meter .ticks .pos{color:var(--ok)}
+
+  /* source rows — override shared .ev with a 3-column authority layout */
+  .ev-list{display:flex;flex-direction:column;gap:14px}
+  .ev{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;
+    padding:20px 22px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);transition:.16s}
+  .ev:hover{border-color:var(--brand-200);box-shadow:var(--shadow);transform:translateY(-1px)}
+  /* uniform brand-tinted tile — tall, two-panel motif (one palette) */
+  .tile{position:relative;width:46px;height:62px;flex:none;border-radius:12px;display:grid;place-items:center;
+    background:var(--soft-brand);border:1px solid var(--brand-100);color:var(--brand-strong)}
+  .tile::after{content:"";position:absolute;left:9px;right:9px;top:22px;height:1px;background:var(--brand-100)}
+  .tile .svi{font-size:21px;position:relative;z-index:2}
+  .ev-name{font-weight:800;font-size:15.5px;color:var(--ink);letter-spacing:-.01em}
+  .ev-name .kind{color:var(--brand-strong);font-weight:800}
+  .ev-cred-line{font-size:12px;color:var(--muted);margin:3px 0 10px}
+  .ev-q{position:relative;font-size:13.5px;color:var(--muted-2);font-style:italic;margin:0;line-height:1.55;max-width:48ch}
+  .ev-q .qm{font-family:Georgia,"Times New Roman",serif;font-size:40px;line-height:0;color:var(--brand-200);
+    margin-right:6px;vertical-align:-16px;font-style:normal}
+  .ev-q cite{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:6px}
+  /* eye-catching credit emblem — single (brand) palette */
+  .credit{width:124px;flex:none;text-align:center;border-left:1px solid var(--line);padding-left:20px}
+  .credit .cic{width:40px;height:40px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;
+    background:var(--soft-brand);color:var(--brand-strong);border:1px solid var(--brand-100)}
+  .credit .cic .svi{font-size:20px}
+  .credit .cbig{font-size:19px;font-weight:800;line-height:1;letter-spacing:-.02em;color:var(--brand-strong)}
+  .credit .cbig.sm{font-size:15px}
+  .credit .csm{display:block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+  @media(max-width:900px){ .grid{grid-template-columns:1fr} aside{position:static;order:-1} }
+  @media(max-width:620px){
+    .ev{grid-template-columns:auto 1fr}
+    .credit{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);padding:14px 0 0;width:auto;
+      display:flex;justify-content:center;align-items:center;gap:10px}
+    .credit .cic{margin:0}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 4-4-4-4"/><path d="m8 6-4 4 4 4"/><path d="m13.5 4-3 16"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-6"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4.1 12.9a1 1 0 0 0 .8 1.6H11l-1 7.5 8.9-10.9a1 1 0 0 0-.8-1.6H13l1-7.5z"/></symbol>
+  <symbol id="i-rules" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></symbol>
+  <symbol id="i-plugin" viewBox="0 0 24 24"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M6 8h12v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-like" viewBox="0 0 24 24"><path d="M7 10v11"/><path d="M15 5.9 14 10h5.8a2 2 0 0 1 2 2.5l-2.3 8a2 2 0 0 1-2 1.5H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h2.8a2 2 0 0 0 1.8-1.1L12 2a3 3 0 0 1 3 3.9z"/></symbol>
+  <symbol id="i-dislike" viewBox="0 0 24 24"><path d="M17 14V3"/><path d="M9 18.1 10 14H4.2a2 2 0 0 1-2-2.5l2.3-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2.8a2 2 0 0 0-1.8 1.1L12 22a3 3 0 0 1-3-3.9z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-verified" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V5z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-docs" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></symbol>
+  <symbol id="i-talk" viewBox="0 0 24 24"><path d="M2 3h20"/><path d="M3 3v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V3"/><path d="m8 21 4-4 4 4"/></symbol>
+  <symbol id="i-article" viewBox="0 0 24 24"><path d="M4 22h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2 2 2 0 0 1-2-2V8h2"/><path d="M10 7h6"/><path d="M10 11h6"/><path d="M10 15h4"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path class="svf" d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.2 3.44 9.6 8.21 11.16.6.11.82-.26.82-.58v-2.02c-3.34.72-4.04-1.59-4.04-1.59-.55-1.37-1.34-1.74-1.34-1.74-1.08-.74.08-.73.08-.73 1.2.08 1.83 1.22 1.83 1.22 1.07 1.8 2.81 1.28 3.5.98.1-.76.42-1.28.76-1.57-2.67-.3-5.47-1.31-5.47-5.84 0-1.29.47-2.34 1.23-3.17-.12-.3-.53-1.52.12-3.16 0 0 1-.32 3.3 1.21a11.6 11.6 0 0 1 6 0c2.28-1.53 3.29-1.21 3.29-1.21.65 1.64.24 2.86.12 3.16.77.83 1.23 1.88 1.23 3.17 0 4.54-2.81 5.53-5.49 5.83.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12.01 12.01 0 0 0 24 12.29C24 5.78 18.63.5 12 .5z"/></symbol>
+  <symbol id="i-bookopen" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+  <symbol id="i-filetext" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+  <symbol id="i-badge" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-award" viewBox="0 0 24 24"><path d="m15.48 12.89 1.51 8.52a.5.5 0 0 1-.81.47l-3.58-2.68a1 1 0 0 0-1.2 0l-3.58 2.68a.5.5 0 0 1-.81-.47l1.51-8.52"/><circle cx="12" cy="8" r="6"/></symbol>
+  <symbol id="i-starf" viewBox="0 0 24 24"><path class="svf" d="M12 2.6 15 9l7 .6-5.3 4.6 1.6 6.9L12 17.7 5.7 21l1.6-6.9L2 9.6 9 9z"/></symbol>
+</defs></svg>
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><span class="logo"><svg class="svi"><use href="#i-grid"/></svg></span>Rules Marketplace</a>
+    <nav class="nav">
+      <a href="#">Categories</a>
+      <a href="#">Top voted rules</a>
+      <a href="#">How we score</a>
+    </nav>
+    <span class="header-spacer"></span>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="crumb"><a href="index.html">Rules Marketplace</a><span class="sep">›</span><a href="#">Node.js</a><span class="sep">›</span><b>Error Handling</b></nav>
+
+  <!-- Title -->
+  <div class="title-block">
+    <h1><span class="rk">Rule:</span> One global <span class="code-tok">process.on('unhandledRejection')</span> handler</h1>
+    <p class="oneliner">Register one process-wide handler for unhandled promise rejections so failures are observed and never crash the process silently.</p>
+  </div>
+
+  <div class="grid">
+    <!-- MAIN -->
+    <main>
+      <!-- Executive Summary -->
+      <div class="xs-judge">
+        <div class="xsC">
+          <span class="xs-eyebrow"><svg class="svi"><use href="#i-target"/></svg>Executive summary</span>
+          <p>This rule deals with a potential <span class="xs-kw">critical production failure</span>. It is supported by evidently <span class="xs-kw">high consensus</span>, and the cost of having high conformance is as small as <span class="xs-kw">24 tokens</span>.</p>
+          <span class="xs-suffix">Based on our 400 evaluation runs over 11 models</span>
+        </div>
+      </div>
+
+      <!-- Evidence & consensus — first, emphasized, the trust anchor -->
+      <section class="sec emph">
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-verified"/></svg></span><span class="ttl">Evidence &amp; consensus</span><span class="meta-r"><svg class="svi"><use href="#i-verified"/></svg>7 reliable sources</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <div class="body"><div class="body-in">
+
+          <!-- consensus reading, shown first as a compact slider -->
+          <div class="cons">
+            <div class="cons-row">
+              <span class="cons-k">Consensus across sources</span>
+              <span class="cons-pill"><svg class="svi"><use href="#i-check"/></svg>High</span>
+            </div>
+            <div class="cons-slider">
+              <span class="track"><span class="fill"></span><span class="thumb"></span></span>
+              <div class="ticks"><span>Low</span><span>Medium</span><span class="hi">High</span></div>
+            </div>
+          </div>
+
+          <div class="ev-list">
+
+            <div class="ev">
+              <span class="tile"><svg class="svi"><use href="#i-bookopen"/></svg></span>
+              <div class="ev-bd">
+                <div class="ev-name"><span class="kind">Book:</span> Node.js Design Patterns</div>
+                <div class="ev-cred-line">3rd edition · Casciaro &amp; Mammino</div>
+                <p class="ev-q"><span class="qm">&ldquo;</span>Leaving a rejection unhandled means the application keeps running in an inconsistent state — observe it, then decide.</p>
+              </div>
+              <div class="credit"><span class="cic"><svg class="svi"><use href="#i-award"/></svg></span><span class="cbig sm">#1 Best-seller</span><span class="csm">Amazon · Node.js</span></div>
+            </div>
+
+            <div class="ev">
+              <span class="tile"><svg class="svi svf"><use href="#i-github"/></svg></span>
+              <div class="ev-bd">
+                <div class="ev-name"><span class="kind">Repository:</span> goldbergyoni/nodebestpractices</div>
+                <div class="ev-cred-line">Most-starred Node.js guide on GitHub</div>
+                <p class="ev-q"><span class="qm">&ldquo;</span>Use a single process-wide handler for unhandled rejections and treat it as you would an uncaught exception.</p>
+              </div>
+              <div class="credit"><span class="cic"><svg class="svi svf"><use href="#i-starf"/></svg></span><span class="cbig">110k</span><span class="csm">GitHub stars</span></div>
+            </div>
+
+            <div class="ev">
+              <span class="tile"><svg class="svi"><use href="#i-filetext"/></svg></span>
+              <div class="ev-bd">
+                <div class="ev-name"><span class="kind">Official docs:</span> Node.js Documentation</div>
+                <div class="ev-cred-line">Maintained by the Node.js core team</div>
+                <p class="ev-q"><span class="qm">&ldquo;</span>The 'unhandledRejection' event is emitted whenever a promise is rejected and no handler is attached within a turn of the event loop.</p>
+              </div>
+              <div class="credit"><span class="cic"><svg class="svi"><use href="#i-badge"/></svg></span><span class="cbig sm">Official</span><span class="csm">nodejs.org</span></div>
+            </div>
+
+            <div class="ev">
+              <span class="tile"><svg class="svi"><use href="#i-bookopen"/></svg></span>
+              <div class="ev-bd">
+                <div class="ev-name"><span class="kind">Book:</span> Node.js in Action</div>
+                <div class="ev-cred-line">Published by Manning</div>
+                <p class="ev-q"><span class="qm">&ldquo;</span>A central error sink keeps you from sprinkling defensive catches across the codebase — register it once and route everything through it.</p>
+              </div>
+              <div class="credit"><span class="cic"><svg class="svi"><use href="#i-bookopen"/></svg></span><span class="cbig sm">Manning</span><span class="csm">Publisher</span></div>
+            </div>
+
+            <div class="ev">
+              <span class="tile"><svg class="svi"><use href="#i-article"/></svg></span>
+              <div class="ev-bd">
+                <div class="ev-name"><span class="kind">Article:</span> Node.js Foundation — Engineering Blog</div>
+                <div class="ev-cred-line">nodejs.org/en/blog</div>
+                <p class="ev-q"><span class="qm">&ldquo;</span>Silent rejections are the single most common cause of 'it just disappeared' production incidents we triage.</p>
+              </div>
+              <div class="credit"><span class="cic"><svg class="svi"><use href="#i-badge"/></svg></span><span class="cbig sm">Foundation</span><span class="csm">Official blog</span></div>
+            </div>
+
+            <div class="ev">
+              <span class="tile"><svg class="svi"><use href="#i-talk"/></svg></span>
+              <div class="ev-bd">
+                <div class="ev-name"><span class="kind">Talk:</span> "Error Handling at Scale" — NodeConf EU</div>
+                <div class="ev-cred-line">Conference talk</div>
+                <p class="ev-q"><span class="qm">&ldquo;</span>One observable choke point beats a hundred scattered try/catches. Log there, alert there, decide there.</p>
+              </div>
+              <div class="credit"><span class="cic"><svg class="svi"><use href="#i-badge"/></svg></span><span class="cbig sm">NodeConf</span><span class="csm">EU · talk</span></div>
+            </div>
+
+            <div class="ev">
+              <span class="tile"><svg class="svi svf"><use href="#i-github"/></svg></span>
+              <div class="ev-bd">
+                <div class="ev-name"><span class="kind">Repository:</span> nodejs/node — TSC discussion</div>
+                <div class="ev-cred-line">Technical Steering Committee thread</div>
+                <p class="ev-q"><span class="qm">&ldquo;</span>Defaulting to terminate on unhandled rejection was deliberate: an unobserved rejection is a bug, not a warning.</p>
+              </div>
+              <div class="credit"><span class="cic"><svg class="svi"><use href="#i-badge"/></svg></span><span class="cbig sm">Core team</span><span class="csm">Standards</span></div>
+            </div>
+
+          </div>
+        </div></div>
+      </section>
+
+      <section class="sec">
+        <button class="head" onclick="tog(this)"><span class="ic warn"><svg class="svi"><use href="#i-warn"/></svg></span><span class="ttl">What can go wrong</span><span class="meta-r">Risk</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <div class="body"><div class="body-in">
+          <p>An unhandled promise rejection leaves your application in an undefined, partially-failed state — a database write may be half-done, a request left hanging.</p>
+          <p>Without a process-level handler, recent Node.js versions terminate the process, so a single forgotten <code>.catch()</code> can take the whole service down with no log line explaining why.</p>
+        </div></div>
+      </section>
+
+      <section class="sec">
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-target"/></svg></span><span class="ttl">When to apply</span><span class="meta-r">Conditions</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <div class="body"><div class="body-in">
+          <p><b>Mandatory in every type of component</b> — APIs, workers, CLIs, serverless functions and scripts. There is no architecture where an unobserved rejection is acceptable, so this rule carries no exceptions.</p>
+        </div></div>
+      </section>
+
+      <!-- Rule to copy — the exact agent-ready instruction -->
+      <section class="sec rule-acc">
+        <button class="head" onclick="tog(this)">
+          <span class="ic"><svg class="svi"><use href="#i-bolt"/></svg></span>
+          <span class="ttl">Rule to copy</span>
+          <span class="meta-r">the exact instruction</span><svg class="svi chev"><use href="#i-chevron"/></svg>
+        </button>
+        <div class="body"><div class="body-in">
+          <div class="rule-panel">
+            <p id="ruleText" style="margin:0">Register a single global <code>unhandledRejection</code> handler. Make the error observable — log it with full context through your logger — then crash or stay alive according to your chosen process strategy.</p>
+          </div>
+          <div class="rule-foot"><button class="btn btn-secondary btn-sm" onclick="copyRule(this)"><svg class="svi"><use href="#i-copy"/></svg>Copy rule text</button></div>
+        </div></div>
+      </section>
+
+      <section class="sec">
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-code"/></svg></span><span class="ttl">Code example</span><span class="meta-r">Good &amp; bad</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <div class="body"><div class="body-in nested">
+          <section class="sec open">
+            <button class="head" onclick="tog(this)"><span class="ic ok"><svg class="svi"><use href="#i-check"/></svg></span><span class="ttl">Good</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+            <div class="body"><div class="body-in">
+              <div class="codewrap"><div class="bar"><span class="tag good"><svg class="svi"><use href="#i-check"/></svg>GOOD</span><span class="fn">server.js</span><button class="copy" onclick="cp(this)"><svg class="svi"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cm">// somewhere a promise rejects without a local catch</span>
+<span class="fnc">Promise</span>.<span class="fnc">reject</span>(<span class="kw">new</span> <span class="fnc">Error</span>(<span class="str">'DB connection lost'</span>));
+
+<span class="cm">// one global handler, registered once at startup</span>
+process.<span class="fnc">on</span>(<span class="str">'unhandledRejection'</span>, (reason) => {
+  logger.<span class="fnc">error</span>(<span class="str">'Unhandled rejection'</span>, { reason });
+  <span class="cm">// decide here: crash or stay alive based on your strategy</span>
+});</pre></div>
+            </div></div>
+          </section>
+          <section class="sec">
+            <button class="head" onclick="tog(this)"><span class="ic warn"><svg class="svi"><use href="#i-x"/></svg></span><span class="ttl">Bad</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+            <div class="body"><div class="body-in">
+              <div class="codewrap"><div class="bar"><span class="tag bad"><svg class="svi"><use href="#i-x"/></svg>BAD</span><span class="fn">server.js</span><button class="copy" onclick="cp(this)"><svg class="svi"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cm">// a promise rejects...</span>
+<span class="fnc">Promise</span>.<span class="fnc">reject</span>(<span class="kw">new</span> <span class="fnc">Error</span>(<span class="str">'DB connection lost'</span>));
+
+<span class="cm">// No handling — the process may crash silently</span></pre></div>
+            </div></div>
+          </section>
+          <p style="margin-top:14px">A rejected promise with no handler is the asynchronous equivalent of an uncaught exception. Catching it in one place lets you log the failure with full context and then make a deliberate decision about whether the process can safely continue. Adapted from the <a href="https://github.com/goldbergyoni/nodebestpractices" target="_blank" rel="noopener">Node.js Best Practices guide</a>.</p>
+        </div></div>
+      </section>
+
+      <section class="sec">
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-chat"/></svg></span><span class="ttl">Community discussion</span><span class="meta-r">94 comments</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <div class="body"><div class="body-in">
+
+          <!-- sentiment meter — where the discussion lands overall -->
+          <div class="senti">
+            <div class="senti-row">
+              <span class="senti-k">Community sentiment</span>
+              <span class="senti-pill"><svg class="svi"><use href="#i-like"/></svg>Mostly positive</span>
+            </div>
+            <div class="senti-meter">
+              <span class="track"><span class="thumb" style="left:76%"></span></span>
+              <div class="ticks"><span>Doubtful</span><span>Subjective</span><span class="pos">Positive</span></div>
+            </div>
+          </div>
+
+          <div class="comment"><div class="ava">DM</div><div class="c-body"><div class="who">Dana M. <span>Staff Engineer</span></div>
+            <div class="txt">This single handler caught a payment-flow rejection that was silently killing our pods for weeks. Mandatory in our template now.</div><span class="likes top"><svg class="svi"><use href="#i-like"/></svg> 142 · most helpful</span></div></div>
+          <div class="comment"><div class="ava">RK</div><div class="c-body"><div class="who">Raj K. <span>Backend Lead</span></div>
+            <div class="txt">Pair it with <code>uncaughtException</code> and a clean shutdown. Log first, then exit — restarting on a fresh state beats limping along.</div><span class="likes"><svg class="svi"><use href="#i-like"/></svg> 89</span></div></div>
+          <div class="comment"><div class="ava">SL</div><div class="c-body"><div class="who">Sofia L. <span>SRE</span></div>
+            <div class="txt">The "crash or stay alive" wording is the right call — too many guides tell you to always exit. It depends on the component.</div><span class="likes"><svg class="svi"><use href="#i-like"/></svg> 51</span></div></div>
+          <div class="comment"><div class="ava">MT</div><div class="c-body"><div class="who">Marco T. <span>Node.js contributor</span></div>
+            <div class="txt">Worth noting the handler's <code>reason</code> isn't always an <code>Error</code> — guard for non-Error rejections before you read <code>.stack</code>.</div><span class="likes"><svg class="svi"><use href="#i-like"/></svg> 34</span></div></div>
+          <div class="comment"><div class="ava">PN</div><div class="c-body"><div class="who">Priya N. <span>Platform Engineer</span></div>
+            <div class="txt">Disagree with "stay alive." In most services you should just crash and let the orchestrator restart on clean state — staying up hides corruption.</div><span class="likes neg"><svg class="svi"><use href="#i-dislike"/></svg> −9</span></div></div>
+          <div class="comment"><div class="ava">LW</div><div class="c-body"><div class="who">Lee W. <span>Full-stack dev</span></div>
+            <div class="txt">Overkill. Just add <code>.catch()</code> everywhere and you'll never need a global handler.</div><span class="likes neg"><svg class="svi"><use href="#i-dislike"/></svg> −16 · contested</span></div></div>
+        </div></div>
+      </section>
+
+      <section class="sec">
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-chart"/></svg></span><span class="ttl">Evaluations</span><span class="meta-r">87% conformance</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <div class="body"><div class="body-in">
+          <p>Respected by <b>87% of agent runs</b> with the rule applied — versus just <b>41%</b> at baseline, with no rule in place. Measured across automated harness assertions on generated code.</p>
+
+          <div class="dash">
+            <div class="dash-card on">
+              <div class="dc-top"><span class="dc-lab">With rule</span><span class="dc-big">87%</span></div>
+              <span class="dc-bar"><span class="dc-fill" style="width:87%"></span></span>
+              <span class="dc-sub">respected across runs</span>
+            </div>
+            <div class="dash-card off">
+              <div class="dc-top"><span class="dc-lab">Without rule · baseline</span><span class="dc-big">41%</span></div>
+              <span class="dc-bar"><span class="dc-fill gray" style="width:41%"></span></span>
+              <span class="dc-sub">respected across runs</span>
+            </div>
+            <div class="dash-delta"><svg class="svi"><use href="#i-trend"/></svg>+46 pts uplift from applying the rule</div>
+          </div>
+
+          <h4 class="dash-h">Phrasing affects conformance</h4>
+          <p style="font-size:13.5px;color:var(--muted);margin:0 0 6px">Each variant is the rule reworded — even with the rule applied, weaker phrasing scores lower.</p>
+          <div class="variant-row"><span class="ph">… make the error observable, then crash or stay alive</span><span class="bar-track"><span class="bar-fill" style="width:87%"></span></span><span class="pct">87%</span></div>
+          <div class="variant-row"><span class="ph">… log unhandled rejections in one place</span><span class="bar-track"><span class="bar-fill" style="width:72%"></span></span><span class="pct">72%</span></div>
+          <div class="variant-row"><span class="ph">… handle promise rejections globally</span><span class="bar-track"><span class="bar-fill" style="width:64%"></span></span><span class="pct">64%</span></div>
+          <div class="variant-row"><span class="ph">no rule — baseline</span><span class="bar-track"><span class="bar-fill gray" style="width:41%"></span></span><span class="pct">41%</span></div>
+        </div></div>
+      </section>
+    </main>
+
+    <!-- SIDEBAR -->
+    <aside>
+      <div class="panel">
+        <button class="btn btn-primary" onclick="toggleGet(this)"><svg class="svi"><use href="#i-bolt"/></svg>Get it</button>
+        <p class="hint">Add to Qodo, install as a plugin, or copy the text</p>
+        <!-- revealed right here, underneath the button -->
+        <div class="getit" id="getit">
+          <div class="getit-card">
+            <div class="getit-grid">
+              <div class="opt feature">
+                <span class="o-ic"><svg class="svi"><use href="#i-rules"/></svg></span>
+                <div class="o-body"><h4>Get with Qodo Rules</h4>
+                  <p>Add to your team's rules</p></div>
+                <button class="btn btn-primary btn-sm">Add</button>
+              </div>
+              <div class="opt">
+                <span class="o-ic"><svg class="svi"><use href="#i-users"/></svg></span>
+                <div class="o-body"><h4>Community plugin</h4>
+                  <p>Install the open-source plugin</p></div>
+                <button class="btn btn-secondary btn-sm">Install</button>
+              </div>
+              <div class="opt">
+                <span class="o-ic"><svg class="svi"><use href="#i-copy"/></svg></span>
+                <div class="o-body"><h4>Copy rule text</h4>
+                  <p>Copy the agent-ready text</p></div>
+                <button class="btn btn-secondary btn-sm" onclick="copyRule(this)">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>At a glance</h3>
+        <div class="stat"><span class="lbl"><span class="dot d-crit"></span>Severity</span><span class="val v-crit">Critical</span></div>
+        <div class="stat"><span class="lbl"><span class="dot d-ok"></span>Ease of implementation</span><span class="val v-ok">Easy</span></div>
+        <div class="stat"><span class="lbl"><span class="dot d-pur"></span>Consensus</span><span class="val v-pur">High</span></div>
+        <div class="stat"><span class="lbl"><span class="dot d-mut"></span>Token cost</span><span class="val">24 tokens</span></div>
+        <div class="stat"><span class="lbl"><span class="dot d-amber"></span>Applies in</span><span class="val v-amber">Every component</span></div>
+        <div class="stat"><span class="lbl"><span class="dot d-mut"></span>Version</span><span class="val">2.11</span></div>
+      </div>
+      <div class="panel">
+        <h3>Included in packages</h3>
+        <div class="pkgs">
+          <span class="chips">
+            <span class="chip cons"><span class="dot"></span>Node.js</span>
+            <span class="chip cons"><span class="dot"></span>Web design</span>
+          </span>
+        </div>
+      </div>
+      <div class="panel ringbox">
+        <h3 style="align-self:flex-start">Agent conformance evaluation</h3>
+        <div class="cmp">
+          <div class="col r1">
+            <div class="ring"><div class="in"><b>87%</b><small>respected</small></div></div>
+            <span class="lab">With rule</span>
+          </div>
+          <div class="col r0">
+            <div class="ring base"><div class="in"><b>41%</b><small>respected</small></div></div>
+            <span class="lab">No rule</span>
+          </div>
+        </div>
+        <div class="cap"><span class="up">+46 pts</span> vs baseline · automated harness</div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  function tog(btn){ btn.closest('.sec').classList.toggle('open'); }
+  function toggleGet(btn){
+    const p=document.getElementById('getit'); const open=p.classList.toggle('open');
+    if(open) p.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function flash(btn,txt){ const orig=btn.innerHTML; btn.innerHTML='<svg class="svi"><use href="#i-check"/></svg>'+txt; setTimeout(()=>btn.innerHTML=orig,1300); }
+  function cp(btn){ const pre=btn.closest('.codewrap').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(()=>flash(btn,'Copied')); }
+  function copyRule(btn){ navigator.clipboard.writeText(document.getElementById('ruleText').innerText).then(()=>flash(btn,'Copied')); }
+</script>
+</body>
+</html>
