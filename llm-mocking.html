@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LLM Mocking for Flow Tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #28282a; --muted: #6b7280;
+    --primary: #0d9488; --primary-soft: #e6f5f3; --border: #e2e4e8; --radius: 14px;
+    --warn: #b45309; --warn-soft: #fef3c7; --bad: #b91c1c; --bad-soft: #fee2e2;
+    --good: #15803d; --good-soft: #dcfce7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.62; }
+  .wrap { max-width: 64rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .4rem; }
+  header .label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header .sub { color: var(--muted); font-size: 1.02rem; max-width: 46rem; }
+  header .meta { font-size: .8rem; color: var(--muted); margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 1.2rem; }
+  header .meta b { color: var(--fg); font-weight: 600; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); padding-top: .5rem; z-index: 5; }
+  nav.tabs button { font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer; border: 0; background: none;
+    padding: .65rem 1rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; border-radius: 8px 8px 0 0; }
+  nav.tabs button:hover { color: var(--fg); }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.6rem 1.9rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 1.25rem; }
+  .card.accent { border-color: var(--primary); border-width: 1.5px; background: linear-gradient(180deg, #f3fbfa 0%, #fff 60%); }
+  .card.warn { border-left: 4px solid var(--warn); }
+  .card.bad { border-left: 4px solid var(--bad); }
+  h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0; }
+  h3 { font-size: 1.06rem; font-weight: 600; margin: 1.4rem 0 .4rem; display: flex; align-items: center; gap: .6rem; }
+  .card h3:first-child { margin-top: 0; }
+  .label-sm { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--primary); margin-bottom: .3rem; }
+  code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .86em; font-family: 'SF Mono', Menlo, monospace; }
+  a { color: var(--primary); }
+  ul, ol { padding-left: 1.2rem; } li { margin: .3rem 0; }
+  .pill { display: inline-block; padding: .15rem .55rem; border-radius: 20px; font-size: .68rem; font-weight: 700;
+    letter-spacing: .03em; text-transform: uppercase; vertical-align: middle; }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.muted { background: #e5e7eb; color: #4b5563; }
+  .callout { background: var(--primary-soft); border-radius: 12px; padding: 1.1rem 1.3rem; margin: 1rem 0; }
+  .callout b { font-weight: 700; }
+  .legend { display: flex; gap: 1.2rem; font-size: .76rem; color: var(--muted); margin: .4rem 0 .8rem; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: .35rem; vertical-align: middle; }
+  .verdict { font-size: .84rem; background: #fafbfc; border: 1px dashed var(--border); border-radius: 8px; padding: .5rem .8rem; margin-top: .6rem; }
+  .tag { font-size: .72rem; color: var(--muted); }
+  .req { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem 1.2rem; border: 1px solid var(--border);
+    border-radius: 12px; background: #fafbfc; margin-bottom: .8rem; }
+  .req .num { display: inline-flex; min-width: 1.9rem; height: 1.9rem; align-items: center; justify-content: center;
+    background: var(--primary); color: #fff; border-radius: 8px; font-size: .9rem; font-weight: 700; flex: none; }
+  .req .body { flex: 1; }
+  .req .body b { font-size: 1rem; font-weight: 600; }
+  .req .body p { margin: .25rem 0 0; font-size: .88rem; color: var(--muted); }
+  pre { background: #1e293b; color: #e2e8f0; border-radius: 10px; padding: 1rem 1.1rem; overflow-x: auto;
+    font-size: .8rem; line-height: 1.55; font-family: 'SF Mono', Menlo, monospace; margin: .7rem 0 .2rem; }
+  pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+  .ex-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin-top: 1rem; }
+  .cmp-fullbleed { width: 96vw; margin-left: calc(50% - 48vw); margin-right: calc(50% - 48vw); overflow-x: auto; margin-bottom: 1.25rem; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  table.cmp th, table.cmp td { border: 1px solid var(--border); padding: .5rem .55rem; text-align: center; }
+  table.cmp th { background: #f1f5f4; font-weight: 600; font-size: .72rem; }
+  table.cmp th.req-h { font-size: .72rem; font-weight: 600; line-height: 1.25; vertical-align: bottom; padding: .55rem .4rem; width: 6.2rem; }
+  table.cmp th.grp-h { background: #e8efee; font-size: .82rem; font-weight: 700; letter-spacing: .03em; padding: .5rem .4rem; }
+  table.cmp td.cur { background: var(--warn-soft) !important; }
+  table.cmp tr.cur-row td { background: #fffaf0; }
+  table.cmp td.name, table.cmp th.name { text-align: left; font-weight: 600; white-space: nowrap; }
+  table.cmp tr:nth-child(even) td { background: #fafbfc; }
+  .info { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--muted); color: #fff; font-size: 9px; font-weight: 700; font-style: normal;
+    cursor: help; position: relative; margin-left: 3px; vertical-align: middle; }
+  .info::after { content: attr(data-tip); position: absolute; top: 150%; left: 50%; transform: translateX(-50%);
+    background: #1e293b; color: #fff; padding: .55rem .7rem; border-radius: 8px; font-size: .72rem; font-weight: 400;
+    line-height: 1.45; letter-spacing: normal; text-transform: none; text-align: left; width: 210px; white-space: normal;
+    opacity: 0; visibility: hidden; transition: opacity .12s; z-index: 30; box-shadow: 0 6px 18px rgba(0,0,0,.22); pointer-events: none; }
+  .info:hover::after { opacity: 1; visibility: visible; }
+  .info.tip-r::after { left: auto; right: 0; transform: none; }
+  .yy { color: var(--good); font-weight: 700; } .y { color: var(--good); }
+  .mid { color: var(--warn); font-weight: 700; } .no { color: var(--bad); font-weight: 700; }
+  .cmp-legend { display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: .78rem; color: var(--muted); margin: .8rem 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">Flow Tests · LLM Mocking</div>
+    <h1>LLM Mocking for Flow Tests</h1>
+    <p class="sub">The whole story in two tabs: <b>what we need</b> from a mock strategy for <code>tests/flows/</code>, and <b>which tools</b> can deliver it. Start with Requirements — it sets the key needs the Options tab is scored against.</p>
+    <div class="meta">
+      <span><b>Scope:</b> tests/flows/</span>
+      <span><b>Stacks:</b> litellm + LangGraph create_agent</span>
+      <span><b>Deeper background:</b> old_LLM_MOCKING_OPTIONS.html</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-tab="today">What We Have Today</button>
+    <button data-tab="requirements">Requirements</button>
+    <button data-tab="options">Tool Options</button>
+    <button data-tab="comparison">Comparison of Options</button>
+  </nav>
+
+  <!-- ============ REQUIREMENTS ============ -->
+  <section class="panel active" id="requirements">
+    <div class="card accent">
+      <div class="label-sm">Read this first · the key need</div>
+      <h2>What we're looking for</h2>
+      <p>We need <b>reliable LLM mocking for the flow tests in <code>tests/flows/</code></b> that <b>replaces what we have today</b> — chiefly <code>FakeAgentGraph</code> in the <code>chat_agent_flow</code> suite. "Reliable" means: deterministic and offline, but running enough of the <i>real</i> agent so a green test actually means the flow works. The motivation below explains why the current stub falls short; the numbered requirements are the bar any replacement must clear.</p>
+    </div>
+
+    <div class="card">
+      <h3>What <code>FakeAgentGraph</code> is</h3>
+      <p>In production the chat flow runs <code>langchain.agents.create_agent(...)</code> — a LangGraph ReAct agent: the LLM decides which tool to call, the graph executes it, feeds the result back, the LLM decides the next step, and a chain of <b>~9 middlewares</b> wraps the whole loop. <code>FakeAgentGraph</code> (<code>tests/flows/chat_agent_flow/fake_agent_graph.py</code>) <b>replaces that entire graph</b> with a stub that takes an author-scripted list of tool calls and <code>await</code>s each tool's raw <code>.coroutine</code> in order.</p>
+    </div>
+
+    <div class="card warn">
+      <h3>Why that's a problem — what it silently stubs out</h3>
+      <ul>
+        <li><b>It fakes the agent's whole reason to exist.</b> An agent's job is to <i>decide and sequence</i> tool calls across turns. The fake hardcodes that sequence, so the orchestration — the actual product behavior — is never exercised.</li>
+        <li><b>It drops all ~9 middlewares</b> (analytics, call-count limits, max-LLM-call guard, structured-response, prompt-caching, model retry/fallback), keeping only <code>mw.tools</code>. Those are <i>our</i> code and run for real users; the tests cover none of their behavior.</li>
+        <li><b>It skips pydantic arg-validation.</b> <code>await tool.coroutine(**args)</code> bypasses <code>BaseTool.ainvoke</code>/<code>_parse_input</code>, so scripted tool args that the real arg-schema would reject still "pass."</li>
+        <li><b>No multi-turn feedback.</b> Real tool results become <code>ToolMessage</code>s fed back into the next model decision; the fake just runs a flat list.</li>
+        <li><b>Silent failure modes:</b> filesystem tools are silently skipped; unknown tool names <code>KeyError</code> — green-but-empty risk.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>The goal</h3>
+      <p>Run the <b>real <code>create_agent</code></b> with a mocked <i>model</i> instead of a faked <i>graph</i> — recovering the real ReAct loop, middleware chain, <code>ToolMessage</code> feedback, and arg-validation, while still feeding the test author's canned model output.</p>
+      <div class="callout"><b>Note on scope:</b> no mock makes the tool-call <i>decision</i> realistic — the author always scripts which tool/args the model "chooses." Replacing the fake buys realistic <b>plumbing</b> (the loop, middleware, validation), not realistic decisions. Fuller background lives in <code>old_LLM_MOCKING_OPTIONS.html</code>.</div>
+    </div>
+
+    <div class="card">
+      <h2>Requirements</h2>
+      <p>A candidate mock mechanism (see the <b>Tool Options</b> tab) is scored against all of the following.</p>
+
+      <div class="req">
+        <span class="num">1</span>
+        <div class="body">
+          <b>Allow canned answers from tests</b>
+          <p>The test author can supply the model's output (text, tool calls, structured output) directly from the test, deterministically.</p>
+        </div>
+      </div>
+
+      <div class="req">
+        <span class="num">2</span>
+        <div class="body">
+          <b>Popular</b>
+          <p>An actively maintained, widely-adopted tool — not a bus-factor-1, sub-1-year-old project we'd be betting a multi-year suite on.</p>
+        </div>
+      </div>
+
+      <div class="req">
+        <span class="num">3</span>
+        <div class="body">
+          <b>Allow returning errors and timeouts</b>
+          <p>Tests can inject failure modes — provider errors, timeouts — to exercise the retry/fallback paths.</p>
+        </div>
+      </div>
+
+      <div class="req">
+        <span class="num">4</span>
+        <div class="body">
+          <b>Works with LangGraph and LiteLLM</b>
+          <p>One mechanism covers both stacks: the LangGraph <code>create_agent</code> agent flow and the litellm path.</p>
+        </div>
+      </div>
+
+      <div class="req">
+        <span class="num">5</span>
+        <div class="body">
+          <b>Allow checking whether the LLM was called</b>
+          <p>Tests can assert that the model was (or wasn't) invoked — and how often — to verify the flow actually reached the LLM.</p>
+        </div>
+      </div>
+
+      <div class="req">
+        <span class="num">6</span>
+        <div class="body">
+          <b>Black-box as possible</b>
+          <p>Mock as few as possible of our own code — ideally zero. The mock should sit at the network layer, so the real provider SDK, the agent graph, middleware, and parsing all run for real and only the wire response is canned.</p>
+        </div>
+      </div>
+
+      <div class="req">
+        <span class="num">7</span>
+        <div class="body">
+          <b>Python-friendly if not generic-endpoint based</b>
+          <p>If the tool doesn't expose generic endpoints (e.g. HTTP), it must be supported in Python and easy to wrap in a Pytest fixture.</p>
+        </div>
+      </div>
+
+      <div class="req">
+        <span class="num">8</span>
+        <div class="body">
+          <b>Support all key LLM vendors</b>
+          <p>Covers the providers we actually use — OpenAI, Anthropic, Bedrock, Vertex — not just one or two.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TOOL OPTIONS ============ -->
+  <section class="panel" id="options">
+    <div class="card">
+      <h2>Tool Landscape — refreshed June 2026</h2>
+      <p>The relevant tools only — anything that can't mock our two stacks (litellm Stack A, LangGraph <code>create_agent</code> Stack B) deterministically and offline has been dropped to the <b>ruled-out</b> strip at the bottom. For each surviving tool: how popular, whether it's maintained, and one paragraph on how it actually works — read against the five requirements in the previous tab. Stars / release dates verified against GitHub &amp; PyPI, June 2026.</p>
+      <div class="legend">
+        <span><i style="background:var(--good)"></i> maintained / active</span>
+        <span><i style="background:var(--warn)"></i> slow / caveated</span>
+        <span><i style="background:var(--bad)"></i> dead / wrong-tool</span>
+      </div>
+    </div>
+
+    <div class="card accent">
+      <div class="label-sm">In-process · the lead pair</div>
+      <h3><code>respx</code> — HTTP-layer mock <span class="tag" style="font-weight:400">· primary recommendation</span></h3>
+      <p><b>Popular:</b> 812★, the de-facto httpx mocking lib. &nbsp;<b>Maintained:</b> <span class="pill good">yes</span> v0.23.1, Apr 2026 (repo currently pins 0.21.1).</p>
+      <p style="font-size:.85rem;margin:.35rem 0"><b>★ / dl:</b> 812★ · 17.6M/mo &nbsp;·&nbsp; <b>Testing tool:</b> yes &nbsp;·&nbsp; <b>Canned answers:</b> yes (routes → <code>Response</code>) &nbsp;·&nbsp; <b>LangGraph:</b> <span class="pill warn">◐ indirect — intercepts the httpx wire langchain rides; no direct mention</span></p>
+      <p>Patches httpx's sync+async transport with a mock router: you register routes (matched on method / URL / headers / body) that return canned <code>httpx.Response</code> objects, including streamed SSE byte chunks. Because it intercepts at the <i>transport</i> boundary, everything above the wire runs for real — the provider SDK, and on Stack B the real <code>bind_tools</code>, <code>with_structured_output</code> parsing, retry and fallbacks. One mechanism covers both stacks (litellm and langchain-anthropic/openai both use httpx). Blind spot: Bedrock rides botocore, not httpx, so respx can't see it.</p>
+      <div class="ex-label">In a tests/flows/ test</div>
+<pre><code>import httpx, respx
+
+@respx.mock
+async def test_when_user_replies_then_agent_posts_inline_reply(github_mock):
+    # Arrange — canned answer at the Anthropic wire; everything above runs for real
+    route = respx.post("https://api.anthropic.com/v1/messages").mock(
+        return_value=httpx.Response(200, json={
+            "role": "assistant", "stop_reason": "end_turn",
+            "content": [{"type": "text",
+                         "text": "Because the query concatenates user_id directly."}],
+        }))
+
+    # Act — real create_agent + 9 middlewares + ToolMessage feedback all execute
+    response = await call_incoming_pr_webhook(
+        make_review_comment_webhook(body="why is this flagged?"),
+        event="pull_request_review_comment")
+
+    # Assert
+    assert response.status_code == 202
+    assert route.called  # req. 5: the model was actually reached
+    github_mock.reply_to_review_comment_from_comment_id.assert_called_once()</code></pre>
+    </div>
+
+    <div class="card">
+      <h3><code>pytest-httpx</code> — httpx mock, as a fixture</h3>
+      <p><b>Popular:</b> 454★ — smaller following than respx, standard in the pytest+httpx crowd. &nbsp;<b>Maintained:</b> <span class="pill good">yes</span> v0.36.2, Apr 2026.</p>
+      <p style="font-size:.85rem;margin:.35rem 0"><b>★ / dl:</b> 454★ · 10.1M/mo &nbsp;·&nbsp; <b>Testing tool:</b> yes (pytest fixture) &nbsp;·&nbsp; <b>Canned answers:</b> yes &nbsp;·&nbsp; <b>LangGraph:</b> <span class="pill warn">◐ indirect — same httpx transport as respx</span></p>
+      <p>Same interception point as respx (httpx transport), exposed as a pytest fixture (<code>httpx_mock</code>) rather than a decorator/context-manager router; it also asserts every registered response was consumed. Functionally interchangeable with respx for our purpose — the choice is ergonomics (fixture style vs. router style), not capability. Identical Bedrock blind spot.</p>
+      <div class="ex-label">In a tests/flows/ test</div>
+<pre><code>async def test_when_user_replies_then_agent_posts_inline_reply(github_mock, httpx_mock):
+    # Arrange — registered as a fixture; auto-asserts the response was consumed
+    httpx_mock.add_response(
+        url="https://api.anthropic.com/v1/messages",
+        json={"role": "assistant", "stop_reason": "end_turn",
+              "content": [{"type": "text",
+                           "text": "Because the query concatenates user_id directly."}]})
+
+    # Act
+    response = await call_incoming_pr_webhook(
+        make_review_comment_webhook(body="why is this flagged?"),
+        event="pull_request_review_comment")
+
+    # Assert
+    assert response.status_code == 202
+    assert httpx_mock.get_request() is not None  # req. 5: model was reached
+    github_mock.reply_to_review_comment_from_comment_id.assert_called_once()</code></pre>
+    </div>
+
+    <div class="card">
+      <h3><code>litellm</code> built-in <code>mock_response</code></h3>
+      <p><b>Popular:</b> ships inside litellm (52k★; 1.83.1 installed). &nbsp;<b>Maintained:</b> <span class="pill good">yes</span> — first-party, actively released.</p>
+      <p style="font-size:.85rem;margin:.35rem 0"><b>★ / dl:</b> 52k★ · 497M/mo (whole lib) &nbsp;·&nbsp; <b>Testing tool:</b> yes (built-in test hook) &nbsp;·&nbsp; <b>Canned answers:</b> yes (streaming ✓; tool-calls hand-built) &nbsp;·&nbsp; <b>LangGraph:</b> <span class="pill">n/a — Stack A only</span></p>
+      <p>litellm has first-class test hooks: pass <code>mock_response="…"</code> (or a dict for tool calls) to <code>acompletion</code> and it short-circuits <i>before</i> httpx, returning a synthetic <code>ModelResponse</code>. Zero infra, perfectly deterministic. But it only covers <b>Stack A</b> — the agent flow's langchain-anthropic path never goes through litellm, so this does nothing for it. Tool-call mocking means hand-building the response dict (no public <code>mock_tool_calls</code> helper).</p>
+      <div class="ex-label">In a tests/flows/ test (Stack A — the litellm path)</div>
+<pre><code># Today the `llm` fixture hand-fakes acompletion's return value. The litellm-native
+# variant lets litellm build the synthetic ModelResponse from mock_response instead,
+# so the real response parsing runs. Inject it on the handler seam:
+
+@pytest_asyncio.fixture
+async def litellm_canned():
+    canned = {"text": "did_suggestion_impact_commit: true"}
+    real = litellm.acompletion
+
+    async def _with_mock(*args, **kwargs):
+        return await real(*args, mock_response=canned["text"], **kwargs)
+
+    with patch("pr_agent.algo.ai_handlers.litellm_ai_handler.acompletion", _with_mock):
+        yield canned  # a test can reset canned["text"] per scenario
+
+async def test_when_commit_fixes_finding_then_comment_is_marked_resolved(github_mock, litellm_canned):
+    litellm_canned["text"] = "did_suggestion_impact_commit: true"
+    response = await call_incoming_pr_webhook(make_push_webhook())
+    assert response.status_code == 202
+    github_mock.aresolve_review_thread.assert_called_once()
+    # errors/timeouts (req. 3): set mock_response=litellm.Timeout(...) to raise instead</code></pre>
+    </div>
+
+    <div class="card accent">
+      <div class="label-sm">Agent flow · the harness for Stack B</div>
+      <h3>LangGraph <code>FakeToolCallingModel</code> (vendored) + real <code>create_agent</code></h3>
+      <p><b>Popular:</b> n/a — not a package; a ~40-line class that lives only in langgraph's own test suite (not a public export). &nbsp;<b>Maintained:</b> <span class="pill warn">you own it</span> once vendored — upstream may drift.</p>
+      <p style="font-size:.85rem;margin:.35rem 0"><b>★ / dl:</b> n/a (not a package) &nbsp;·&nbsp; <b>Testing tool:</b> yes &nbsp;·&nbsp; <b>Canned answers:</b> yes (scripted <code>AIMessage</code>s) &nbsp;·&nbsp; <b>LangGraph:</b> <span class="pill good">✅✅ it IS langgraph's own test fixture</span></p>
+      <p>This is the only thing that makes "scripted model into the <i>real</i> graph" work. The class is a <code>BaseChatModel</code> that implements <code>bind_tools</code> (records the bound tools) and returns pre-scripted <code>AIMessage</code>s carrying <code>tool_calls</code> — those scripts <b>are</b> your canned answers. Inject it as the model into the real <code>create_agent</code>, and the real ReAct loop, your ~9 middlewares, <code>ToolMessage</code> feedback, and <code>BaseTool.ainvoke</code> pydantic arg-validation all execute; only the model's "decision" is hand-written. Gap: it does <i>not</i> implement <code>with_structured_output</code>, so the structured-response path stays stubbed (that's respx's job). Needed because the stock langchain-core fakes (below) can't bind tools.</p>
+      <div class="ex-label">In a tests/flows/ test (Stack B — replaces FakeAgentGraph)</div>
+<pre><code>from langchain.agents import create_agent
+from langchain_core.messages import AIMessage
+from tests.flows.chat_agent_flow.fakes import FakeToolCallingModel  # vendored ~40-line class
+
+async def test_when_user_asks_to_dismiss_then_agent_dismisses_then_replies(github_mock):
+    # Arrange — the script IS the canned answer: turn 1 calls a tool, turn 2 replies
+    model = FakeToolCallingModel(tool_calls=[
+        [{"name": "dismiss_finding", "args": {"finding_id": "42"}, "id": "c1"}],
+        [],  # no tool call -> the loop ends
+    ], responses=[AIMessage("Dismissed — thanks for flagging.")])
+
+    # the real graph runs; only the model object is faked
+    def _real_graph_fake_model(**kw):
+        return create_agent(**{**kw, "model": model})
+
+    # Act — real ReAct loop, 9 middlewares, ToolMessage feedback, pydantic arg-validation
+    with patch("pr_agent.algo.agents.chat_agent.create_agent", _real_graph_fake_model):
+        response = await call_incoming_pr_webhook(
+            make_review_comment_webhook(body="please dismiss this"),
+            event="pull_request_review_comment")
+
+    # Assert
+    assert response.status_code == 202
+    github_mock.aresolve_review_thread.assert_called_once()  # the real tool fired
+    assert model.invoke_count == 2  # req. 5: model reached twice (the ReAct turns)</code></pre>
+    </div>
+
+    <div class="card">
+      <div class="label-sm">Cross-process · if you want one mechanism for everything incl. Bedrock+Vertex</div>
+      <h3>CopilotKit <code>aimock</code> — multi-provider mock server <span class="tag" style="font-weight:400">· formerly <code>llmock</code></span></h3>
+      <p><b>Popular:</b> 637★, vendor-backed, fast-growing. &nbsp;<b>Maintained:</b> <span class="pill good">very active</span> — v1.35.0, Jun 28 2026 (the <code>llmock</code> repo 301-redirects here; same product renamed).</p>
+      <p style="font-size:.85rem;margin:.35rem 0"><b>★ / dl:</b> 637★ (npm pkg) &nbsp;·&nbsp; <b>Testing tool:</b> yes &nbsp;·&nbsp; <b>Canned answers:</b> yes (fixtures / record-replay) &nbsp;·&nbsp; <b>LangGraph:</b> <span class="pill good">✅ site lists LangGraph explicitly; has a langchain integration guide</span></p>
+      <p>A standalone (TypeScript/Node) HTTP server you run on one port and point your SDK base-URLs at; it speaks ~14 provider wire formats (OpenAI/Claude/Gemini/Azure/<b>Bedrock/Vertex</b>), full SSE streaming, multi-round tool calls with result matching, record/replay fixtures, and fault injection. From Python you launch it as a subprocess. Its one real edge over respx is being the only verified single mechanism that also covers Bedrock + Vertex; its cost is a CI process to manage (port/startup races — the exact flakiness this migration is trying to kill) and its youth.</p>
+      <div class="ex-label">In a tests/flows/ test (cross-process server)</div>
+<pre><code>import subprocess, pytest_asyncio
+
+@pytest_asyncio.fixture
+async def aimock_server():
+    proc = subprocess.Popen(["npx", "aimock", "--port", "8731",
+                             "--fixtures", "tests/flows/fixtures/chat_replies.json"])
+    await wait_for_port(8731)          # the port/startup race to manage in CI
+    yield "http://localhost:8731"
+    proc.terminate()
+
+async def test_when_user_replies_then_agent_posts_inline_reply(github_mock, aimock_server, monkeypatch):
+    # Arrange — point the SDK base-URL at the mock server (covers Bedrock/Vertex too)
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", aimock_server)
+
+    # Act — real SDK + real graph run their wire path against the server
+    response = await call_incoming_pr_webhook(
+        make_review_comment_webhook(body="why is this flagged?"),
+        event="pull_request_review_comment")
+
+    # Assert
+    assert response.status_code == 202
+    github_mock.reply_to_review_comment_from_comment_id.assert_called_once()</code></pre>
+    </div>
+
+    <div class="card">
+      <div class="label-sm">High-fidelity, narrow use</div>
+      <h3><code>vcr.py</code> + <code>pytest-recording</code> — record/replay cassettes</h3>
+      <p><b>Popular:</b> vcr.py 3.0k★ (the canonical Python cassette tool). &nbsp;<b>Maintained:</b> <span class="pill good">yes</span> — vcr.py 8.2.1 Jun 2026; <code>pytest-recording</code> (610★) is the pytest wrapper (<code>@pytest.mark.vcr</code>), though its last release was v0.13.4 May 2025.</p>
+      <p style="font-size:.85rem;margin:.35rem 0"><b>★ / dl:</b> vcr.py 3.0k★ · 15.8M/mo; pytest-recording 610★ &nbsp;·&nbsp; <b>Testing tool:</b> yes &nbsp;·&nbsp; <b>Canned answers:</b> ◐ recorded cassettes, not hand-scripted &nbsp;·&nbsp; <b>LangGraph:</b> <span class="pill warn">◐ indirect — captures the httpx layer; no langgraph-specific support</span></p>
+      <p>Records real HTTP interactions to YAML "cassettes" on first run, then replays them offline forever after — maximally faithful because the bytes are genuine provider responses. Best reserved for a small set of high-fidelity contract tests, not a default: cassettes drift, bloat, and need re-recording against a live key. <span class="tag">(The langchain-specific <code>vcr-langchain</code> wrapper is dead — use vanilla vcr.py.)</span></p>
+      <div class="ex-label">In a tests/flows/ test (record once, replay forever)</div>
+<pre><code>import pytest
+
+@pytest.mark.vcr  # 1st run with a live key records cassettes/test_..._reply.yaml; then offline
+async def test_when_user_replies_then_agent_posts_inline_reply(github_mock):
+    # Act — genuine provider bytes replay from the cassette; real graph + parsers run
+    response = await call_incoming_pr_webhook(
+        make_review_comment_webhook(body="why is this flagged?"),
+        event="pull_request_review_comment")
+
+    # Assert
+    assert response.status_code == 202
+    github_mock.reply_to_review_comment_from_comment_id.assert_called_once()
+    # canned answers (req. 1) are recorded, not hand-scripted; to inject an error,
+    # hand-edit the cassette YAML to a 500 / timeout body</code></pre>
+    </div>
+
+    <div class="card">
+      <div class="label-sm">Context · why you can't just use the shipped fakes</div>
+      <h3>langchain-core stock fake chat models</h3>
+      <p><b>Popular:</b> ship with langchain-core (very widely used). &nbsp;<b>Maintained:</b> <span class="pill good">yes</span>, but <span class="pill bad">insufficient here</span>.</p>
+      <p style="font-size:.85rem;margin:.35rem 0"><b>★ / dl:</b> bundled in langchain-core &nbsp;·&nbsp; <b>Testing tool:</b> yes &nbsp;·&nbsp; <b>Canned answers:</b> yes (scripted strings) &nbsp;·&nbsp; <b>LangGraph:</b> <span class="pill warn">◐ same ecosystem, but <code>bind_tools</code>/<code>with_structured_output</code> raise NotImplementedError — can't drive a tool agent</span></p>
+      <p><code>GenericFakeChatModel</code>, <code>FakeMessagesListChatModel</code>, <code>ParrotFakeChatModel</code> replay scripted strings as a <code>BaseChatModel</code> — fine for plain prompt→text tests. But they inherit <code>BaseChatModel.bind_tools</code> and <code>.with_structured_output</code>, both of which <code>raise NotImplementedError</code> (confirmed live on installed 1.2.27). So they cannot drive a tool-binding agent — which is precisely why the agent harness has to vendor <code>FakeToolCallingModel</code> instead.</p>
+      <div class="ex-label">Why it doesn't work for our agent flow</div>
+<pre><code>from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
+from langchain_core.messages import AIMessage
+
+model = GenericFakeChatModel(messages=iter([AIMessage("plain text reply")]))
+# Fine for a prompt -> text flow test:
+#   reply = await model.ainvoke("hello")   # -> "plain text reply"
+
+# But the chat agent binds tools, and that is exactly what raises:
+model.bind_tools([dismiss_finding_tool])   # NotImplementedError
+model.with_structured_output(ChatAgentResponse)   # NotImplementedError
+# -> can't drive create_agent; use the vendored FakeToolCallingModel above.</code></pre>
+    </div>
+
+    <div class="card bad">
+      <h3>Ruled out — and why (so nobody re-discovers them)</h3>
+      <ul>
+        <li><b><code>moto</code></b> (8.6k★) — <code>bedrock-runtime</code> only stubs <code>invoke_model</code> (1 of 10 ops); <code>converse</code> and the other 8 are unimplemented and raise. Dead end for converse-based LLM calls.</li>
+        <li><b>LocalStack Pro Bedrock</b> — emulates by running a <i>real</i> local model (Ollama); paid + non-deterministic output. Wrong tool when you want canned answers.</li>
+        <li><b><code>vcr-langchain</code></b> — dead (last push Jun 2024, pins ancient LangChain). Superseded by vanilla vcr.py.</li>
+        <li><b><code>mock-ai</code></b> (ajac-zero) — ~14★, OpenAI+Anthropic only, bus-factor 1. Too immature for a foundation.</li>
+        <li><b><code>ai-mocks</code></b> (mokksy) — Kotlin/JVM, not Python.</li>
+        <li><b><code>openai-responses-python</code></b> — OpenAI Responses API only, maintenance mode (v0.13.1 Dec 2025). Our stack is litellm + langchain-anthropic.</li>
+        <li><b>LangSmith pytest</b> + <code>langsmith[vcr]</code> — cloud-coupled (account/network); only the VCR cache is offline. Heavyweight for this.</li>
+      </ul>
+      <div class="callout" style="margin-top:1rem"><b>The finding that shapes the ranking:</b> there is <i>no</i> official public "agent test harness" for <code>create_agent</code> that runs the real graph with a scripted model — the closest supported path is vendoring <code>FakeToolCallingModel</code>. Combined with the <code>with_structured_output</code> gap, that's why <b>respx</b> (which runs the real binding) leads, with the fake-model harness as the complement for tool-trajectory and middleware coverage.</div>
+    </div>
+  </section>
+
+  <!-- ============ COMPARISON ============ -->
+  <section class="panel" id="comparison">
+    <div class="card">
+      <h2>All options vs. the requirements</h2>
+      <p>Every surviving option scored against the eight requirements from the first tab, plus a second group of <b>agent-flow fidelity</b> criteria that captures what each approach actually exercises on the LangGraph (Stack B) path — the differences that motivate moving off the current fake. The two <span class="pill warn">current</span> approaches are the top rows: <code>FakeAgentGraph</code> (the agent flow today) and the <code>AsyncMock</code> on <code>acompletion</code> (the litellm path today). Read alongside the per-tool paragraphs in <b>Tool Options</b>.</p>
+      <div class="cmp-legend">
+        <span><span class="yy">✓✓</span> strong / native</span>
+        <span><span class="y">✓</span> yes</span>
+        <span><span class="mid">◐</span> partial / caveated</span>
+        <span><span class="no">✗</span> no</span>
+        <span>— not applicable to this path</span>
+      </div>
+      <div class="callout" style="font-size:.85rem"><b>Agent-flow fidelity (last 4 columns)</b> only applies to approaches that touch the real LangGraph agent. The two questions that separate a faithful harness from a hollow one: do <b>our ~9 middlewares</b> and the <b>real <code>_tools</code></b> (with pydantic arg-validation) actually run, and does <b>real <code>with_structured_output</code></b> parse the response? Stack-A-only approaches score <b>—</b> here because there is no agent graph in that path. <span class="tag">Hover the ⓘ in each column header for what it measures.</span></div>
+    </div>
+
+    <div class="cmp-fullbleed">
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th class="name" rowspan="2">Option</th>
+            <th class="grp-h" colspan="9">Core requirements</th>
+            <th class="grp-h" colspan="4">Agent-flow fidelity · Stack B</th>
+          </tr>
+          <tr>
+            <th class="req-h">1 · Canned answers<span class="info" data-tip="The test author can supply the model's output — text, tool calls, structured output — directly from the test, deterministically.">ⓘ</span></th>
+            <th class="req-h">2 · Popular / maintained<span class="info" data-tip="Actively maintained and widely adopted — not a bus-factor-1, sub-1-year-old project to bet a multi-year suite on.">ⓘ</span></th>
+            <th class="req-h">3 · Errors &amp; timeouts<span class="info" data-tip="Tests can inject failure modes — provider errors, timeouts — to exercise the retry/fallback paths.">ⓘ</span></th>
+            <th class="req-h">4 · LangGraph<span class="info" data-tip="Covers the LangGraph create_agent agent flow (Stack B).">ⓘ</span></th>
+            <th class="req-h">4 · LiteLLM<span class="info" data-tip="Covers the litellm completion path (Stack A).">ⓘ</span></th>
+            <th class="req-h">5 · Assert LLM called<span class="info" data-tip="Tests can assert the model was (or wasn't) invoked, and how often, to verify the flow reached the LLM.">ⓘ</span></th>
+            <th class="req-h">6 · Black-box (wire)<span class="info" data-tip="Mocks at the network layer so the real provider SDK, agent graph, middleware and parsing all run — only the wire response is canned.">ⓘ</span></th>
+            <th class="req-h">7 · Python / pytest<span class="info" data-tip="If it doesn't expose generic HTTP endpoints, it must be supported in Python and easy to wrap in a pytest fixture.">ⓘ</span></th>
+            <th class="req-h">8 · All vendors<span class="info" data-tip="Covers the providers we actually use — OpenAI, Anthropic, Bedrock, Vertex — not just one or two.">ⓘ</span></th>
+            <th class="req-h">Real ~9 middleware chain<span class="info" data-tip="Our ~9 middlewares (analytics, call-count limits, max-LLM-call guard, structured-response, prompt-caching, retry/fallback) actually execute, instead of being dropped.">ⓘ</span></th>
+            <th class="req-h">Invokes real <code>_tools</code><span class="info tip-r" data-tip="Bound tools run for real through BaseTool.ainvoke — including pydantic arg-validation — not awaited raw. ◐ = invoked but validation/filesystem tools bypassed.">ⓘ</span></th>
+            <th class="req-h">Runs <code>with_structured_output</code><span class="info tip-r" data-tip="The structured-response parsing path (with_structured_output) actually runs, instead of the response being hand-built.">ⓘ</span></th>
+            <th class="req-h">Real ReAct loop / feedback<span class="info tip-r" data-tip="Real multi-turn loop: tool results become ToolMessages fed back into the next model decision, instead of a flat scripted list.">ⓘ</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="cur-row">
+            <td class="name"><code>FakeAgentGraph</code> <span class="pill warn">current</span><br><span class="tag">agent flow today</span></td>
+            <td class="y">✓</td><td class="no">✗</td><td class="no">✗</td>
+            <td class="mid">◐</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="y">✓</td><td>—</td>
+            <td class="no">✗</td><td class="mid">◐</td><td class="no">✗</td><td class="no">✗</td>
+          </tr>
+          <tr class="cur-row">
+            <td class="name"><code>AsyncMock</code> on <code>acompletion</code> <span class="pill warn">current</span><br><span class="tag">litellm path today (<code>llm</code> fixture)</span></td>
+            <td class="y">✓</td><td class="y">✓</td><td class="y">✓</td>
+            <td class="no">✗</td><td class="yy">✓✓</td><td class="yy">✓✓</td><td class="no">✗</td><td class="yy">✓✓</td><td>—</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td class="name"><code>respx</code></td>
+            <td class="yy">✓✓</td><td class="y">✓</td><td class="y">✓</td>
+            <td class="mid">◐</td><td class="y">✓</td><td class="y">✓</td><td class="yy">✓✓</td><td class="y">✓</td><td class="mid">◐</td>
+            <td class="y">✓</td><td class="yy">✓✓</td><td class="y">✓</td><td class="y">✓</td>
+          </tr>
+          <tr>
+            <td class="name"><code>pytest-httpx</code></td>
+            <td class="yy">✓✓</td><td class="y">✓</td><td class="y">✓</td>
+            <td class="mid">◐</td><td class="y">✓</td><td class="y">✓</td><td class="yy">✓✓</td><td class="yy">✓✓</td><td class="mid">◐</td>
+            <td class="y">✓</td><td class="yy">✓✓</td><td class="y">✓</td><td class="y">✓</td>
+          </tr>
+          <tr>
+            <td class="name"><code>litellm</code> <code>mock_response</code></td>
+            <td class="y">✓</td><td class="yy">✓✓</td><td class="y">✓</td>
+            <td class="no">✗</td><td class="yy">✓✓</td><td class="mid">◐</td><td class="no">✗</td><td class="yy">✓✓</td><td class="mid">◐</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td class="name">FakeToolCallingModel<br>+ real <code>create_agent</code></td>
+            <td class="yy">✓✓</td><td class="no">✗</td><td class="y">✓</td>
+            <td class="yy">✓✓</td><td class="no">✗</td><td class="yy">✓✓</td><td class="no">✗</td><td class="y">✓</td><td>—</td>
+            <td class="y">✓</td><td class="yy">✓✓</td><td class="no">✗</td><td class="y">✓</td>
+          </tr>
+          <tr>
+            <td class="name">CopilotKit <code>aimock</code></td>
+            <td class="y">✓</td><td class="mid">◐</td><td class="y">✓</td>
+            <td class="y">✓</td><td class="y">✓</td><td class="mid">◐</td><td class="yy">✓✓</td><td class="mid">◐</td><td class="yy">✓✓</td>
+            <td class="y">✓</td><td class="yy">✓✓</td><td class="y">✓</td><td class="y">✓</td>
+          </tr>
+          <tr>
+            <td class="name"><code>vcr.py</code> + pytest-recording</td>
+            <td class="mid">◐</td><td class="y">✓</td><td class="mid">◐</td>
+            <td class="mid">◐</td><td class="mid">◐</td><td class="mid">◐</td><td class="y">✓</td><td class="y">✓</td><td class="mid">◐</td>
+            <td class="y">✓</td><td class="yy">✓✓</td><td class="y">✓</td><td class="mid">◐</td>
+          </tr>
+          <tr>
+            <td class="name">langchain-core stock fakes</td>
+            <td class="y">✓</td><td class="y">✓</td><td class="mid">◐</td>
+            <td class="no">✗</td><td class="no">✗</td><td class="mid">◐</td><td class="no">✗</td><td class="y">✓</td><td>—</td>
+            <td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Net read, per option</h3>
+      <ul>
+        <li><b><code>FakeAgentGraph</code> <span class="pill warn">current</span></b> — What we're replacing. Replaces the <i>whole</i> graph, so middleware never runs, tools are awaited raw (no arg-validation, filesystem tools silently skipped), <code>with_structured_output</code> is hand-built, and the tool sequence is a flat script, not a real ReAct loop. Cheap and deterministic, but a green test proves little about the real flow.</li>
+        <li><b><code>AsyncMock</code> on <code>acompletion</code> <span class="pill warn">current</span></b> — The litellm path today (the <code>llm</code> fixture). Patches our handler function above the wire, so it's not black-box, but for the non-agent litellm path that's fine: native call-assertions, trivial error injection, zero infra. No agent graph in this path, so the fidelity columns don't apply.</li>
+        <li><b><code>respx</code></b> — Primary pick. Wire-level, runs the real binding for both httpx stacks; blind to Bedrock (botocore).</li>
+        <li><b><code>pytest-httpx</code></b> — Same wire interception as respx, exposed as a fixture. The choice is ergonomics, not capability.</li>
+        <li><b><code>litellm</code> <code>mock_response</code></b> — LiteLLM path only — the langchain agent path never goes through litellm. Zero-infra and native for the litellm path.</li>
+        <li><b>FakeToolCallingModel + real <code>create_agent</code></b> — The LangGraph harness. Runs the real graph + 9 middlewares; mocks our model object, not the wire. Vendored, not a package.</li>
+        <li><b>CopilotKit <code>aimock</code></b> — The only single mechanism that also covers Bedrock + Vertex. Cost: a CI subprocess (port/startup races) and its youth.</li>
+        <li><b><code>vcr.py</code> + pytest-recording</b> — Highest fidelity (genuine bytes), but recorded not scripted; cassettes drift. Best for a few contract tests.</li>
+        <li><b>langchain-core stock fakes</b> — Context only: <code>bind_tools</code>/<code>with_structured_output</code> raise, so they can't drive a tool agent. This is why FakeToolCallingModel is vendored.</li>
+      </ul>
+
+      <div class="callout" style="margin-top:1.2rem"><b>How to read the table:</b> no single row is all-✓✓. The shape of the recommendation is a <b>pair</b> — <code>respx</code> (or <code>pytest-httpx</code>) for wire-level fidelity on the httpx stacks, complemented by the <b>FakeToolCallingModel</b> harness for the real graph + middleware coverage that the wire mocks can't script. Reach for <code>aimock</code> only if covering Bedrock + Vertex through one mechanism outweighs running a CI subprocess.</div>
+    </div>
+  </section>
+</div>
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  }));
+</script>
+</body>
+</html>
