@@ -247,7 +247,7 @@
 
   <!-- Title -->
   <div class="title-block">
-    <h1><span class="rk">Rule:</span> One global <span class="code-tok">process.on('unhandledRejection')</span> handler</h1>
+    <h1><span class="rk">Rule:</span> Set an event handler for 'unhandledRejection'</h1>
     <p class="oneliner">Register one process-wide handler for unhandled promise rejections so failures are observed and never crash the process silently.</p>
   </div>
 
@@ -265,7 +265,7 @@
 
       <!-- Evidence & consensus — first, emphasized, the trust anchor -->
       <section class="sec emph">
-        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-verified"/></svg></span><span class="ttl">Evidence &amp; consensus</span><span class="meta-r"><svg class="svi"><use href="#i-verified"/></svg>7 reliable sources</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-verified"/></svg></span><span class="ttl">Evidence &amp; consensus</span><span class="meta-r"><svg class="svi"><use href="#i-verified"/></svg>8 reliable sources</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
         <div class="body"><div class="body-in">
 
           <!-- consensus reading, shown first as a compact slider -->
@@ -300,6 +300,16 @@
                 <p class="ev-q"><span class="qm">&ldquo;</span>Use a single process-wide handler for unhandled rejections and treat it as you would an uncaught exception.</p>
               </div>
               <div class="credit"><span class="cic"><svg class="svi svf"><use href="#i-starf"/></svg></span><span class="cbig">110k</span><span class="csm">GitHub stars</span></div>
+            </div>
+
+            <div class="ev">
+              <span class="tile"><svg class="svi"><use href="#i-plugin"/></svg></span>
+              <div class="ev-bd">
+                <div class="ev-name"><span class="kind">Community skill:</span> JavaScript Best Practices</div>
+                <div class="ev-cred-line">Ranked #3 in the Vercel marketplace</div>
+                <p class="ev-q"><span class="qm">&ldquo;</span>Register a single global unhandledRejection handler — make the failure observable before deciding whether to crash.</p>
+              </div>
+              <div class="credit"><span class="cic"><svg class="svi"><use href="#i-award"/></svg></span><span class="cbig">#3</span><span class="csm">Vercel marketplace</span></div>
             </div>
 
             <div class="ev">
@@ -357,7 +367,7 @@
       </section>
 
       <section class="sec">
-        <button class="head" onclick="tog(this)"><span class="ic warn"><svg class="svi"><use href="#i-warn"/></svg></span><span class="ttl">What can go wrong</span><span class="meta-r">Risk</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <button class="head" onclick="tog(this)"><span class="ic warn"><svg class="svi"><use href="#i-warn"/></svg></span><span class="ttl">What can go wrong without this rule</span><span class="meta-r">Risk</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
         <div class="body"><div class="body-in">
           <p>An unhandled promise rejection leaves your application in an undefined, partially-failed state — a database write may be half-done, a request left hanging.</p>
           <p>Without a process-level handler, recent Node.js versions terminate the process, so a single forgotten <code>.catch()</code> can take the whole service down with no log line explaining why.</p>
@@ -365,9 +375,16 @@
       </section>
 
       <section class="sec">
-        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-target"/></svg></span><span class="ttl">When to apply</span><span class="meta-r">Conditions</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-target"/></svg></span><span class="ttl">When to apply this rule</span><span class="meta-r">Conditions</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
         <div class="body"><div class="body-in">
           <p><b>Mandatory in every type of component</b> — APIs, workers, CLIs, serverless functions and scripts. There is no architecture where an unobserved rejection is acceptable, so this rule carries no exceptions.</p>
+        </div></div>
+      </section>
+
+      <section class="sec">
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-verified"/></svg></span><span class="ttl">Security scan of this rule</span><span class="meta-r">0 findings</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <div class="body"><div class="body-in">
+          <p><b>71 checks performed — zero findings.</b> The rule's example code and recommended implementation were run through our security scanner with no issues detected.</p>
         </div></div>
       </section>
 
@@ -375,7 +392,7 @@
       <section class="sec rule-acc">
         <button class="head" onclick="tog(this)">
           <span class="ic"><svg class="svi"><use href="#i-bolt"/></svg></span>
-          <span class="ttl">Rule to copy</span>
+          <span class="ttl">Rule text to copy</span>
           <span class="meta-r">the exact instruction</span><svg class="svi chev"><use href="#i-chevron"/></svg>
         </button>
         <div class="body"><div class="body-in">
@@ -387,7 +404,7 @@
       </section>
 
       <section class="sec">
-        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-code"/></svg></span><span class="ttl">Code example</span><span class="meta-r">Good &amp; bad</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-code"/></svg></span><span class="ttl">Rule code example</span><span class="meta-r">Good &amp; bad</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
         <div class="body"><div class="body-in nested">
           <section class="sec open">
             <button class="head" onclick="tog(this)"><span class="ic ok"><svg class="svi"><use href="#i-check"/></svg></span><span class="ttl">Good</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
@@ -449,7 +466,7 @@ process.<span class="fnc">on</span>(<span class="str">'unhandledRejection'</span
       </section>
 
       <section class="sec">
-        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-chart"/></svg></span><span class="ttl">Evaluations</span><span class="meta-r">87% conformance</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
+        <button class="head" onclick="tog(this)"><span class="ic"><svg class="svi"><use href="#i-chart"/></svg></span><span class="ttl">Rule evaluations</span><span class="meta-r">87% conformance</span><svg class="svi chev"><use href="#i-chevron"/></svg></button>
         <div class="body"><div class="body-in">
           <p>Respected by <b>87% of agent runs</b> with the rule applied — versus just <b>41%</b> at baseline, with no rule in place. Measured across automated harness assertions on generated code.</p>
 
@@ -480,8 +497,8 @@ process.<span class="fnc">on</span>(<span class="str">'unhandledRejection'</span
     <!-- SIDEBAR -->
     <aside>
       <div class="panel">
-        <button class="btn btn-primary" onclick="toggleGet(this)"><svg class="svi"><use href="#i-bolt"/></svg>Get it</button>
-        <p class="hint">Add to Qodo, install as a plugin, or copy the text</p>
+        <button class="btn btn-primary" onclick="toggleGet(this)"><svg class="svi"><use href="#i-bolt"/></svg>Get this rule</button>
+        <p class="hint">Add this rule to Qodo, install as a plugin, or copy its text</p>
         <!-- revealed right here, underneath the button -->
         <div class="getit" id="getit">
           <div class="getit-card">
@@ -509,8 +526,9 @@ process.<span class="fnc">on</span>(<span class="str">'unhandledRejection'</span
         </div>
       </div>
       <div class="panel">
-        <h3>At a glance</h3>
+        <h3>Rule properties</h3>
         <div class="stat"><span class="lbl"><span class="dot d-crit"></span>Severity</span><span class="val v-crit">Critical</span></div>
+        <div class="stat"><span class="lbl"><span class="dot d-ok"></span>Security scan</span><span class="val v-ok">Passed · 0 findings</span></div>
         <div class="stat"><span class="lbl"><span class="dot d-ok"></span>Ease of implementation</span><span class="val v-ok">Easy</span></div>
         <div class="stat"><span class="lbl"><span class="dot d-pur"></span>Consensus</span><span class="val v-pur">High</span></div>
         <div class="stat"><span class="lbl"><span class="dot d-mut"></span>Token cost</span><span class="val">24 tokens</span></div>
