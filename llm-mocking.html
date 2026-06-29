@@ -110,8 +110,146 @@
     <button data-tab="comparison">Comparison of Options</button>
   </nav>
 
+  <!-- ============ WHAT WE HAVE TODAY ============ -->
+  <section class="panel active" id="today">
+    <div class="card accent">
+      <div class="label-sm">Inventory · current state</div>
+      <h2>Three separate mocking seams, two stacks</h2>
+      <p>Flow tests in <code>tests/flows/</code> mock the LLM at <b>three distinct injection points</b>, each targeting a different code path. None of them intercept the wire — they all patch Python symbols above the HTTP layer. The table at the bottom maps each seam to what it silently bypasses.</p>
+    </div>
+
+    <!-- ─── SEAM 1: AsyncMock on acompletion ─── -->
+    <div class="card">
+      <div class="label-sm">Stack A · litellm path</div>
+      <h2>Seam 1 — <code>AsyncMock</code> on <code>acompletion</code></h2>
+      <p><b>Where:</b> <code>tests/flows/shared_helpers/mocks/llm.py</code> — the <code>llm</code> fixture, re-exported from the top-level <code>tests/flows/conftest.py</code> and auto-applied to every flow test suite that lists it.</p>
+      <p><b>What it patches:</b> <code>pr_agent.algo.ai_handlers.litellm_ai_handler.acompletion</code> is replaced with an <code>AsyncMock</code> whose <code>return_value</code> is a hand-built <code>DictObj</code> with <code>choices[0].message.content = ""</code>. Tests override <code>llm.return_value</code> per scenario.</p>
+      <div class="ex-label">The fixture</div>
+<pre><code># shared_helpers/mocks/llm.py
+@pytest_asyncio.fixture
+async def llm():
+    mock = AsyncMock(return_value=make_llm_response())   # DictObj, content=""
+    with patch("pr_agent.algo.ai_handlers.litellm_ai_handler.acompletion", new=mock):
+        ...
+        yield mock
+
+# In a test:
+async def test_something(llm):
+    llm.return_value = make_llm_response(content="did_suggestion_impact_commit: true")
+    ...</code></pre>
+      <h3 style="color:var(--bad)">What this seam silently bypasses</h3>
+      <ul>
+        <li><b>litellm itself</b> — <code>acompletion</code> is replaced wholesale; litellm's request building, provider routing, retry/fallback logic, and token counting never run.</li>
+        <li><b>Response parsing</b> — the handler receives a <code>DictObj</code> that duck-types a <code>ModelResponse</code> but is not one; any code that inspects provider-specific fields (finish reason, usage, tool-call format) gets a minimal stub.</li>
+        <li><b>The HTTP layer</b> — no provider SDK or httpx transport is exercised; network-level auth, streaming, and SSE parsing are untested.</li>
+        <li><b>Provider SDKs</b> — openai, anthropic, bedrock, vertex client libraries are never instantiated.</li>
+      </ul>
+    </div>
+
+    <!-- ─── SEAM 2: FakeAgentGraph ─── -->
+    <div class="card">
+      <div class="label-sm">Stack B · LangGraph chat-agent path</div>
+      <h2>Seam 2 — <code>FakeAgentGraph</code> replacing <code>create_agent</code></h2>
+      <p><b>Where:</b> <code>tests/flows/chat_agent_flow/fake_agent_graph.py</code>, wired via <code>mocking.py:mock_llm_response(agent_name=...)</code>. Each test patches <code>pr_agent.algo.agents.{agent_name}.create_agent</code> (e.g. <code>chat_agent.create_agent</code>) with a factory that returns a <code>FakeAgentGraph</code> instance.</p>
+      <p><b>What it patches:</b> the entire LangGraph ReAct graph is replaced with a ~70-line class. The test author supplies a flat list of <code>simulated_tool_calls</code> dicts; the fake loops over them and calls <code>await tool.coroutine(**args)</code> on each. At the end it returns a hand-built <code>ChatAgentResponse</code>.</p>
+      <div class="ex-label">In a chat-agent flow test</div>
+<pre><code># mocking.py
+def mock_llm_response(*, agent_name, response_text="", simulated_tool_calls=None, ...):
+    target = f"pr_agent.algo.agents.{agent_name}.create_agent"
+    return patch(target, new=make_fake_create_agent(
+        response_text=response_text, simulated_tool_calls=simulated_tool_calls, ...
+    ))
+
+# In a test:
+with mock_llm_response(agent_name="chat_agent",
+                       simulated_tool_calls=[{"name": "dismiss_finding", "args": {...}}],
+                       response_text="Dismissed."):
+    response = await call_incoming_pr_webhook(...)</code></pre>
+      <h3>Two variant fakes that also exist</h3>
+      <ul>
+        <li><b><code>PromptObedientAgentGraph</code></b> — instead of a scripted tool list it reads the rendered <code>system_prompt</code> and stays silent if a required marker string is present, otherwise replies with a fixed fallback. Used by tests that verify a prompt-level behavioural rule isn't accidentally removed.</li>
+      </ul>
+      <h3 style="color:var(--bad)">What this seam silently bypasses</h3>
+      <ul>
+        <li><b>The real LangGraph ReAct loop</b> — <code>create_agent</code> is never called; the graph, state machine, and turn-by-turn message accumulation never run.</li>
+        <li><b>All ~9 middlewares</b> — analytics, call-count limits, max-LLM-call guard, structured-response, prompt-caching, model retry/fallback are all dropped. The fake only preserves <code>mw.tools</code> to build its tool map.</li>
+        <li><b>Pydantic arg-validation</b> — the fake calls <code>tool.coroutine(**args)</code> directly, bypassing <code>BaseTool.ainvoke</code> / <code>_parse_input</code>; invalid args that the schema would reject still "pass".</li>
+        <li><b>Filesystem tools</b> — <code>ls</code>, <code>read_file</code>, <code>glob</code>, <code>grep</code>, <code>execute</code>, <code>write_file</code>, <code>edit_file</code> are silently skipped if they appear in the script.</li>
+        <li><b><code>with_structured_output</code> parsing</b> — <code>ChatAgentResponse</code> is hand-constructed inside <code>ainvoke</code>; the structured-output binding and parse path never execute.</li>
+        <li><b>Multi-turn ToolMessage feedback</b> — real tool results are never wrapped in <code>ToolMessage</code>s and fed back to a next model turn; the fake is a flat sequential loop, not a graph.</li>
+        <li><b>LLM model construction</b> — <code>get_langchain_llm</code> is patched to a bare <code>MagicMock()</code> in <code>_chat_flow_base.py</code> so the agent's <code>__init__</code> doesn't contact any provider; since <code>create_agent</code> is replaced anyway, the mock LLM is never called.</li>
+      </ul>
+    </div>
+
+    <!-- ─── SEAM 3: Attribution Judge _FakeRunnable ─── -->
+    <div class="card">
+      <div class="label-sm">Attribution judge · LangChain path</div>
+      <h2>Seam 3 — <code>_FakeRunnable</code> for the attribution judge</h2>
+      <p><b>Where:</b> also inside <code>shared_helpers/mocks/llm.py</code>, alongside the <code>acompletion</code> mock. The attribution judge uses a LangChain runnable (via <code>get_langchain_llm</code> → <code>wrap_model_with_retry_and_fallback</code> → <code>.ainvoke(messages)</code>) rather than litellm, so a second patch is needed.</p>
+      <p><b>What it patches:</b></p>
+      <ul>
+        <li><code>pr_agent.algo.agents.attribution_judge.get_langchain_llm</code> → <code>_fake_langchain_llm()</code> which returns a <code>_FakeRunnable</code> object.</li>
+        <li><code>pr_agent.algo.agents.attribution_judge.wrap_model_with_retry_and_fallback</code> → identity lambda (passes the runnable through unchanged).</li>
+      </ul>
+      <p>The <code>_FakeRunnable.ainvoke</code> method reads <code>mock.return_value.choices[0].message.content</code> (the same value a test sets on the <code>llm</code> AsyncMock for the litellm path), parses it as YAML, and directly constructs a <code>FindingAttributionImpact</code> Pydantic model to return. This keeps a single <code>llm.return_value = make_attribution_llm_response(...)</code> call working for both stacks.</p>
+      <div class="ex-label">In an attribution flow test</div>
+<pre><code># set once, used by both the litellm patch and the _FakeRunnable:
+llm.return_value = make_llm_response(content="did_suggestion_impact_commit: true\nis_direct_implementation: true")
+# The _FakeRunnable parses that YAML and builds FindingAttributionImpact directly</code></pre>
+      <h3 style="color:var(--bad)">What this seam silently bypasses</h3>
+      <ul>
+        <li><b>Real <code>get_langchain_llm</code></b> — provider key validation, model selection, and LangChain LLM construction are all skipped.</li>
+        <li><b><code>wrap_model_with_retry_and_fallback</code></b> — retry logic and fallback model handling never run.</li>
+        <li><b>LangChain structured-output parsing</b> — the real path calls <code>model.with_structured_output(FindingAttributionImpact).ainvoke(messages)</code>; the fake constructs the Pydantic model directly from YAML, so the binding/schema-validation layer is skipped.</li>
+        <li><b>Prompt rendering</b> — messages are passed to <code>_FakeRunnable.ainvoke</code> but ignored; the only input that matters is the pre-set <code>mock.return_value</code>.</li>
+      </ul>
+    </div>
+
+    <!-- ─── Summary table ─── -->
+    <div class="card">
+      <h2>At a glance — seams vs. bypassed code</h2>
+      <div class="cmp-fullbleed">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th class="name">Seam</th>
+              <th class="req-h">Used in</th>
+              <th class="req-h">Patch target</th>
+              <th class="req-h">What runs for real</th>
+              <th class="req-h">What is bypassed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="name"><code>AsyncMock</code> on <code>acompletion</code><br><span class="tag">llm fixture</span></td>
+              <td>attribution, gerrit, command-labels, (and chat agent — though that flow also applies Seam 2)</td>
+              <td><code>litellm_ai_handler.acompletion</code></td>
+              <td>AI handler wrapper, prompt building, token truncation</td>
+              <td>litellm internals, provider SDKs, HTTP transport, response parsing</td>
+            </tr>
+            <tr>
+              <td class="name"><code>FakeAgentGraph</code><br><span class="tag">mock_llm_response()</span></td>
+              <td>chat_agent_flow (all providers)</td>
+              <td><code>agents.{name}.create_agent</code></td>
+              <td>Tool side-effects (DB, git-provider calls), downstream webhook handling</td>
+              <td>LangGraph loop, all ~9 middlewares, tool pydantic validation, ToolMessage feedback, with_structured_output, LLM construction</td>
+            </tr>
+            <tr>
+              <td class="name"><code>_FakeRunnable</code><br><span class="tag">llm fixture (agentic path)</span></td>
+              <td>attribution, gerrit (judge path)</td>
+              <td><code>attribution_judge.get_langchain_llm</code> + <code>wrap_model_with_retry_and_fallback</code></td>
+              <td>Attribution judge logic, Pydantic model construction</td>
+              <td>Real LLM construction, retry/fallback wrapping, LangChain structured-output binding, prompt rendering</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout" style="margin-top:1rem"><b>The common theme:</b> every seam patches at a Python-symbol boundary <i>above</i> the wire. No provider SDK, no httpx transport, no response parser is exercised by any current flow test. The <b>Requirements</b> tab (Req 6 — "Black-box as possible") articulates why that matters; the <b>Tool Options</b> tab evaluates what would let us push the seam down to the HTTP layer.</div>
+    </div>
+  </section>
+
   <!-- ============ REQUIREMENTS ============ -->
-  <section class="panel active" id="requirements">
+  <section class="panel" id="requirements">
     <div class="card accent">
       <div class="label-sm">Read this first · the key need</div>
       <h2>What we're looking for</h2>
