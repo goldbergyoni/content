@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The New SDLC With Vibe Coding — Reading Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --background: oklch(0.91 0.004 265);
+  --foreground: oklch(0.16 0 0);
+  --card: oklch(1 0 0);
+  --primary: oklch(0.68 0.12 199);
+  --primary-strong: oklch(0.58 0.13 199);
+  --secondary: oklch(0.94 0.015 199);
+  --muted: oklch(0.93 0.003 265);
+  --muted-foreground: oklch(0.45 0 0);
+  --accent: oklch(0.96 0.012 199);
+  --border: oklch(0.87 0.005 265);
+  --radius: 0.75rem;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.05);
+  --shadow-md: 0 4px 12px rgba(16,24,40,.08);
+  --shadow-lg: 0 12px 32px rgba(16,24,40,.12);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; font-family: var(--font-sans); background: var(--background);
+  color: var(--foreground); line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--primary-strong); text-underline-offset: 3px; }
+a:hover { text-decoration: underline; }
+
+/* Header */
+.hero {
+  background: linear-gradient(180deg, var(--card), var(--background));
+  border-bottom: 1px solid var(--border);
+  padding: 48px 24px 28px;
+}
+.hero-inner { max-width: 64rem; margin: 0 auto; }
+.kicker {
+  font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--primary-strong); margin: 0 0 12px;
+}
+.hero h1 {
+  font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.08; letter-spacing: -.02em;
+  font-weight: 800; margin: 0 0 14px;
+}
+.hero p.sub { font-size: 1.05rem; color: var(--muted-foreground); margin: 0; max-width: 46rem; }
+.hero .meta { margin-top: 16px; font-size: .82rem; color: var(--muted-foreground); }
+.hero .meta span { color: var(--foreground); font-weight: 600; }
+
+/* Tab bar */
+.tabbar {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in oklch, var(--card) 85%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+}
+.tabbar-inner { max-width: 72rem; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tab-divider { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+.tabbtn {
+  font-family: inherit; font-size: .85rem; font-weight: 600; cursor: pointer;
+  border: 1px solid transparent; background: transparent; color: var(--muted-foreground);
+  padding: 7px 14px; border-radius: 999px; transition: all .18s ease; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.tabbtn:hover { color: var(--foreground); background: var(--muted); }
+.tabbtn.overview { }
+.tabbtn .num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%; font-size: .68rem; font-weight: 700;
+  background: var(--secondary); color: var(--primary-strong);
+}
+.tabbtn.active { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
+.tabbtn.active .num { background: rgba(255,255,255,.25); color: #fff; }
+
+/* Layout */
+main { max-width: 64rem; margin: 0 auto; padding: 36px 24px 80px; }
+.panel { display: none; animation: fade .25s ease; }
+.panel.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.stack > * + * { margin-top: 22px; }
+
+/* Cards */
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 1rem;
+  padding: 32px 36px; box-shadow: var(--shadow-sm);
+}
+@media (max-width: 640px) { .card { padding: 22px; } main { padding: 24px 14px 64px; } }
+
+/* Prose */
+.prose { font-size: 1.02rem; color: oklch(0.16 0 0 / .9); }
+.prose h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; margin: 0 0 8px; line-height: 1.15; }
+.prose h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -.01em; margin: 2.2em 0 .6em; padding-bottom: .3em; border-bottom: 1px solid var(--border); }
+.prose h3 { font-size: 1.12rem; font-weight: 700; margin: 1.6em 0 .5em; }
+.prose p { margin: 0 0 1.05em; }
+.prose ul, .prose ol { margin: 0 0 1.1em; padding-left: 1.3em; }
+.prose li { margin: .42em 0; }
+.prose ul li::marker { color: var(--primary); }
+.prose ol li::marker { color: var(--primary); font-weight: 700; }
+.prose strong { color: var(--foreground); font-weight: 700; }
+.prose em { color: oklch(0.16 0 0 / .85); }
+.prose blockquote {
+  margin: 1.4em 0; padding: 2px 0 2px 20px; border-left: 4px solid var(--primary);
+  color: var(--muted-foreground); font-style: italic; background: var(--accent);
+  border-radius: 0 8px 8px 0; padding: 14px 18px 14px 20px;
+}
+.prose blockquote p { margin: 0; }
+.prose code {
+  font-family: var(--font-mono); font-size: .86em; background: oklch(0.16 0 0 / .06);
+  padding: 2px 6px; border-radius: 6px;
+}
+.prose pre:not(.mermaid) {
+  background: oklch(0.18 0.01 265); color: oklch(0.95 0 0); border-radius: 12px;
+  padding: 18px 20px; overflow-x: auto; font-family: var(--font-mono); font-size: .85rem;
+  line-height: 1.6; margin: 1.3em 0;
+}
+.prose pre:not(.mermaid) code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+/* Tables */
+.prose table { width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: .92rem; box-shadow: var(--shadow-sm); border-radius: 10px; overflow: hidden; }
+.prose th { background: var(--secondary); color: var(--primary-strong); font-weight: 700; text-align: left; padding: 11px 14px; border: 1px solid var(--border); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.prose td { padding: 11px 14px; border: 1px solid var(--border); vertical-align: top; }
+.prose tbody tr:nth-child(even) { background: oklch(0.97 0.002 265); }
+
+/* Mermaid */
+.mermaid { background: none; text-align: center; margin: 1.4em 0; font-family: var(--font-sans) !important; }
+.diagram { overflow-x: auto; background: var(--accent); border: 1px solid var(--border); border-radius: 14px; padding: 22px 16px; }
+
+/* Top 5 insight cards */
+.insight-card {
+  display: flex; gap: 22px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 1rem; padding: 26px 30px; box-shadow: var(--shadow-sm); transition: all .25s ease;
+}
+.insight-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.insight-rank {
+  flex: 0 0 auto; width: 46px; height: 46px; border-radius: 14px;
+  background: var(--primary); color: #fff; font-weight: 800; font-size: 1.3rem;
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);
+}
+.insight-main h3 { margin: 10px 0 8px; font-size: 1.16rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; }
+.insight-main p { margin: 0; color: oklch(0.16 0 0 / .82); font-size: .98rem; }
+.insight-main em { font-style: italic; }
+.badge {
+  display: inline-block; background: var(--secondary); color: var(--primary-strong);
+  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  padding: 4px 10px; border-radius: 999px;
+}
+
+/* Visual cards */
+.visual-card h3 { margin: 0 0 16px; font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; }
+.visual-card .caption { margin: 18px 0 0; color: var(--muted-foreground); font-size: .98rem; line-height: 1.7; }
+
+/* All-insights spacing */
+.insights-all h2 { font-size: 1.25rem; }
+
+footer { border-top: 1px solid var(--border); padding: 26px 24px; text-align: center; color: var(--muted-foreground); font-size: .82rem; }
+footer a { color: var(--primary-strong); }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <p class="kicker">Reading Companion</p>
+    <h1>The New SDLC With Vibe Coding</h1>
+    <p class="sub">From ad-hoc prompting to agentic engineering — an advanced companion to the Google whitepaper by Addy Osmani, Shubham Saboo &amp; Sokratis Kartakis.</p>
+    <p class="meta">Source: <span>Google whitepaper, May 2026</span> · 51 pages · 9 topics · 64 curated insights</p>
+  </div>
+</header>
+
+<nav class="tabbar">
+  <div class="tabbar-inner" role="tablist">
+    <button class="tabbtn overview" role="tab" data-tab="exec">Executive Summary</button>
+<button class="tabbtn overview" role="tab" data-tab="top5">Top 5 Insights</button>
+<button class="tabbtn overview" role="tab" data-tab="all">All Insights</button>
+<button class="tabbtn overview" role="tab" data-tab="visuals">Key Visuals</button>
+    <span class="tab-divider"></span>
+    <button class="tabbtn topic" role="tab" data-tab="t01"><span class="num">1</span>Spectrum</button>
+<button class="tabbtn topic" role="tab" data-tab="t02"><span class="num">2</span>Context Engineering</button>
+<button class="tabbtn topic" role="tab" data-tab="t03"><span class="num">3</span>New SDLC Phases</button>
+<button class="tabbtn topic" role="tab" data-tab="t04"><span class="num">4</span>Factory Model</button>
+<button class="tabbtn topic" role="tab" data-tab="t05"><span class="num">5</span>Harness Engineering</button>
+<button class="tabbtn topic" role="tab" data-tab="t06"><span class="num">6</span>Roles &amp; 80% Problem</button>
+<button class="tabbtn topic" role="tab" data-tab="t07"><span class="num">7</span>Coding Agents</button>
+<button class="tabbtn topic" role="tab" data-tab="t08"><span class="num">8</span>Economics</button>
+<button class="tabbtn topic" role="tab" data-tab="t09"><span class="num">9</span>Adoption &amp; Principles</button>
+  </div>
+</nav>
+
+<main>
+<section class="panel" id="exec" role="tabpanel"><div class="card prose">
+<p>Software engineering is going through its largest shift since high-level programming languages: from writing <em>syntax</em> to expressing <em>intent</em>. As of early 2026, 85% of professional developers regularly use AI coding agents, 51% use them daily, and an estimated 41% of all new code is AI-generated. The developer's job moves up a level — from typing implementation to specifying what to build and verifying that the machine built it correctly.</p>
+
+<p>The paper's core framing is a <strong>spectrum</strong> running from casual <em>vibe coding</em> (prompt, accept, paste the error back) to disciplined <em>agentic engineering</em> (AI implements inside human-designed constraints, tests, and feedback loops). The single biggest differentiator is not the model or the cleverness of prompts — it is <strong>verification</strong>: tests check the deterministic parts, while <em>evals</em> (labelled datasets, scoring rubrics, and LM judges) check the non-deterministic parts. Just as decisive is the <strong>harness</strong> — the instructions, tools, sandboxes, orchestration, guardrails, and observability wrapped around the model. Benchmarks show a coding agent jumping from outside the Top 30 to the Top 5 by changing only the harness, with no model change. The everyday lesson: most agent failures are configuration failures, not model failures.</p>
+
+<p>AI compresses the SDLC <strong>unevenly</strong> — implementation collapses from weeks to hours while requirements, architecture, and verification stay stubbornly human-paced. So the developer becomes a kind of factory manager whose real output is the <em>system that builds software</em>, moving fluidly between hands-on <em>conductor</em> and async, multi-agent <em>orchestrator</em> modes. Economically, this flips low-CapEx / high-OpEx vibe coding into high-CapEx / low-OpEx agentic engineering, with context engineering and intelligent model routing acting as financial levers on the token economy. The durable conclusion of the paper: <strong>generation is solved; verification, judgment, and direction are the new craft.</strong></p>
+</div></section>
+<section class="panel" id="top5" role="tabpanel"><div class="stack"><div class="insight-card">
+  <div class="insight-rank">1</div>
+  <div class="insight-main">
+    <span class="badge">Harness Engineering</span>
+    <h3>Most agent failures are configuration failures, not model failures</h3>
+    <p>When an agent misbehaves the instinct is to blame the model — but the failure usually traces to a missing tool, a vague rule, an absent guardrail, or a context window stuffed with noise. The evidence is concrete: on Terminal Bench 2.0 one team moved a coding agent from outside the Top 30 to the Top 5 by changing <em>only the harness</em>, with no model change at all; a separate LangChain study raised an agent's score by 13.7 points by tweaking only the system prompt, tools, and middleware around a fixed model. <strong>Agent = Model + Harness</strong>, and the harness is your team's surface area, not the provider's.</p>
+  </div>
+</div><div class="insight-card">
+  <div class="insight-rank">2</div>
+  <div class="insight-main">
+    <span class="badge">The New SDLC</span>
+    <h3>The 25–39% productivity paradox: AI can make experts slower</h3>
+    <p>Industry surveys report 25–39% productivity gains, yet a METR study found experienced developers were <strong>19% slower</strong> on certain tasks — largely because of time spent verifying, debugging, and correcting AI output. AI does not eliminate implementation work so much as transform it from <em>writing</em> into <em>reviewing, guiding, and verifying</em>. The headline numbers and the slowdown are both real; which one you get depends on the discipline around the agent.</p>
+  </div>
+</div><div class="insight-card">
+  <div class="insight-rank">3</div>
+  <div class="insight-main">
+    <span class="badge">Verification</span>
+    <h3>Tests and evals are categorically different — and you need both</h3>
+    <p>Tests verify the deterministic parts of a system (this input yields that output) and are checked by code. Evals verify the non-deterministic parts — did the agent take the right trajectory, choose the right tools, and meet the quality bar — and are checked by labelled datasets, rubrics, and LM judges. <strong>Without both, the practice is always vibe coding, regardless of how sophisticated the prompts are.</strong> And trajectory evaluation beats output evaluation as a safety net: a fluent output that skipped its verification steps is more dangerous than a visibly broken one, because it looks right and may pass basic tests.</p>
+  </div>
+</div><div class="insight-card">
+  <div class="insight-rank">4</div>
+  <div class="insight-main">
+    <span class="badge">Context Engineering</span>
+    <h3>The static/dynamic context boundary is an economic decision</h3>
+    <p>Static context (AGENTS.md / CLAUDE.md / GEMINI.md, global memory, persona) is loaded on <em>every</em> call, so its token cost is paid regardless of relevance; dynamic context (skills on task-match, tool results, RAG docs, windowed history) is pay-per-use. <strong>Agent Skills</strong> exploit this through <em>progressive disclosure</em> — lightweight metadata at startup, full instructions on a match, deep reference only when needed — which decouples an agent's capability from its prompt size: it can carry dozens of specialties while paying tokens for only the active one.</p>
+  </div>
+</div><div class="insight-card">
+  <div class="insight-rank">5</div>
+  <div class="insight-main">
+    <span class="badge">Economics</span>
+    <h3>Vibe coding is low CapEx / high OpEx — and the OpEx compounds</h3>
+    <p>Vibe coding looks cheap (a subscription and a few prompts) but hides a compounding operational bill: a high token burn rate from dumping unstructured files into context and re-asking the model to fix its own mistakes, a maintenance tax when engineers later reverse-engineer AI 'spaghetti', and security remediation that is exponentially more expensive in production. Agentic engineering flips this to high CapEx / low OpEx. Two levers drive the OpEx down: <strong>context engineering</strong> as a financial strategy (dense, high-signal payloads raise first-pass success) and <strong>intelligent model routing</strong> (large models for architecture and initial implementation; small, cheap models for test generation, code review, and CI/CD monitoring).</p>
+  </div>
+</div></div></section>
+<section class="panel" id="all" role="tabpanel"><div class="card prose insights-all"><h2>1. The Vibe Coding → Agentic Engineering Spectrum</h2>
+<ul>
+<li><strong>The adoption baseline is not aspirational, it's current.</strong> As of early 2026: <strong>85%</strong> of professional developers regularly use AI coding agents, <strong>51%</strong> use them daily, and an estimated <strong>41%</strong> of all new code is AI-generated. The "syntax → intent" shift is described as present reality, not forecast.</li>
+<li><strong>The Karpathy timeline is the conceptual spine.</strong> Feb 2025: Karpathy coins <em>vibe coding</em> ("give in to the vibes... forget the code even exists"). The term then dilutes to mean any AI-assisted work, losing meaning. Early 2026: Karpathy himself admits the framing was too narrow and introduces <em>agentic engineering</em> for the disciplined end — so both endpoints come from the same author, ~one year apart.</li>
+<li><strong>The hard claim:</strong> "Without both tests and evals, the practice is always vibe coding, regardless of how sophisticated the prompts are." Verification — not tooling, not prompt quality — is named the single biggest differentiator between the spectrum's ends.</li>
+<li><strong>Tests and evals are categorically different, not redundant.</strong> Tests verify <em>deterministic</em> behavior and are checked by code. Evals verify <em>non-deterministic</em> behavior — right trajectory, right tool choices, response quality — and are checked by labelled datasets, scoring rubrics, and LM judges. Each covers what the other structurally cannot.</li>
+<li><strong>Trajectory evaluation &gt; output evaluation as a safety net.</strong> Output eval checks the artifact (compiles? tests pass?); trajectory eval checks the full sequence of tool calls and reasoning. A fluent output that <em>skipped its verification steps</em> is more dangerous than a visibly broken one — it looks right and may pass basic tests. This is the non-obvious reframe for senior reviewers.</li>
+<li><strong>Evals are an intent-communication channel, not just a gate.</strong> A well-written eval suite tells the AI what "correct" means more precisely than any natural-language prompt — hence the recommendation to write tests/evals <em>before</em> generating code (they are the contract).</li>
+<li><strong>It's a continuum, and the right position is set by stakes.</strong> Same agent can vibe code or do agentic engineering; the skill is calibrating structure to risk per task (weekend prototype = pure vibe; financial-transaction API = agentic), not maximizing autonomy. The CTO framing — "vibe coding the payment system" vs. "agentic engineering under constraints" — dramatizes that the words signal discipline, not tools.</li>
+<li><strong>Six dimensions define the spectrum</strong> (Table 1): intent specification, verification, codebase understanding, error handling, appropriate scope, risk profile — moving from casual prompts/"does it seem to work?"/high-risk-disposable to formal specs/automated suites+LM judges/low-risk systematic verification.</li>
+</ul>
+<h2>2. Context Engineering</h2>
+<ul>
+<li><strong>Static context is a fixed per-call tax.</strong> AGENTS.md/CLAUDE.md/GEMINI.md, global memory, and persona are loaded on <em>every</em> interaction — so their token cost is paid regardless of relevance. This makes the static/dynamic boundary an economic decision, not just an architectural one; the paper says to version and review it like any other config.</li>
+<li><strong>Dynamic context is pay-per-use.</strong> Skill instructions (on task match), tool results, RAG docs, and windowed history are loaded on demand — the agent only pays tokens when the info is actually needed.</li>
+<li><strong>The trade-off is bidirectional:</strong> too much static context wastes tokens and dilutes signal; too little means the agent forgets critical rules. Best systems treat this as a first-class, reviewed boundary.</li>
+<li><strong>Progressive disclosure decouples capability from prompt size.</strong> Skills expose lightweight metadata at startup -&gt; full instructions on task match -&gt; deep reference only when needed. Result: an agent carries dozens of specialist capabilities while paying for only the active one.</li>
+<li><strong>The four problems Skills solve:</strong> context rot from overloaded prompts; absence of procedural memory in LLMs; operational overhead of multi-agent architectures; lack of portability across tools and vendors.</li>
+<li><strong>The reframe that travels:</strong> stop asking "how do I trick the AI into good code?" Ask "what would a skilled new team member need to know, and how do I encode it?" If the answer is "always" -&gt; static; "for this task type" -&gt; skill; "occasionally" -&gt; RAG/tool.</li>
+<li><strong>Context engineering is the bridge</strong> between vibe coding and agentic engineering — the same model behaves very differently depending on the surrounding context architecture.</li>
+<li><strong>Day-3 companion paper reference:</strong> <em>Context Engineering: Sessions, Skills &amp; Memory</em> extends sessions design, writing/evaluating skills, persistent memory, and production token economics.</li>
+</ul>
+<h2>3. The New SDLC, Phase by Phase</h2>
+<ul>
+<li><strong>Uneven compression is the core thesis.</strong> AI compresses the SDLC dramatically but not uniformly: implementation drops from weeks to hours while requirements, architecture, and verification stay human-paced. The phases that stay slow become the new bottleneck and the highest-leverage place to invest.</li>
+<li><strong>The 25-39% vs. METR-19%-slower paradox.</strong> Industry surveys report 25-39% productivity gains, yet METR found experienced developers 19% <em>slower</em> on certain tasks because of time spent verifying, debugging, and correcting AI output. AI transforms implementation from writing into reviewing/guiding/verifying rather than eliminating the work.</li>
+<li><strong>Output vs. trajectory evaluation.</strong> Testing AI code requires checking not just the final artifact (does it compile, do tests pass) but the full sequence of tool calls and reasoning. A fluent output that skipped its verification steps is more dangerous than one with a visible error.</li>
+<li><strong>Tests and evals are the new spec.</strong> They become the primary mechanism for communicating intent to agents — a well-written eval suite tells the AI what "correct" means more precisely than any prompt.</li>
+<li><strong>The continuous quality flywheel.</strong> Evaluate against a benchmark suite, diagnose by clustering root causes, optimize the prompts/tools at fault, verify against a regression suite, monitor production for new failure modes — each cycle compounds.</li>
+<li><strong>Maintenance is the most underestimated transformation.</strong> Legacy code becomes navigable; tech debt that was "too risky to touch" can now be refactored, migrated across frameworks, and modernized — work that previously never happened.</li>
+<li><strong>Architecture is the most stubbornly human phase.</strong> Trade-offs (consistency vs. availability, build vs. buy) depend on business and strategic context AI cannot grasp; AI implements decisions once made.</li>
+<li><strong>Mid-2026 pace-of-change caveat.</strong> The phase boundaries reflect mid-2026 and are shifting fast — teams are already piloting specs-to-review-direct workflows with agents handling implementation, testing, and deployment in the background. The constant is human judgment, taste, and verification skill.</li>
+</ul>
+<h2>4. The Factory Model</h2>
+<ul>
+<li><strong>Output reframe:</strong> the developer's primary deliverable is no longer code — it's the <em>system that produces code</em>. Code becomes the line's output; the line itself is the work.</li>
+<li><strong>Five components of that system:</strong> (1) specifications &amp; context that define what to build, (2) agents that translate specs into implementation, (3) tests &amp; quality gates that verify correctness, (4) feedback loops that route failures back to agents for correction, (5) guardrails that constrain agents to safe, predictable behavior. They form a closed, self-correcting loop, not a checklist.</li>
+<li><strong>Success criteria, not step-by-step instructions:</strong> give agents a precise spec plus tests/evals (the "contract" with the AI), then let them iterate to a passing state. This is the structural divide between agentic engineering and vibe coding.</li>
+<li><strong>Factory-manager analogy:</strong> a manager designs the assembly line and owns quality control rather than assembling each widget; the developer designs the development system and ensures its output meets the bar. Upstream design over downstream inspection — and upfront CapEx that lowers the marginal cost of every feature.</li>
+<li><strong>The model is just the raw engine:</strong> if the developer is the factory manager, the AI model is merely the engine on the floor — it needs belts, gears, sensors, and the assembly line around it. That surrounding machinery is the <strong>harness</strong>, which is exactly what the next section (Harness Engineering) dissects.</li>
+</ul>
+<h2>5. Harness Engineering</h2>
+<ul>
+<li><strong>Agent = Model + Harness.</strong> A raw model is not an agent; it becomes one only when scaffolding (prompts, tools, context policies, hooks, sandboxes, sub-agents, observability) gives it state, tool execution, feedback loops, and enforceable constraints. The model is one input, not the system.</li>
+<li><strong>The six harness components</strong> are Instructions &amp; Rule Files, Tools, Sandboxes &amp; execution environments, Orchestration logic, Guardrails/Hooks, and Observability — and this is the <em>team's</em> surface area, not the model provider's.</li>
+<li><strong>Terminal Bench 2.0:</strong> one team moved a coding agent from outside the Top 30 to the Top 5 by changing only the harness — no model change at all.</li>
+<li><strong>LangChain study:</strong> raised a coding agent's score on the same benchmark by 13.7 points by tweaking only the system prompt, tools, and middleware around a fixed model.</li>
+<li><strong>"Most agent failures, examined honestly, are configuration failures."</strong> The first instinct is to blame the model; more often it's a missing tool, a vague rule, an absent guardrail, or a context window stuffed with noise.</li>
+<li><strong>Harness role shifts by SDLC phase:</strong> Requirements/Planning/Architecture = configuring it; Implementation = running it (sandboxes + tools); Testing/QA = the feedback loop (orchestration captures test failures and routes them back = automated think → act → observe); Review/Deploy/Maintenance = observing it (hooks block bad commits, observability tracks cost/latency/drift).</li>
+<li><strong>Vibe coding vs agentic engineering is a harness distinction, not a tool choice</strong> — the same agent serves both. The difference is how <em>deliberately</em> you configure and apply the harness: minimal/implicit scaffolding for speed vs clear, extensive harness abstractions from first planning doc through production monitoring.</li>
+</ul>
+<h2>6. Developer Roles + The 80% Problem</h2>
+<ul>
+<li><strong>Conductor/orchestrator is a duality, not a hierarchy.</strong> Developers move <em>fluidly</em> between hands-on real-time direction in the IDE (conductor) and higher-abstraction async delegation to parallel background agents (orchestrator), choosing the posture by task stakes and codebase familiarity rather than by which is "more advanced."</li>
+<li><strong>Conductor's main risk is throughput; orchestrator's is specification/review quality.</strong> A conductor who gates every keystroke caps the productivity gain from AI; an orchestrator who under-specifies or under-reviews gets bad output produced fast and in parallel.</li>
+<li><strong>The orchestrator runs on a different skill set.</strong> Not syntax fluency but four skills: Specification (unambiguous tasks), Decomposition (right-sized units), Evaluation (fast quality judgment), and System design (constraints, tests, feedback loops).</li>
+<li><strong>The 80% problem caps delegation.</strong> Agents generate ~80% of a feature rapidly, but the remaining 20% — edge cases, error handling, integration points, subtle correctness — needs deep contextual knowledge models lack. The leftover is the hardest, highest-consequence part, not evenly distributed grunt work.</li>
+<li><strong>AI errors evolved from syntax to insidious conceptual failures.</strong> Wrong business-logic assumptions, not asking for clarification on ambiguity, missing edge cases, and architecture that creates long-term maintenance burden — failures that survive compilation and basic tests because the code "looks right."</li>
+<li><strong>Because the failure class changed, review must change.</strong> Syntax-level checks are obsolete as the safety net; review has to target correctness and intent on the hard 20%.</li>
+<li><strong>The effective posture is focused allocation, not blanket acceptance.</strong> Use AI for rapid implementation of well-specified tasks; reserve scarce human attention for ambiguity, architectural trade-offs, and correctness verification. Be faster by focusing expertise where it matters, not by accepting everything.</li>
+<li><strong>The four orchestrator skills are also the antidote to the 80% problem.</strong> Precise specs and strong evals are how you surface the hard 20% early instead of discovering it in production.</li>
+</ul>
+<h2>7. Coding Agents in Practice</h2>
+<ul>
+<li><strong>Three loci, not a ladder.</strong> Coding agents live in the editor (inline completion, in-place chat, whole-codebase awareness — stays in flow), the terminal (CLI-launched, plain-language goal, full filesystem access, runs tools/tests and iterates — "where serious vibe coding happens today"), and the background (autonomous cloud sandboxes for hours, produces a PR). Most devs use all three daily; the right starting point depends on the <strong>task, not on which sits highest on an autonomy ladder.</strong></li>
+<li><strong>The terminal workflow now reaches production agents.</strong> When the thing you build is itself an agent (support bot, research assistant, compliance monitor), it's a product needing its own tools, memory, evals, and deployment. The same terminal workflow that produced prototype scripts now builds, evaluates, and deploys these — no separate stack or cloud console.</li>
+<li><strong>Agents CLI + ADK 7-skill lifecycle.</strong> <code>uvx google-agents-cli setup</code> works with whichever coding agent you prefer (Claude Code, Codex, etc.) and adds seven skills covering the full ADK lifecycle: scaffold, write code, evaluate, deploy to Agent Runtime, wire observability. You describe intent; the coding agent uses the skills. Direct CLI: <code>agents-cli create / playground / eval / deploy</code>. No new SDK to learn.</li>
+<li><strong>Prototype→production collapse, no rewrite.</strong> Yesterday's laptop prototype becomes today's production agent serving real users — same lifecycle (build → evaluate → deploy → observe → refine) in one place. Path from idea to running agent collapses from weeks to hours; the discriminator between "script" and "product" is the operational substrate (persistent memory, scoped permissions, eval coverage, tracing).</li>
+<li><strong>MCP + A2A as the coordination substrate.</strong> Scaling one→many agents uses ADK graph-based and multi-agent workflows. Coordination happens via shared session state (simple cases), MCP (tool access), and Agent2Agent/A2A (cross-agent delegation) — open standards that preserve vendor/framework optionality.</li>
+<li><strong>The Anthropic C-compiler-in-Rust experiment (early 2026).</strong> Agent teams on this architecture built a working C compiler in Rust over two weeks, with humans setting direction and reviewing but not writing the implementation. The bottleneck moved from writing code to <strong>specifying what it should do and verifying the agents did it</strong> — the section's load-bearing proof point.</li>
+</ul>
+<h2>8. The Economics of AI Development</h2>
+<ul>
+<li><strong>Reframe the metric from velocity to TCO.</strong> Leaders should evaluate AI workflows by Total Cost of Ownership, decomposed into CapEx (upfront build) vs OpEx (ongoing run/fix/maintain) — and in the AI era OpEx is heavily dictated by the token economy, since every LLM interaction is metered per input and output token.</li>
+<li><strong>Vibe coding = low CapEx, high OpEx (hidden debt).</strong> Near-zero barrier (a subscription plus casual prompts) masks a compounding operational burden: (1) token burn rate from dumping unstructured files into context and re-prompting the model to fix its own unverified mistakes at low first-pass success; (2) a maintenance tax as engineers later spend days reverse-engineering AI "spaghetti"; (3) security remediation, where no eval harness means rapid vulnerability generation and exponentially costlier production fixes.</li>
+<li><strong>Agentic engineering = high CapEx, low OpEx (the flip).</strong> A deliberate upfront investment — API schemas, deterministic test suites, and structured agent context — drops the marginal cost of shipping and maintaining each feature, because output from the governed "factory" is structurally sound, pre-tested, and standards-aligned.</li>
+<li><strong>Context engineering is a financial lever, not just a technical skill.</strong> LLMs charge per token, so passing a 100k-token repo into every prompt is financially unviable at scale; a dense, high-signal payload (a precise AGENTS.md plus guardrails) raises first-pass success and avoids the costly trial-and-error loops that define vibe coding.</li>
+<li><strong>Scale efficiency with dynamic context.</strong> Advanced agentic engineering loads knowledge on demand via skills and tool calling (e.g., MCP servers, per the Day-3 paper), so the agent pays token cost only for what a task actually needs.</li>
+<li><strong>Intelligent model routing across a multi-model ecosystem.</strong> Vibe coding pays frontier-model premium prices even to fix a typo; a well-designed factory routes complex tasks (requirements, architecture, initial implementation) to large advanced models and deterministic low-complexity tasks (test generation, code review, CI/CD monitoring) to smaller/faster/cheaper models — maintaining quality while systematically driving down token cost.</li>
+</ul>
+<h2>9. Adoption &amp; Durable Principles</h2>
+<ul>
+<li><strong>"AI amplifies the engineering culture it lands in."</strong> This is the unifying principle across all three audiences. The same agent multiplies a disciplined team's strengths and an undisciplined team's weaknesses — tooling does not substitute for culture.</li>
+<li><strong>"Set the bar at the eval, not the demo."</strong> A demo proves success once; a passing eval suite proves reliability. But an eval without a rubric measures nothing — score task success, tool-use quality, trajectory compliance, hallucination, and response quality, and gate shipping on coverage the way test coverage gates a deployment.</li>
+<li><strong>Treat harness artifacts as code.</strong> AGENTS.md, system prompts, eval suites, skill libraries, and MCP connections should be reviewed in PRs, versioned, and owned by named engineers. Built once and refined many times, they become a compounding shared team asset; left unmanaged, the harness drifts and behavior becomes irreproducible.</li>
+<li><strong>Plan for hybrid human-plus-agent teams.</strong> Agents are now participants, not just tools. Humans set direction, agents implement, and explicit handoff protocols govern the boundary — so code review, on-call rotations, and team structures all have to evolve.</li>
+<li><strong>Reframe hiring around judgment, not implementation.</strong> As implementation cheapens, the bottleneck moves to specification, evaluation, architectural judgment, and review. The most valuable engineers direct agents well rather than writing the most code.</li>
+<li><strong>The three durable principles:</strong> (1) <em>Structure scales, vibes don't</em> — production work needs specs, tests, guardrails, and human oversight of architecture; (2) <em>AI amplifies your engineering culture</em> — a force multiplier of both strengths and weaknesses; (3) <em>The human role is evolving, not diminishing</em> — skills shift from implementation to judgment.</li>
+<li><strong>Build the production substrate before scale, not after.</strong> CI evals (trajectory and final-response), traces of every run, scoped per-agent permissions, and generated-code-aware security review must exist before the first production agent ships. Adopt open standards (MCP, A2A) now to preserve vendor optionality.</li>
+<li><strong>The closing thesis:</strong> <em>"Generation is solved. Verification, judgment, and direction are the new craft."</em> Paired with the framing of <em>intent as the new interface</em>, this reframes the engineer's value away from producing code toward directing and verifying the systems that produce it.</li>
+</ul></div></section>
+<section class="panel" id="visuals" role="tabpanel"><div class="stack"><div class="card visual-card">
+  <h3>The Vibe Coding → Agentic Engineering Spectrum</h3>
+  <div class="diagram"><pre class="mermaid">graph LR
+    A[&quot;Vibe Coding&lt;br/&gt;minimal scaffolding&lt;br/&gt;rapid implementation&quot;] --&gt; B[&quot;Structured AI-Assisted Coding&lt;br/&gt;human judgment at&lt;br/&gt;key checkpoints&quot;]
+    B --&gt; C[&quot;Agentic Engineering&lt;br/&gt;extensive harness&lt;br/&gt;systematic verification&quot;]
+    A -.-&gt;|high risk · disposable code| C
+    C -.-&gt;|low risk · production systems| A</pre></div>
+  <p class="caption">The paper refuses the vibe-coding-vs-agentic-engineering binary and instead draws a continuum. What moves you along it is not whether you use AI but how much structure, verification, and human judgment surrounds the AI's output. The right position is set by the stakes: a weekend prototype can be pure vibe coding, while a payment API demands agentic engineering — the skill is knowing where to draw the line for each task.</p>
+</div><div class="card visual-card">
+  <h3>Agent = Model + Harness</h3>
+  <div class="diagram"><pre class="mermaid">graph TD
+    M[&quot;Model — reasoning engine&quot;]
+    I[&quot;1 · Instructions &amp; Rule Files&quot;]
+    T[&quot;2 · Tools&quot;]
+    S[&quot;3 · Sandboxes &amp; Execution Environments&quot;]
+    O[&quot;4 · Orchestration Logic&quot;]
+    G[&quot;5 · Guardrails &amp; Hooks&quot;]
+    B[&quot;6 · Observability&quot;]
+    I --&gt; M
+    T --&gt; M
+    S --&gt; M
+    O --&gt; M
+    G --&gt; M
+    B --&gt; M</pre></div>
+  <p class="caption">Treating the model as the whole system leads to the wrong investments. A raw model is not an agent; it becomes one when a harness gives it state, tool execution, feedback loops, and enforceable constraints. The six harness components shown here — far more than the model alone — dominate the behaviour you actually experience in Claude Code, Cursor, Codex, or Cline, and they belong to your team to design and refine.</p>
+</div><div class="card visual-card">
+  <h3>AI Compresses the SDLC — But Unevenly</h3>
+  <div class="diagram"><pre class="mermaid">flowchart TB
+    subgraph Traditional[&quot;Traditional SDLC — weeks per phase&quot;]
+        direction LR
+        T1[Requirements] --&gt; T2[Architecture] --&gt; T3[&quot;Implementation — weeks&quot;] --&gt; T4[Testing &amp; QA] --&gt; T5[Review &amp; Deploy] --&gt; T6[Maintenance]
+    end
+    subgraph AIDriven[&quot;AI-Driven SDLC — implementation collapses&quot;]
+        direction LR
+        A1[&quot;Requirements — human paced&quot;] --&gt; A2[&quot;Architecture — human paced&quot;] --&gt; A3[&quot;Impl — hours&quot;] --&gt; A4[&quot;Verification — human paced&quot;] --&gt; A5[Review &amp; Deploy] --&gt; A6[&quot;Maintenance — now tractable&quot;]
+    end
+    Traditional --&gt; AIDriven</pre></div>
+  <p class="caption">The result of AI is not a faster version of the old SDLC but a differently-shaped one. Implementation that once took weeks now takes hours, yet requirements, architecture, and verification remain human-paced — so the slow phases become the new bottleneck and the highest-leverage place to invest human attention. The boundaries blur and the developer's role shifts from primary implementor to system designer and quality arbiter.</p>
+</div></div></section>
+<section class="panel" id="t01" role="tabpanel"><div class="card prose topic-body"><h1>The Vibe Coding → Agentic Engineering Spectrum</h1>
+<p>The paper's foundational move is to reject the binary. "Vibe coding" and "agentic engineering" are not two camps but the endpoints of one continuum, and the axis that separates them is not <em>whether</em> you use AI — it's how much structure, verification, and human judgment surrounds the AI's output. For a senior engineer the load-bearing claim is precise and uncomfortable: without both tests and evals, the practice is always vibe coding regardless of how sophisticated the prompts are.</p>
+<h2>From syntax to intent — and why the term fractured</h2>
+<p>The deeper shift the paper names is from <em>writing code</em> to <em>expressing intent</em>. Programming has historically been an act of translation (problem → abstract design → machine syntax), and each step adds friction. That friction is now collapsing. The adoption data backs the framing rather than a forecast: as of early 2026, <strong>85%</strong> of professional developers regularly use AI coding agents, <strong>51%</strong> use them daily, and an estimated <strong>41%</strong> of all new code is AI-generated.</p>
+<p>The terminology has a precise lineage worth keeping straight:</p>
+<ul>
+<li><strong>February 2025</strong> — Andrej Karpathy coins <em>vibe coding</em>: "fully give in to the vibes, embrace exponentials, and forget that the code even exists." Describe in natural language, accept the output, paste errors back when something breaks. It went viral because it named what many were already doing.</li>
+<li><strong>The dilution problem</strong> — within months "vibe coding" was applied to <em>any</em> AI-assisted workflow, including a senior engineer implementing a well-specified feature. Applied that broadly, the term lost meaning.</li>
+<li><strong>Early 2026</strong> — Karpathy himself concedes the original framing was too narrow and introduces <em>agentic engineering</em> for the disciplined end of the spectrum.</li>
+</ul>
+<p>The stakes are framed bluntly: telling a CTO your team is <em>vibe coding</em> the payment processing system should raise alarms; saying you practice <em>agentic engineering</em> — AI implementing under human-designed constraints with test coverage ensuring correctness — is a fundamentally different conversation. Same tools, different discipline.</p>
+<h2>The spectrum as a continuum</h2>
+<pre class="mermaid">graph LR
+    A[Vibe Coding&lt;br/&gt;minimal scaffolding&lt;br/&gt;rapid implementation] --&gt; B[Structured AI-Assisted Coding&lt;br/&gt;human judgment at&lt;br/&gt;key checkpoints]
+    B --&gt; C[Agentic Engineering&lt;br/&gt;extensive harness&lt;br/&gt;systematic verification]
+    A -.high risk / disposable code.-&gt; C
+    C -.low risk / production systems.-&gt; A</pre>
+<p>The position you choose is a function of stakes, not status. A weekend prototype can be pure vibe coding; a production API handling financial transactions demands agentic engineering. Most real work sits in between, and the skill is knowing where to draw the line per task — not climbing an "autonomy ladder."</p>
+<h2>Table 1 — the six dimensions</h2>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Vibe Coding</th>
+<th>Structured AI-Assisted Coding</th>
+<th>Agentic Engineering</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Intent specification</strong></td>
+<td>Casual natural-language prompts</td>
+<td>Detailed prompts with examples and constraints</td>
+<td>Formal specs, architecture docs, memory files</td>
+</tr>
+<tr>
+<td><strong>Verification</strong></td>
+<td>"Does it seem to work?"</td>
+<td>Manual testing, spot-checking</td>
+<td>Automated test suites, CI/CD gates, LM judges</td>
+</tr>
+<tr>
+<td><strong>Codebase understanding</strong></td>
+<td>Minimal; developer may not read the generated code</td>
+<td>Selective review of critical paths</td>
+<td>Comprehensive review of architecture; AI handles implementation details</td>
+</tr>
+<tr>
+<td><strong>Error handling</strong></td>
+<td>Copy-paste error messages back to the AI</td>
+<td>Developer diagnoses root cause, AI implements fix</td>
+<td>Agents self-diagnose within defined bounds; humans handle architectural issues</td>
+</tr>
+<tr>
+<td><strong>Appropriate scope</strong></td>
+<td>Prototypes, scripts, personal projects, hackathons</td>
+<td>Features within established codebases</td>
+<td>Production systems, team-scale development</td>
+</tr>
+<tr>
+<td><strong>Risk profile</strong></td>
+<td>High; acceptable for disposable code</td>
+<td>Moderate; human judgment at key checkpoints</td>
+<td>Low; systematic verification at every stage</td>
+</tr>
+</tbody>
+</table>
+<h2>Verification: the single biggest differentiator</h2>
+<p>The paper is explicit that <em>how outputs get verified</em> is what most distinguishes the ends of the spectrum. In vibe coding, verification is optional — run it, eyeball it. In agentic engineering, two mechanisms work together, and they check different kinds of things:</p>
+<ul>
+<li><strong>Tests</strong> verify the <strong>deterministic</strong> parts: a function given this input produces that output. They are <strong>checked by code</strong>.</li>
+<li><strong>Evals</strong> verify the <strong>non-deterministic</strong> parts: did the agent take the right <em>trajectory</em> of steps, choose the right tools, and produce a final response that meets the quality bar. They are <strong>checked by labelled datasets, scoring rubrics, and LM judges</strong>.</li>
+</ul>
+<pre class="mermaid">flowchart TD
+    V[Verifying AI output] --&gt; T[Tests]
+    V --&gt; E[Evals]
+    T --&gt; T1[Target: deterministic behavior]
+    T --&gt; T2[Checked by: code]
+    T --&gt; T3[Asks: same input yields expected output]
+    E --&gt; E1[Target: non-deterministic behavior]
+    E --&gt; E2[Checked by: labelled datasets,&lt;br/&gt;scoring rubrics, LM judges]
+    E --&gt; E3[Asks: right trajectory, right tools,&lt;br/&gt;response meets quality bar]</pre>
+<p>This maps onto the two evaluation lenses the paper introduces for AI-generated code: <strong>output evaluation</strong> checks the final artifact (does it compile, do the tests pass) while <strong>trajectory evaluation</strong> checks the full sequence of tool calls and intermediate reasoning. Both are necessary — a fluent output that <em>skipped its verification steps</em> is a more dangerous failure than one with a visible error, because it "looks right" and may even pass basic tests.</p>
+<p>A second-order insight: tests and evals are not just gates, they are the <strong>primary mechanism for communicating intent</strong>. A well-written eval suite tells the AI what "correct" means and gives an automated way to verify it — more precisely than any natural-language prompt. This is why the recommended posture is to write tests and evals <em>before</em> generating the code.</p>
+<h2>Why this matters / advanced takeaways</h2>
+<blockquote>
+<ul>
+<li><strong>The dividing line is verification, not tooling.</strong> The same coding agent can be used to vibe code or to do agentic engineering. Sophistication of prompts is irrelevant: <strong>without both tests and evals, the practice is always vibe coding.</strong> This is the section's hardest, most quotable claim.</li>
+<li><strong>Trajectory beats output as a failure detector.</strong> A confident, well-formed answer that quietly skipped its checks is more dangerous than a visibly broken one. Evals exist precisely because output inspection misses this class of failure.</li>
+<li><strong>Evals encode intent better than prompts.</strong> Treating the eval suite as the contract reframes "prompt engineering" as a weaker substitute for a specification that is itself executable and checkable.</li>
+<li><strong>Stakes set position.</strong> There is no virtue in always being at the agentic end — the skill is calibrating structure to risk, per task, not maximizing autonomy.</li>
+</ul>
+</blockquote></div></section>
+<section class="panel" id="t02" role="tabpanel"><div class="card prose topic-body"><h1>Context Engineering — the real skill</h1>
+<p>The paper's central claim about working with AI is deceptively simple: <strong>the quality of AI-generated code depends far less on the cleverness of your prompts than on the quality of the context you provide.</strong> This is the shift from <em>prompt engineering</em> (wordsmithing a single instruction to coax good output) to <em>context engineering</em> (architecting the structured information an agent needs to do real work). The reframe at the heart of the section is worth holding onto: stop asking "how do I trick the AI into writing good code?" and start asking "what would a new team member need to know to contribute effectively, and how do I encode that in a form the AI can use?"</p>
+<p>For a senior engineer, the useful mental model is onboarding. You would never hand a new hire a clever one-liner and expect a production PR. You would give them the codebase conventions, the architecture, the domain rules, examples of good work, the tools they're allowed to touch, and the lines they must not cross. Context engineering is that onboarding packet — made machine-consumable, versioned, and reviewed like any other configuration.</p>
+<h2>The six types of context</h2>
+<p>Every agent needs the same six categories of context. Designing them deliberately is the practice.</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>What it is</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Instructions</strong></td>
+<td>The agent's core role, goals, and operational boundaries</td>
+<td>System prompt defining the agent's purpose and what it must not do</td>
+</tr>
+<tr>
+<td><strong>Knowledge</strong></td>
+<td>Retrieved documents and domain-specific data</td>
+<td>Architectural diagrams, design docs, domain reference data</td>
+</tr>
+<tr>
+<td><strong>Memory</strong></td>
+<td>Short-term session state plus long-term persistent state</td>
+<td>Session logs of what just happened; persistent record of what the project is</td>
+</tr>
+<tr>
+<td><strong>Examples</strong></td>
+<td>Few-shot behavioral demonstrations and reference patterns</td>
+<td>Codebase reference patterns, worked examples of correct behavior</td>
+</tr>
+<tr>
+<td><strong>Tools</strong></td>
+<td>Precise definitions of what the agent can invoke</td>
+<td>API definitions, scripts, external services</td>
+</tr>
+<tr>
+<td><strong>Guardrails</strong></td>
+<td>Hard constraints, formatting rules, safety validations</td>
+<td>Forbidden operations, output format rules, safety checks</td>
+</tr>
+</tbody>
+</table>
+<h2>Static vs. dynamic context: an architectural AND economic trade-off</h2>
+<p>The real engineering decision is not <em>whether</em> to provide these six types, but <em>how</em> each one reaches the model: loaded upfront on every call, or retrieved on demand. This splits context into two classes with very different cost profiles.</p>
+<p><strong>Static context is always loaded.</strong> It defines who the agent is and how it behaves: system instructions, rule files (<code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>GEMINI.md</code>), global memory, and persona definitions. Because every token is present in <em>every</em> interaction regardless of relevance, static context is expensive — you pay for it on each call whether the current task needs it or not.</p>
+<p><strong>Dynamic context is loaded on demand.</strong> Skill instructions triggered by task matching, tool results retrieved during execution, documents fetched from RAG pipelines, and windowed session history. It is efficient precisely because the agent pays the token cost only when the information is actually needed.</p>
+<p>The boundary between the two is a genuine trade-off, not a default:</p>
+<ul>
+<li><strong>Too much static context</strong> wastes tokens on every call and dilutes the signal the model is trying to attend to.</li>
+<li><strong>Too little static context</strong> means the agent forgets critical rules that should always apply.</li>
+</ul>
+<p>The paper's prescription: treat this boundary as a <strong>first-class architectural decision — reviewed and versioned like any other configuration.</strong> It is also a financial lever. In the token economy, every byte you send is billed on every request, so deciding what is "always on" versus "fetched when relevant" directly shapes operational cost at scale.</p>
+<pre class="mermaid">flowchart TD
+    Q[Six context types] --&gt; D{Always relevant&lt;br/&gt;to every call?}
+
+    D --&gt;|Yes| S[STATIC CONTEXT&lt;br/&gt;loaded on every call]
+    D --&gt;|No| DY[DYNAMIC CONTEXT&lt;br/&gt;loaded on demand]
+
+    S --&gt; S1[System instructions]
+    S --&gt; S2[Rule files: AGENTS.md, CLAUDE.md, GEMINI.md]
+    S --&gt; S3[Global memory]
+    S --&gt; S4[Persona definition]
+    S --&gt; SC[Cost: paid every interaction&lt;br/&gt;expensive per token]
+
+    DY --&gt; D1[Skill instructions on task match]
+    DY --&gt; D2[Tool results during execution]
+    DY --&gt; D3[RAG-fetched documents]
+    DY --&gt; D4[Windowed session history]
+    DY --&gt; DC[Cost: paid only when needed&lt;br/&gt;efficient]</pre>
+<h2>Agent Skills: progressive disclosure as the key pattern</h2>
+<p>The most powerful pattern for managing dynamic context is <strong>Agent Skills</strong> — structured, portable packages of procedural knowledge the agent loads only when the task calls for it. Rather than embedding every specialized capability into the system prompt (which would balloon static context), Skills let the agent stay a <strong>lightweight generalist that flexes into specialist roles on demand</strong>.</p>
+<p>The mechanism is <strong>progressive disclosure</strong>, staged in three tiers:</p>
+<ol>
+<li><strong>At startup</strong>, the agent sees only lightweight <em>metadata</em> for each skill — enough to know it exists and what it's for.</li>
+<li><strong>When a task matches</strong>, the agent loads that skill's <em>full instructions</em>.</li>
+<li><strong>Only when explicitly needed</strong>, it pulls <em>deep reference material</em>.</li>
+</ol>
+<p>The payoff: an agent can carry dozens of specialized capabilities while paying the token cost for only the one it is actively using.</p>
+<pre class="mermaid">flowchart LR
+    A[Startup] --&gt; B[Load lightweight&lt;br/&gt;metadata for all skills]
+    B --&gt; C{Does an incoming&lt;br/&gt;task match a skill?}
+    C --&gt;|No match| Z[Stay generalist&lt;br/&gt;no skill tokens paid]
+    C --&gt;|Match| D[Load full skill&lt;br/&gt;instructions]
+    D --&gt; E{Need deeper&lt;br/&gt;detail?}
+    E --&gt;|No| F[Execute with&lt;br/&gt;instructions only]
+    E --&gt;|Yes| G[Pull deep&lt;br/&gt;reference material]
+    G --&gt; F</pre>
+<h2>The four problems Skills solve</h2>
+<p>The paper attributes the rapid adoption of Agent Skills across major coding agents and enterprise platforms to four specific, recurring failures they address:</p>
+<ul>
+<li><strong>Context rot</strong> from overloaded prompts — stuffing everything into static context degrades the model's attention and signal.</li>
+<li><strong>Absence of procedural memory</strong> for LLMs — models have no native place to retain reusable, step-by-step know-how across tasks.</li>
+<li><strong>Operational overhead of multi-agent architectures</strong> — Skills package capability without spinning up and coordinating separate agents.</li>
+<li><strong>Lack of portability</strong> across tools and vendors — a skill is a portable package, not glue code bonded to one harness.</li>
+</ul>
+<blockquote>
+<h3>Why this matters / advanced takeaways</h3>
+<ul>
+<li><strong>The static/dynamic split is a cost model, not just an architecture diagram.</strong> Static tokens are a fixed tax on every single call. Audit what truly belongs in <code>AGENTS.md</code>/<code>CLAUDE.md</code>/<code>GEMINI.md</code> versus what can be a skill — the boundary is where your per-interaction token bill is decided.</li>
+<li><strong>Progressive disclosure breaks the "more capability = bigger prompt" coupling.</strong> You can carry dozens of specialist skills while only paying for the active one, so capability and context cost scale independently.</li>
+<li><strong>Skills give LLMs the procedural memory they structurally lack.</strong> This is the difference between an agent that re-derives a workflow each time and one that reliably executes an encoded procedure — and it's portable across vendors.</li>
+<li><strong>Treat context as code.</strong> The paper is explicit that the static/dynamic boundary should be reviewed and versioned. Rule files, skills, and persona definitions are configuration that drifts if unowned.</li>
+<li><strong>The onboarding reframe is the durable lesson.</strong> "What would a skilled new teammate need to know?" generalizes past any specific tool. If the answer is "always," it's static; if it's "for this kind of task," it's a skill; if it's "occasionally," it's RAG or a tool call.</li>
+<li><strong>Context engineering is the bridge.</strong> It is what separates disciplined agentic engineering from ad-hoc vibe coding — the same model behaves very differently depending on the context architecture around it.</li>
+</ul>
+<p>The companion <strong>Day-3 paper, <em>Context Engineering: Sessions, Skills &amp; Memory</em></strong>, extends each of these ideas — designing and managing sessions, writing and evaluating skills, building persistent memory across interactions, and optimizing token economics for production systems.</p>
+</blockquote></div></section>
+<section class="panel" id="t03" role="tabpanel"><div class="card prose topic-body"><h1>The New SDLC, Phase by Phase</h1>
+<p>The SDLC has already survived one revolution. Over the past two decades most enterprises traded sequential waterfall for iterative models — Agile sprints, CI, DevOps pipelines, continuous release. That shift shortened feedback loops and made deployment continuous. You know this story. What follows is the <em>next</em> discontinuity, and the key insight is that it is <strong>not uniform</strong>.</p>
+<p>AI compresses the cycle dramatically but <strong>unevenly</strong>. Implementation that once took weeks now takes hours, while requirements, architecture, and verification remain stubbornly human-paced. The result is not a faster version of the old SDLC — it is a different workflow, where phase boundaries blur, iteration shrinks from weeks to minutes, and the developer's center of gravity moves from primary implementor to system designer and quality arbiter. The bottleneck is no longer human hands typing boilerplate; it is human minds defining the boundaries.</p>
+<h2>The uneven compression</h2>
+<p>This is the single most important mental model in the section. Time does not collapse evenly across phases — it collapses where the work is mechanical translation (implementation) and holds where the work is judgment (architecture, verification). Picture the relative duration of each phase before and after:</p>
+<pre class="mermaid">flowchart TB
+    subgraph Traditional[Traditional SDLC - weeks per phase]
+        direction LR
+        T1[Requirements] --&gt; T2[Architecture] --&gt; T3[Implementation - weeks] --&gt; T4[Testing and QA] --&gt; T5[Review and Deploy] --&gt; T6[Maintenance]
+    end
+    subgraph AIDriven[AI-Driven SDLC - implementation collapses]
+        direction LR
+        A1[Requirements - still human paced] --&gt; A2[Architecture - still human paced] --&gt; A3[Impl - hours] --&gt; A4[Verification - still human paced] --&gt; A5[Review and Deploy] --&gt; A6[Maintenance - now tractable]
+    end
+    Traditional --&gt; AIDriven</pre>
+<p>The phases that stay wide are the phases where humans still own the work. The narrow one — implementation — is where the machine takes over.</p>
+<h2>Requirements and planning</h2>
+<p>Requirements is where the gap between intent and implementation has historically been widest: translating business needs into specs is manual and error-prone, leaving a persistent gap between what stakeholders want and what engineers build.</p>
+<p>AI now participates directly in refinement — generating user stories from briefs, surfacing edge cases humans miss, producing API schemas from natural language, and turning specs into interactive prototypes in minutes. The deepest change is structural: <strong>specification and initial implementation are produced simultaneously</strong>. Requirements stop being a document handed off between teams and become a conversation between humans and AI, collapsing the requirements-to-prototype loop toward zero.</p>
+<h2>Design and architecture</h2>
+<p>Architecture remains the most stubbornly human-centric phase, and for good reason. Architectural decisions are fundamentally about trade-offs — consistency vs. availability, complexity vs. flexibility, build vs. buy — and those trade-offs depend on business context, organizational constraints, and long-term strategy that AI cannot fully grasp.</p>
+<p>What AI does excel at is <em>implementing</em> architectural decisions once they are made. Given a clear architecture document, agents scaffold whole applications, generate consistent patterns across modules, and conform new code to established conventions. The developer's role shifts from writing the boilerplate to making and documenting the structural decisions the boilerplate implements.</p>
+<h2>Implementation</h2>
+<p>Coding agents generate entire features from natural-language descriptions, implement complex algorithms, and produce coherent multi-file changes. The productivity gains are real: industry surveys report <strong>25 to 39% productivity improvements</strong>, with some tasks seeing larger gains.</p>
+<p>But the headline numbers hide nuance. A METR study found experienced developers using AI assistants actually took <strong>19% longer</strong> on certain tasks — largely from the time spent verifying, debugging, and correcting AI output. The lesson is not that AI is slower; it is that AI <strong>transforms</strong> implementation rather than eliminating it. The work shifts from <em>writing</em> to <em>reviewing, guiding, and verifying</em>.</p>
+<h2>Testing and quality assurance</h2>
+<p>Testing AI-generated code means evaluating not just <em>what</em> the agent produced but <em>how it got there</em>:</p>
+<ul>
+<li><strong>Output evaluation</strong> checks the final artifact: does it compile, do the tests pass?</li>
+<li><strong>Trajectory evaluation</strong> checks the full sequence of tool calls and intermediate reasoning.</li>
+</ul>
+<p>Both are necessary, because a fluent output that skipped its verification steps is a <em>more</em> dangerous failure than one with a visible error. Beyond detection, AI also transforms test <em>generation</em> — producing edge cases and property-based tests humans miss. Most importantly, <strong>tests and evals become the primary mechanism for communicating intent to agents</strong>: a well-written eval suite tells the AI what "correct" means and gives an automated way to verify it.</p>
+<p>These practices are strongest when wired into a <strong>continuous quality flywheel</strong>, where each cycle compounds:</p>
+<pre class="mermaid">flowchart LR
+    E[Evaluate against benchmark suite] --&gt; D[Diagnose failures by clustering root causes]
+    D --&gt; O[Optimize prompts or tools that caused them]
+    O --&gt; V[Verify fixes against regression suite]
+    V --&gt; M[Monitor production traffic for new failure modes]
+    M --&gt; E</pre>
+<h2>Code review and deployment</h2>
+<p>Review is being augmented, not replaced. AI acts as a <strong>first-pass reviewer</strong>, flagging potential bugs, style violations, security vulnerabilities, and performance issues before a human sees the code. This does not replace human review — context-dependent calls on design, maintainability, and strategic alignment still need human judgment — but it sharply reduces reviewer cognitive load.</p>
+<p>Deployment pipelines are becoming <strong>AI-aware</strong>: agents monitor deployment health, automatically roll back problematic releases, and predict deployment risk from the nature and scope of changes. Modern platforms increasingly wire AI-powered observability into feedback loops between production behavior and development decisions. (Day 5 in the series covers what changes for human reviewers when PR volume scales with agent output — bundled summaries, conditional LGTM, agent-driven code-review skills.)</p>
+<h2>Maintenance and evolution</h2>
+<p>Perhaps the most <strong>underestimated</strong> transformation. Legacy codebases that were once impenetrable to new team members can now be navigated, understood, and modified with AI assistance: an agent reads the codebase, learns its patterns, identifies the files relevant to a change, and implements modifications while respecting the existing architecture.</p>
+<p>The implications for technical debt are large. Code that was "too risky to touch" because only its original authors understood it can now be safely refactored, modernized, and extended. Agents can systematically migrate codebases between frameworks, update deprecated APIs, and modernize test suites — tasks that were previously so tedious and risky that they simply never happened.</p>
+<h2>Phase-by-phase summary</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>What changes</th>
+<th>What stays human</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Requirements &amp; planning</td>
+<td>Spec and initial implementation produced simultaneously; requirements become a human-AI conversation; prototype loop collapses to near zero</td>
+<td>Deciding what is actually worth building; resolving ambiguity in stakeholder intent</td>
+</tr>
+<tr>
+<td>Design &amp; architecture</td>
+<td>AI implements decisions, scaffolds apps, enforces conventions once a clear architecture doc exists</td>
+<td>The trade-off decisions themselves — context, constraints, long-term strategy AI cannot grasp</td>
+</tr>
+<tr>
+<td>Implementation</td>
+<td>25-39% productivity gains; multi-file features from natural language; work shifts from writing to reviewing</td>
+<td>Verifying, debugging, guiding output; catching the subtle correctness gaps that look right</td>
+</tr>
+<tr>
+<td>Testing &amp; QA</td>
+<td>Output AND trajectory evaluation; AI-generated edge/property tests; tests and evals become the way to communicate intent</td>
+<td>Defining the quality bar and rubrics; deciding what "correct" means</td>
+</tr>
+<tr>
+<td>Code review &amp; deployment</td>
+<td>AI as first-pass reviewer; AI-aware pipelines with auto-rollback and risk prediction</td>
+<td>Design, maintainability, and strategic-alignment judgment; final accountability</td>
+</tr>
+<tr>
+<td>Maintenance &amp; evolution</td>
+<td>Legacy code becomes navigable; tech debt "too risky to touch" becomes refactorable and migratable</td>
+<td>Prioritizing what to modernize; validating that behavior is preserved</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<h2>Why this matters / advanced takeaways</h2>
+<ul>
+<li><strong>Compression is uneven, and that is the whole point.</strong> Optimizing for raw implementation speed misreads the system. If implementation collapses to hours but requirements, architecture, and verification stay human-paced, those phases become the new bottleneck — and the highest-leverage place to invest.</li>
+<li><strong>The METR paradox.</strong> Headline surveys cite 25-39% gains, yet METR found experienced developers <strong>19% slower</strong> on certain tasks, dominated by verification, debugging, and correction overhead. The gains are real but conditional; for senior engineers on familiar code, the AI tax can exceed the AI dividend. Generation is solved — verification is the new cost center.</li>
+<li><strong>Output vs. trajectory.</strong> Judging only the final artifact misses the most dangerous failure mode: a fluent output that silently skipped its verification steps. Evaluate the path, not just the destination.</li>
+<li><strong>Tests and evals are the new spec.</strong> They are no longer just a quality gate — they are the most precise channel for communicating intent to an agent. A well-written eval suite outperforms any natural-language prompt.</li>
+<li><strong>The flywheel compounds.</strong> Evaluate, diagnose by clustering root causes, optimize, verify against regression, monitor production — each turn raises the floor. Quality becomes a continuous, compounding loop rather than a phase.</li>
+<li><strong>Maintenance is the sleeper unlock.</strong> The biggest near-term ROI may not be greenfield velocity but finally being able to touch the legacy and tech debt that organizations had written off.</li>
+<li><strong>Pace-of-change caveat (mid-2026).</strong> This phase picture reflects mid-2026 and is shifting fast. Teams are already experimenting with workflows where developers go <strong>directly from specs to review</strong>, with agents handling implementation, testing, and deployment in the background. These boundaries may look different in 12 months. What stays constant: human judgment, taste, and the skill to verify AI output.</li>
+</ul>
+</blockquote></div></section>
+<section class="panel" id="t04" role="tabpanel"><div class="card prose topic-body"><h1>The Factory Model — Building the System That Builds Software</h1>
+<p>The factory model is the mental model that ties together every transformation the paper has described so far. Its single load-bearing claim is a reframe of what a developer actually produces: <strong>your primary output is no longer code — it's the system that produces code.</strong> Once implementation collapses from weeks to hours, the scarce, high-leverage work moves up a level. You stop hand-assembling the artifact and start designing the line that assembles it for you.</p>
+<p>This section unpacks the five components of that system, the factory-manager analogy that anchors it, the operating principle that makes it work (success criteria, not step-by-step instructions), and the question it leaves open — which sets up Harness Engineering.</p>
+<h2>The reframe: output is the system</h2>
+<p>For most of computing history the deliverable <em>was</em> the code. In the factory model, the code is the line's output; the developer's deliverable is the line itself — the specifications, agents, tests, feedback loops, and guardrails that, taken together, reliably turn intent into working software. A senior engineer is no longer measured by lines written but by whether the system they designed produces software that meets the required standard.</p>
+<h2>The five components of the system</h2>
+<p>The paper defines the code-producing system as five interlocking parts. Note the flow embedded in them: specs say <em>what</em>, agents <em>build</em>, tests <em>verify</em>, feedback loops <em>correct</em>, and guardrails <em>contain</em>.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Role</th>
+<th>Example artifacts</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Specifications &amp; context</td>
+<td>Define what needs to be built and the conditions it must satisfy</td>
+<td>Formal specs, architecture docs, <code>AGENTS.md</code>/<code>CLAUDE.md</code>/<code>GEMINI.md</code>, memory files, API schemas</td>
+</tr>
+<tr>
+<td>Agents</td>
+<td>Translate specifications into implementation</td>
+<td>Terminal and background coding agents, sub-agents, multi-agent workflows</td>
+</tr>
+<tr>
+<td>Tests &amp; quality gates</td>
+<td>Verify that the output is correct</td>
+<td>Deterministic test suites, eval suites with rubrics, CI/CD gates, LM judges</td>
+</tr>
+<tr>
+<td>Feedback loops</td>
+<td>Route failures back to agents for correction</td>
+<td>Captured test/error output fed back to the agent, regression suites, the continuous quality flywheel</td>
+</tr>
+<tr>
+<td>Guardrails</td>
+<td>Constrain agents to safe, predictable behavior</td>
+<td>Hard constraints, hooks at lifecycle points, formatting and safety validations</td>
+</tr>
+</tbody>
+</table>
+<h2>The factory-manager analogy</h2>
+<p>A factory manager does not assemble every widget by hand. They design the assembly line and own quality control. The modern developer designs the development system and ensures its output meets the bar. The work is <em>upstream</em> of any individual artifact: get the line right, and every widget that comes off it is correct by construction rather than by inspection. The corollary is economic — this is upfront CapEx (designing schemas, tests, and context) that drives down the marginal cost of every feature the line subsequently ships.</p>
+<h2>The operating principle: success criteria, not step-by-step instructions</h2>
+<p>The principle that makes the line run is this: <strong>give agents success criteria, then let them iterate</strong> — do not script every step. A precise spec plus a test-and-eval suite tells the agent what <em>correct</em> means and gives it an automated way to check itself. That turns the agent into a closed loop that converges on a passing state, instead of a transcription engine waiting on the next instruction. It is also why tests and evals are framed as the contract with the AI: they communicate intent more precisely than any prose prompt, and they are what separates agentic engineering from vibe coding.</p>
+<h3>Diagram A — The factory pipeline</h3>
+<pre class="mermaid">flowchart LR
+    subgraph Guardrails [Guardrails constrain all behavior]
+        direction LR
+        Dev[Developer designs the system] --&gt; Specs[Specifications and context]
+        Specs --&gt; Agents[Agents produce code]
+        Agents --&gt; Tests[Tests and quality gates verify]
+        Tests --&gt;|Pass| Ship[Ship the output]
+        Tests --&gt;|Fail| Feedback[Feedback loop]
+        Feedback --&gt;|Route failure back| Agents
+    end</pre>
+<h3>Diagram B — Old output vs. new output</h3>
+<pre class="mermaid">flowchart TB
+    subgraph Old [Writing code - old output]
+        direction TB
+        O1[Developer] --&gt; O2[Hand-writes implementation]
+        O2 --&gt; O3[Code is the deliverable]
+    end
+    subgraph New [Designing the system that writes code - new output]
+        direction TB
+        N1[Developer] --&gt; N2[Designs specs, tests, feedback, guardrails]
+        N2 --&gt; N3[Agents produce the code]
+        N3 --&gt; N4[The system is the deliverable]
+    end
+    Old -.shift.-&gt; New</pre>
+<h2>The handoff to Harness Engineering</h2>
+<p>The factory model raises the obvious next question: what is the central machine on the floor? If the developer is the factory manager, the <strong>AI model is merely the raw engine</strong> — and an engine alone cannot manufacture a car. It needs belts, gears, safety sensors, and the assembly line around it. In AI-assisted development, that surrounding machinery is the <strong>harness</strong>. The factory model tells you the developer's job is to design the system; Harness Engineering tells you what that system is actually made of.</p>
+<h2>Why this matters / advanced takeaways</h2>
+<blockquote>
+<ul>
+<li><strong>Your output is the system, not the code.</strong> Optimize the line, not the widget. Reviewing the system that produces a thousand changes is higher leverage than reviewing any one change — and it is where senior judgment now compounds.</li>
+<li><strong>Success criteria beat step-by-step instructions.</strong> Scripting steps reduces an agent to a transcription engine and caps throughput at your typing speed. Specifying <em>what correct looks like</em> — via tests, evals, and rubrics — lets the agent iterate to a passing state on its own. This is the structural difference between agentic engineering and vibe coding.</li>
+<li><strong>The five components are a closed loop, not a checklist.</strong> Specs, agents, tests, feedback, and guardrails only deliver reliability when wired together so failures route back automatically. Tests without a feedback loop are inspection; the loop is what makes the factory self-correcting.</li>
+<li><strong>The model is just the engine.</strong> Treating a model upgrade as the fix for agent failures is the wrong investment. The factory model deliberately separates the engine (model) from the machinery (harness) — which is precisely the subject of the next section.</li>
+</ul>
+</blockquote></div></section>
+<section class="panel" id="t05" role="tabpanel"><div class="card prose topic-body"><h1>Harness Engineering: What Surrounds the Model</h1>
+<p>When engineers first start building with AI agents, there is a strong temptation to treat the model as the system. A new model ships and the agent gets smarter; an older model and it gets worse. The model becomes the explanation for everything good and bad.</p>
+<p>That intuition is wrong, and it leads to the wrong investments. The model is one input into a running agent. Everything else — the prompts, the tools, the context policies, the hooks, the sandboxes, the sub-agents, the observability — is the <strong>harness</strong>: the scaffolding wrapped around the model that lets it actually finish something.</p>
+<h2>The equation</h2>
+<blockquote>
+<p><strong>Agent = Model + Harness</strong></p>
+</blockquote>
+<p>A raw model is not an agent. It becomes one once a harness gives it state, tool execution, feedback loops, and enforceable constraints. The behaviour you experience working with Claude Code, Cursor, Codex, Antigravity, Aider, or Cline is dominated by what the harness does — not just by which model is underneath. To borrow the whitepaper's image: if the developer is the factory manager, the model is the raw engine on the factory floor. An engine alone cannot manufacture a car; it needs belts, gears, safety sensors, and an assembly line. The harness is that surrounding machinery.</p>
+<h2>What's in the harness</h2>
+<p>A harness is built from six components. Crucially, this is the <strong>team's</strong> surface area, not the model provider's — it is what you own, configure, and version.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>What it includes</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Instructions &amp; Rule Files</strong></td>
+<td>The text defining who the agent is, what it cares about, and what it is forbidden from doing: <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>GEMINI.md</code>, skill files, and sub-agent prompts.</td>
+<td>Sets the agent's role, goals, and hard boundaries before it acts. A vague rule here surfaces later as misbehaviour everywhere.</td>
+</tr>
+<tr>
+<td><strong>2. Tools</strong></td>
+<td>The functions, MCP servers, and APIs the agent can call — plus the prose around them telling the model when and how to call them.</td>
+<td>Connects the model to the world. A missing tool or unclear calling instructions is a common, silent cause of failure.</td>
+</tr>
+<tr>
+<td><strong>3. Sandboxes &amp; Execution Environments</strong></td>
+<td>Where the agent's code actually runs, what it can access, and what it cannot reach.</td>
+<td>Keeps the agent secure and contained while it executes real code, reads files, and runs tests.</td>
+</tr>
+<tr>
+<td><strong>4. Orchestration Logic</strong></td>
+<td>Sub-agent spawning, model routing, hand-offs between specialists, and the rules that govern when each one fires.</td>
+<td>Runs the loop and the feedback cycle — it is what captures a result and decides whether to continue, retry, or delegate.</td>
+</tr>
+<tr>
+<td><strong>5. Guardrails / Hooks</strong></td>
+<td>Deterministic code that runs at specific lifecycle points: before a tool call, after a file edit, before a commit.</td>
+<td>The place for the things the agent should never forget but often does. Non-probabilistic enforcement at the moments that matter.</td>
+</tr>
+<tr>
+<td><strong>6. Observability</strong></td>
+<td>Logs, traces, evaluations, cost and latency metering, drift detection.</td>
+<td>Without it there is no way to tell whether the agent is doing well or quietly drifting.</td>
+</tr>
+</tbody>
+</table>
+<h2>Harness anatomy</h2>
+<pre class="mermaid">graph TD
+    M[Model - reasoning engine]
+    I[1. Instructions and Rule Files]
+    T[2. Tools]
+    S[3. Sandboxes and Execution Environments]
+    O[4. Orchestration Logic]
+    G[5. Guardrails and Hooks]
+    B[6. Observability]
+    I --&gt; M
+    T --&gt; M
+    S --&gt; M
+    O --&gt; M
+    G --&gt; M
+    B --&gt; M
+    M -.-&gt;|wrapped by the harness = an Agent| I</pre>
+<h2>The harness across the SDLC</h2>
+<p>The model determines <em>how</em> to accomplish a task; the harness provides the access — tools, sandboxes, orchestration — needed to execute it. So the harness must be present in every phase where an agent operates. Its role shifts phase by phase: you <strong>configure</strong> it, then <strong>run</strong> it, then close the <strong>feedback loop</strong>, then <strong>observe</strong> it.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Harness role</th>
+<th>Components used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Requirements, Planning &amp; Architecture</strong></td>
+<td><strong>Configuring the harness</strong> — set up the agent's environment before any production code is written. Author the instructions and rule files, define which tools the agent gets, and set the rules it cannot break.</td>
+<td>Instructions &amp; Rule Files; Tools (defined)</td>
+</tr>
+<tr>
+<td><strong>Implementation</strong></td>
+<td><strong>Running the harness</strong> — the harness acts as the boundary that keeps the model focused, secure, and productive. Generated code executes inside the isolated sandbox; file reads and web searches go through provided tools.</td>
+<td>Sandboxes &amp; Execution Environments; Tools</td>
+</tr>
+<tr>
+<td><strong>Testing &amp; QA</strong></td>
+<td><strong>The feedback loop</strong> — the harness facilitates autonomous self-correction. It runs the tests in a sandboxed environment; on failure, orchestration logic captures the error output and routes it back to the model to try again. This is the automated <em>think → act → observe</em> loop.</td>
+<td>Orchestration Logic; Guardrails</td>
+</tr>
+<tr>
+<td><strong>Code Review, Deployment &amp; Maintenance</strong></td>
+<td><strong>Observing the harness</strong> — keeps the agent safe in live or near-live environments. Deterministic hooks block bad actions (e.g. a commit with a hard-coded password); observability tracks token cost, latency, and drift, and lets engineers audit <em>why</em> an agent made a given decision.</td>
+<td>Hooks; Observability</td>
+</tr>
+</tbody>
+</table>
+<h2>The automated feedback loop</h2>
+<p>The single most important thing the harness creates in the QA phase is a closed, automated loop. The model never just emits code and stops — orchestration logic runs its output against tests in a sandbox and feeds failures back in.</p>
+<pre class="mermaid">graph LR
+    Think[Think - model writes a function] --&gt; Act[Act - run code and tests in sandbox]
+    Act --&gt; Observe[Observe - capture test results]
+    Observe --&gt;|tests pass| Done[Accept output]
+    Observe --&gt;|test fails| Route[Orchestration logic captures error output]
+    Route --&gt;|routes failure back to model| Think</pre>
+<p>This is the difference between an agent that finishes and one that flails: the orchestration layer turns a single fluent generation into an iterative, self-correcting process.</p>
+<h2>Vibe coding vs agentic engineering: a harness distinction</h2>
+<p>The transition from vibe coding to agentic engineering is <em>not</em> about which tool you use — a developer can do either with the exact same agent. It is defined by <strong>how deliberately you configure and apply the harness</strong>. Vibe coding relies on minimal or implicit scaffolding aimed purely at rapid implementation. Agentic engineering relies on clear, extensive harness abstractions that guide the AI from the first planning document all the way through to production monitoring.</p>
+<h2>Why this matters — advanced takeaways</h2>
+<blockquote>
+<p><strong>The harness effect is large and measurable, with the model held fixed.</strong></p>
+<ul>
+<li>On <strong>Terminal Bench 2.0</strong>, one team moved a coding agent from <strong>outside the Top 30 to the Top 5 by changing only the harness — no model change at all.</strong></li>
+<li>A separate study at <strong>LangChain</strong> raised a coding agent's score on the same benchmark by <strong>13.7 points</strong> by tweaking only the system prompt, tools, and middleware around a fixed model.</li>
+</ul>
+<p>The everyday version of this is the most useful rule of thumb a team can adopt: when an agent does something wrong, the first instinct is to blame the model. More often, the failure traces back to a missing tool, a vague rule, an absent guardrail, or a context window stuffed with noise.</p>
+<p><strong>Most agent failures, examined honestly, are configuration failures.</strong></p>
+</blockquote>
+<p>The practical implication for senior engineers: invest where the leverage is. The harness is your surface area to design, version, and improve — and it is where the measurable wins live. Treat the six components as first-class engineering artifacts, not afterthoughts bolted onto whichever frontier model happens to be current.</p></div></section>
+<section class="panel" id="t06" role="tabpanel"><div class="card prose topic-body"><h1>The Developer's Evolving Role + The 80% Problem</h1>
+<p>As AI absorbs more of the implementation work, the developer's job is not shrinking so much as bifurcating. The whitepaper frames this through two modes that engineers move between <em>fluidly</em> over the course of a single day: the <strong>conductor</strong> and the <strong>orchestrator</strong>. Neither is a permanent identity or a rung on a ladder; they are postures matched to the task at hand. Running underneath both is a hard ceiling on what delegation buys you — the <strong>80% problem</strong> — and a quiet shift in the <em>kind</em> of mistakes AI makes, from syntax errors you can spot to conceptual errors you can't.</p>
+<h2>Two modes of working with agents</h2>
+<h3>Conductor: hands-on, real-time direction</h3>
+<p>In conductor mode, the developer works in real time with an AI pair-programmer. They are in the IDE, watching code appear, steering with prompts and corrections, and keeping fine-grained control over what gets written. The AI is a powerful instrument, but the developer is actively directing <em>every movement</em>.</p>
+<p>This mode fits complex logic, tricky debugging, and unfamiliar codebases — anywhere the developer needs to understand each change as it lands. Tools like <strong>GitHub Copilot, Gemini Code Assist, Cursor, and Windsurf</strong> support it through inline completions, chat, and edit-in-place. It is the natural mode for engineers from traditional backgrounds, because it preserves the sense of understanding and control they value.</p>
+<p>The risk is throughput: if a human is personally directing every keystroke, the productivity gain from AI is capped. The conductor can become the bottleneck.</p>
+<h3>Orchestrator: async, multi-agent delegation</h3>
+<p>In orchestrator mode, the developer operates at a higher level of abstraction. They define goals, assign them to agents, and review results — but they are not watching code appear line by line. Agents may run in the <strong>background, in parallel</strong>, across different parts of the codebase. The developer checks in periodically, reviews output, and provides course corrections.</p>
+<p>This mode fits well-defined work: bug fixes, feature implementations against established patterns, codebase migrations, and test generation. Tools like <strong>Google Jules, GitHub Copilot agent mode, Cursor background agents, and Claude Code</strong> support it through async task execution, often in sandboxed environments with full access to the repo, build tools, and test suites.</p>
+<p>Critically, the orchestrator demands a <em>different skill set</em> — not deep fluency in syntax and language idioms, but four capabilities:</p>
+<ul>
+<li><strong>Specification</strong> — defining tasks precisely enough that an agent can execute without ambiguity.</li>
+<li><strong>Decomposition</strong> — breaking large tasks into appropriately sized units for agent execution.</li>
+<li><strong>Evaluation</strong> — quickly assessing whether agent output meets the quality bar.</li>
+<li><strong>System design</strong> — designing the constraints, tests, and feedback loops that keep agents productive.</li>
+</ul>
+<h3>Conductor vs. Orchestrator at a glance</h3>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Conductor</th>
+<th>Orchestrator</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Abstraction level</td>
+<td>Low — line-by-line, in the editor</td>
+<td>High — goals and acceptance criteria</td>
+</tr>
+<tr>
+<td>Interaction style</td>
+<td>Real-time, synchronous, in the loop</td>
+<td>Async; periodic check-ins on background work</td>
+</tr>
+<tr>
+<td>Concurrency</td>
+<td>Single agent, one stream of work</td>
+<td>Multiple agents in parallel</td>
+</tr>
+<tr>
+<td>Typical tasks</td>
+<td>Complex logic, tricky debugging, unfamiliar codebases</td>
+<td>Bug fixes, pattern-based features, migrations, test generation</td>
+</tr>
+<tr>
+<td>Core skills</td>
+<td>Syntax fluency, language idioms, real-time judgment</td>
+<td>Specification, decomposition, evaluation, system design</td>
+</tr>
+<tr>
+<td>Representative tools</td>
+<td>GitHub Copilot, Gemini Code Assist, Cursor, Windsurf</td>
+<td>Google Jules, Copilot agent mode, Cursor background agents, Claude Code</td>
+</tr>
+<tr>
+<td>Main risk</td>
+<td>Throughput bottleneck — human gates every keystroke</td>
+<td>Specification or review gaps — bad output produced fast, at scale</td>
+</tr>
+</tbody>
+</table>
+<pre class="mermaid">flowchart TB
+    subgraph Conductor [Conductor mode - real-time, single agent]
+        direction TB
+        D1[Developer in the IDE] --&gt;|prompt, then correct| A1[AI pair-programmer]
+        A1 --&gt;|code appears line by line| D1
+    end
+    subgraph Orchestrator [Orchestrator mode - async, multi-agent]
+        direction TB
+        D2[Developer defines goals] --&gt; AG1[Agent 1: feature]
+        D2 --&gt; AG2[Agent 2: tests]
+        D2 --&gt; AG3[Agent 3: migration]
+        AG1 --&gt;|results for review| R[Periodic check-in and course correction]
+        AG2 --&gt;|results for review| R
+        AG3 --&gt;|results for review| R
+        R --&gt; D2
+    end</pre>
+<h2>The 80% problem</h2>
+<p>The persistent ceiling on delegation is what the authors call the <strong>80% problem</strong>: AI agents can rapidly generate roughly <strong>80% of the code</strong> for a feature, but the remaining <strong>20%</strong> demands deep contextual knowledge current models often lack. That 20% is not evenly distributed leftover work — it is precisely the hardest and most consequential part:</p>
+<ul>
+<li><strong>Edge cases</strong> the model never considered.</li>
+<li><strong>Error handling</strong> that covers realistic failure modes, not happy paths.</li>
+<li><strong>Integration points</strong> where the feature meets the rest of the system.</li>
+<li><strong>Subtle correctness requirements</strong> that depend on intent the code can't infer.</li>
+</ul>
+<pre class="mermaid">flowchart LR
+    F[A feature to build] --&gt; E[The easy 80 percent]
+    F --&gt; H[The hard 20 percent]
+    E --&gt; E1[Boilerplate and scaffolding]
+    E --&gt; E2[Common patterns]
+    E --&gt; E3[Happy-path logic]
+    H --&gt; H1[Edge cases]
+    H --&gt; H2[Error handling]
+    H --&gt; H3[Integration points]
+    H --&gt; H4[Subtle correctness]
+    E1 --&gt; AI[AI generates this rapidly]
+    E2 --&gt; AI
+    E3 --&gt; AI
+    H1 --&gt; HU[Needs deep contextual human judgment]
+    H2 --&gt; HU
+    H3 --&gt; HU
+    H4 --&gt; HU</pre>
+<h2>The nature of AI errors has changed</h2>
+<p>The 80% problem is dangerous because of <em>how</em> the missing 20% fails. The nature of AI errors has evolved from simple <strong>syntax mistakes</strong> — which a compiler catches instantly — to <strong>insidious conceptual failures</strong>:</p>
+<ul>
+<li>Wrong assumptions about business logic.</li>
+<li>Failure to seek clarification on ambiguous requirements.</li>
+<li>Missing edge cases.</li>
+<li>Architectural decisions that create subtle, long-term maintenance burdens.</li>
+</ul>
+<p>These are harder to detect <em>precisely because the code "looks right"</em> and may even pass basic tests. The error is not in the grammar; it is in the understanding.</p>
+<h2>The effective posture</h2>
+<p>The developers who navigate this best adopt a deliberate division of labor. They use AI for <strong>what it's good at</strong> — rapid implementation of well-specified tasks — while reserving their own attention for <strong>what AI struggles with</strong>: ambiguous requirements, architectural trade-offs, and correctness verification.</p>
+<p>The key distinction: they do not try to be faster by <strong>accepting everything</strong> the AI produces. They try to be faster by <strong>focusing their expertise where it matters most</strong>.</p>
+<blockquote>
+<h3>Why this matters / advanced takeaways</h3>
+<ul>
+<li><strong>The error class shifted, so the review discipline must shift with it.</strong> When AI mostly made syntax errors, the toolchain caught them. Now the dangerous failures are conceptual — wrong business-logic assumptions, unasked clarifying questions, missing edge cases, costly architectural choices — and they survive compilation, basic tests, and a casual glance. Review can no longer be a syntax pass; it has to be a <em>correctness and intent</em> pass aimed squarely at the 20%.</li>
+<li><strong>Conductor and orchestrator are postures, not tiers.</strong> The skill is moving between them by stakes and familiarity: conduct the parts you must understand as they're written; orchestrate the well-specified parts you can hand off. Treating orchestration as strictly "more advanced" misses the point — and over-conducting turns the human into the throughput bottleneck.</li>
+<li><strong>Speed comes from allocation, not acceptance.</strong> The leverage is not in trusting more output; it is in concentrating scarce human attention on ambiguity, architectural trade-offs, and verification — the exact places models are weakest. Faster <em>because</em> expertise is focused, not because review was skipped.</li>
+<li><strong>The orchestrator's four skills are the new core competency.</strong> Specification, decomposition, evaluation, and system design displace raw syntax fluency as the differentiating skills — and they are the same skills that contain the 80% problem, since precise specs and good evals are how you force the hard 20% into view early.</li>
+</ul>
+</blockquote></div></section>
+<section class="panel" id="t07" role="tabpanel"><div class="card prose topic-body"><h1>Coding Agents in Practice + Production-Ready Agents</h1>
+<p>A year ago, building an agent meant frameworks, SDKs, and cloud consoles. Today a developer does most of the work from a terminal, in natural language, often with another coding agent doing the typing. This section names the patterns that replaced the old stack — first for the developer who <em>uses</em> coding agents day to day, then for the developer who <em>builds</em> agents as products.</p>
+<h2>Where coding agents fit in the developer's day</h2>
+<p>Coding agents show up in three places. Most developers use all three in a single day, switching by task rather than climbing a ladder.</p>
+<ul>
+<li><strong>In the editor</strong> — Inline completion suggests the next line as you type; chat panels explain or modify code in place; whole-codebase awareness lives inside the IDE. This is where most people first meet AI in coding, and where the work stays <em>in flow</em>.</li>
+<li><strong>In the terminal</strong> — A coding agent launched from the command line, handed a goal in plain language, with full filesystem access. It makes multi-file edits, runs tools and tests, and iterates on what it observes. This is where serious vibe coding happens today.</li>
+<li><strong>In the background</strong> — An agent that takes a task and runs autonomously in a cloud-hosted sandbox, often for hours, typically producing a pull request. The developer hands off and reviews later.</li>
+</ul>
+<h3>The three loci at a glance</h3>
+<table>
+<thead>
+<tr>
+<th>Locus</th>
+<th>Behavior</th>
+<th>Best-fit tasks</th>
+<th>Representative tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Editor</strong></td>
+<td>Inline completion, in-place chat edits, whole-codebase awareness; developer stays in flow</td>
+<td>Mid-stream writing, quick edits, explanations without leaving the IDE</td>
+<td>GitHub Copilot, Cursor, Windsurf, JetBrains AI Assistant</td>
+</tr>
+<tr>
+<td><strong>Terminal</strong></td>
+<td>Launched from CLI, given a plain-language goal, full filesystem access, multi-file edits, runs tools/tests and iterates</td>
+<td>Multi-file work, exploring unfamiliar codebases, tasks needing run-and-react loops</td>
+<td>Antigravity CLI, Claude Code, Codex CLI, OpenCode, Cline</td>
+</tr>
+<tr>
+<td><strong>Background</strong></td>
+<td>Autonomous in a cloud sandbox for hours, produces a PR as output</td>
+<td>Well-specified tasks you can describe in a paragraph and walk away from: known bug fixes, test-suite generation, framework migrations</td>
+<td>Google Jules, GitHub Copilot agent mode, Cursor background agents, AlphaEvolve for algorithm design</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>The right starting point depends on the <strong>task</strong>, not on which category sits highest on some autonomy ladder.</p>
+</blockquote>
+<h3>Mapped by interaction and autonomy</h3>
+<pre class="mermaid">flowchart LR
+    A[Editor agent&lt;br/&gt;high interaction, low autonomy] --&gt; B[Terminal agent&lt;br/&gt;goal-driven, runs and reacts]
+    B --&gt; C[Background agent&lt;br/&gt;low interaction, high autonomy]
+    A -.-&gt;|stays in flow| Dev[Developer]
+    B -.-&gt;|hands a goal| Dev
+    C -.-&gt;|hands off, reviews a PR later| Dev</pre>
+<h2>Vibe coding production-ready agents</h2>
+<p>Everything above is about using coding agents to build software. But what happens when the thing you need to build <em>is itself an agent</em> — a support bot that handles refund requests, a research assistant that produces grounded reports, a compliance monitor that flags anomalies?</p>
+<p>These are not tasks you solve with a coding agent in your terminal. They are <strong>products</strong>: they need their own tools, their own memory, their own evaluation, and their own deployment infrastructure. The distinction is who the agent serves. For one-off scripts or personal automation, a regular coding agent is enough — the agent is the destination. For agents that serve real users at scale, the agent is the <em>product</em>, and it needs the substrate underneath: persistent memory across sessions, scoped permissions on tools and data, eval coverage that catches regressions before they ship, and observability that traces what the agent actually did.</p>
+<p>The shift is that the <strong>same terminal workflow</strong> that produces prototype scripts now reaches these production agents. What used to be a framework-and-cloud-console task now happens in the same terminal, often by talking to the same coding agent the developer was already using.</p>
+<h3>Google's Agents CLI</h3>
+<p>Google's Agents CLI is built around this idea. It is a small command-line tool that bundles a set of skills for building agents on Google Cloud, and it works with <em>whichever coding agent the developer prefers</em> — Claude Code, Codex, or another. After a one-time install, the coding agent gains <strong>seven new skills covering the full ADK lifecycle</strong>: scaffolding a project, writing the agent code, evaluating it, deploying it to Agent Runtime, and wiring up observability. The developer does not learn a new SDK; they describe what they want, and the coding agent uses the skills to do the right thing at each step.</p>
+<pre><code class="language-bash"># One-time setup
+uvx google-agents-cli setup
+
+# Then in your coding agent:
+&gt; Build a support agent that answers questions from our docs.
+&gt; evaluate it on the FAQ dataset
+&gt; Deploy it to Agent Engine
+</code></pre>
+<p>Behind that single instruction, the coding agent scaffolds a project from a template, writes the ADK code, generates an evalset, runs it against the agent, deploys to Agent Runtime, and reports back. For developers who prefer to drive directly, the same operations are available as plain CLI commands:</p>
+<pre><code class="language-bash">agents-cli create
+agents-cli playground
+agents-cli eval
+agents-cli deploy
+</code></pre>
+<h3>The prototype-to-production collapse</h3>
+<p>Production agents used to require a separate stack and a separate workflow from prototypes. Now the prototype that ran on the developer's laptop yesterday can become the production agent serving real users today — <strong>without a rewrite</strong>. The lifecycle — build, evaluate, deploy, observe, refine — lives in one place.</p>
+<pre class="mermaid">flowchart LR
+    Build[Build&lt;br/&gt;scaffold + ADK code] --&gt; Eval[Evaluate&lt;br/&gt;evalset + rubrics]
+    Eval --&gt; Deploy[Deploy&lt;br/&gt;Agent Runtime]
+    Deploy --&gt; Observe[Observe&lt;br/&gt;traces, cost, latency]
+    Observe --&gt; Refine[Refine]
+    Refine --&gt; Build</pre>
+<h3>Scaling from one agent to many</h3>
+<p>The same workflow scales from a single agent to a team of them. ADK provides graph-based workflows and multi-agent workflows for building collaborative agents, plus interaction mechanisms — shared session state, LLM-driven delegation, and explicit invocation — that combine into whatever multi-agent pattern fits the problem.</p>
+<p>Coordination across agents happens through three layers:</p>
+<ul>
+<li><strong>Shared session state</strong> for simple cases.</li>
+<li><strong>Model Context Protocol (MCP)</strong> for tool access.</li>
+<li><strong>Agent2Agent (A2A)</strong> for cross-agent delegation.</li>
+</ul>
+<pre class="mermaid">flowchart TB
+    Orchestrator[Orchestrator agent] --&gt;|A2A delegation| WorkerA[Specialist agent A]
+    Orchestrator --&gt;|A2A delegation| WorkerB[Specialist agent B]
+    WorkerA --&gt;|MCP| Tools[Tools and data]
+    WorkerB --&gt;|MCP| Tools
+    WorkerA &lt;--&gt;|shared session state| WorkerB</pre>
+<blockquote>
+<p><strong>Why this matters / advanced takeaways</strong></p>
+<ul>
+<li><strong>Prototype to production with no rewrite.</strong> The same vibe coding workflow that produces a script today produces a production agent tomorrow. The path from idea to running agent has collapsed from weeks to hours, and most of the work now happens in natural language — which means the verification discipline (evals in CI, traces, scoped permissions) has to move <em>with</em> it.</li>
+<li><strong>The C-compiler-in-Rust result.</strong> Anthropic's engineering team published an early-2026 experiment in which agent teams running on this kind of architecture built a working C compiler in Rust over two weeks — humans setting direction and reviewing output, but <em>not writing the implementation</em>. The bottleneck moved from writing code to specifying what it should do and verifying that the agents did it.</li>
+<li><strong>Open standards are the coordination substrate.</strong> MCP (tool access) and A2A (cross-agent delegation) are converging into the connective tissue of multi-agent systems. Adopting them now keeps the option to mix vendors and frameworks open and avoids re-platforming later.</li>
+</ul>
+</blockquote></div></section>
+<section class="panel" id="t08" role="tabpanel"><div class="card prose topic-body"><h1>The Economics of AI Development</h1>
+<p>Discussions of AI's impact on the SDLC usually open and close with developer velocity: how fast can we ship code? For engineering leaders, the paper argues, that is the wrong headline metric. The decisive question is <strong>Total Cost of Ownership (TCO)</strong> — and TCO is best understood by tracing how each workflow distributes its burden between <strong>Capital Expenditure (CapEx)</strong>, the upfront investment to build something, and <strong>Operational Expenditure (OpEx)</strong>, the ongoing cost to run, fix, and maintain it. The pivotal AI-era twist: <strong>OpEx is now heavily dictated by the token economy.</strong> Every interaction with an LLM is metered per token, so operational cost is no longer just engineer-hours — it is also a literal API bill that scales with how you feed and re-prompt the model.</p>
+<h2>The leadership reframe: from velocity to TCO</h2>
+<p>Velocity measures one moment — generation. TCO measures the whole lifecycle. Two workflows can look identical at the speed-of-first-draft level yet sit at opposite ends of the cost spectrum once you account for the months of running, debugging, and securing the code. The economic signature of a workflow is therefore the <em>shape</em> of its CapEx/OpEx split, not its day-one output rate.</p>
+<h2>The hidden debt of vibe coding: low CapEx, high OpEx</h2>
+<p>Vibe coding looks almost free. The barrier to entry is essentially zero — a monthly subscription to an AI assistant plus a few casual prompts. CapEx is negligible because the developer leans entirely on the model's baseline capability instead of investing time in system design.</p>
+<p>That low entry cost masks a compounding OpEx burden along three axes:</p>
+<ul>
+<li><strong>Token burn rate.</strong> Developers dump massive, unstructured files into the context window and repeatedly ask the model to fix its own unverified mistakes. The result is an expensive "prompting loop" that burns API tokens with a low first-pass success rate — you pay, fail, re-prompt, and pay again.</li>
+<li><strong>Maintenance tax.</strong> Ad-hoc prompting produces code that lacks structural consistency. When a bug surfaces six months later, human engineers spend days reverse-engineering unstructured, AI-generated "spaghetti" before they can even begin the fix.</li>
+<li><strong>Security remediation.</strong> Without an automated evaluation harness, rapid code generation becomes rapid vulnerability generation. Fixing a security flaw in production is exponentially more expensive than catching it at the design phase.</li>
+</ul>
+<h2>The investment of agentic engineering: high CapEx, low OpEx</h2>
+<p>Agentic engineering flips the model. It demands a deliberate, upfront investment of engineering time <em>before a single line of production code is generated</em>: designing API schemas, building deterministic test suites, and — most importantly — structuring the agent's context.</p>
+<p>That higher CapEx buys a dramatically lower marginal cost per feature. Because the AI operates inside a strictly governed "factory," its output is structurally sound, pre-tested, and aligned with company standards. The cost of shipping and maintaining each subsequent feature drops, and the expensive trial-and-error loops never get a chance to form.</p>
+<h2>Economics side by side</h2>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Vibe Coding</th>
+<th>Agentic Engineering</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CapEx (upfront build)</strong></td>
+<td>Near zero — subscription plus casual prompts; no system design</td>
+<td>High — API schemas, deterministic test suites, structured context</td>
+</tr>
+<tr>
+<td><strong>OpEx (run / fix / maintain)</strong></td>
+<td>High and compounding</td>
+<td>Low and declining per feature</td>
+</tr>
+<tr>
+<td><strong>Token behavior</strong></td>
+<td>Massive unstructured context dumps; repeated re-prompting to fix unverified output</td>
+<td>Dense, high-signal payloads; dynamic context and model routing curb spend</td>
+</tr>
+<tr>
+<td><strong>Maintenance</strong></td>
+<td>Maintenance tax — days spent reverse-engineering AI "spaghetti"</td>
+<td>Structurally consistent, standards-aligned output is cheap to evolve</td>
+</tr>
+<tr>
+<td><strong>Security</strong></td>
+<td>No eval harness — rapid generation of vulnerabilities; costly production fixes</td>
+<td>Pre-tested inside a governed factory; flaws caught at design</td>
+</tr>
+<tr>
+<td><strong>First-pass success</strong></td>
+<td>Low — drives the expensive prompting loop</td>
+<td>High — right context upfront avoids costly trial-and-error</td>
+</tr>
+</tbody>
+</table>
+<h2>The CapEx/OpEx flip</h2>
+<pre class="mermaid">flowchart LR
+    subgraph VC[Vibe Coding]
+        direction TB
+        VC1[Low CapEx&lt;br/&gt;subscription plus casual prompts]
+        VC2[High OpEx&lt;br/&gt;token burn, maintenance tax, security remediation]
+        VC1 --&gt; VC2
+    end
+    subgraph AE[Agentic Engineering]
+        direction TB
+        AE1[High CapEx&lt;br/&gt;API schemas, test suites, structured context]
+        AE2[Low OpEx&lt;br/&gt;sound, pre-tested, standards-aligned output]
+        AE1 --&gt; AE2
+    end
+    VC -. economic flip .-&gt; AE</pre>
+<h2>Context engineering as a financial lever</h2>
+<p>In the token economy, context engineering is not merely a technical skill — it is a financial strategy. LLMs charge for every piece of information you send, so passing an entire 100,000-token repository into every prompt is financially unviable at scale.</p>
+<p>Effective context engineering ensures the model receives a <strong>dense, high-signal payload</strong> — a precise <code>AGENTS.md</code> and architectural guardrails — rather than a sprawling, noisy one. Providing the right context upfront raises the agent's first-pass success rate, which is what eliminates the costly trial-and-error loops that plague vibe coding. To push OpEx lower still, advanced agentic engineering relies on <strong>dynamic context</strong> loaded on demand through skills and tool calling such as Model Context Protocol (MCP) servers — covered in depth in the Day-3 companion paper on Context Engineering. You pay the token cost only for the knowledge a task actually needs.</p>
+<h2>Intelligent model routing</h2>
+<p>A vibe coding workflow typically funnels every interaction through a single, massive frontier model — paying premium token prices just to ask the AI to fix a typo or generate a basic unit test.</p>
+<p>A well-designed factory avoids that waste. It reserves large, advanced models for genuinely complex tasks — requirements, architecture, and initial implementation — and automatically routes deterministic, low-complexity tasks — test generation, code review, and CI/CD monitoring — to smaller, faster, and significantly cheaper models. By orchestrating a multi-model ecosystem, teams maintain peak output quality while systematically driving down the operational token cost.</p>
+<pre class="mermaid">flowchart TD
+    T[Incoming task] --&gt; R{Router&lt;br/&gt;assess complexity}
+    R --&gt;|complex tasks| L[Large advanced model]
+    R --&gt;|deterministic tasks| S[Small fast cheap model]
+    L --&gt; L1[Requirements]
+    L --&gt; L2[Architecture]
+    L --&gt; L3[Initial implementation]
+    S --&gt; S1[Test generation]
+    S --&gt; S2[Code review]
+    S --&gt; S3[CI/CD monitoring]
+    L1 --&gt; Q[Quality maintained, token cost down]
+    L2 --&gt; Q
+    L3 --&gt; Q
+    S1 --&gt; Q
+    S2 --&gt; Q
+    S3 --&gt; Q</pre>
+<h2>Why this matters / advanced takeaways</h2>
+<blockquote>
+<ul>
+<li><strong>OpEx is governed by the token economy.</strong> In the AI era, the ongoing cost line is no longer just engineer-hours — it is a per-token API bill. Any architecture decision that changes how much context you send, how often you re-prompt, or which model answers is directly an OpEx decision.</li>
+<li><strong>Context engineering is a financial lever, not just a quality lever.</strong> Dense, high-signal payloads raise first-pass success, and first-pass success is what kills the expensive re-prompting loop. Treating <code>AGENTS.md</code>, guardrails, and the static/dynamic context boundary as financial controls reframes them from "nice discipline" to direct cost management.</li>
+<li><strong>The flip is the whole point.</strong> Vibe coding trades near-zero CapEx for compounding OpEx — token burn, maintenance tax, security remediation. Agentic engineering pays CapEx upfront (schemas, deterministic tests, structured context) to collapse the marginal cost of every feature that follows. TCO, not velocity, exposes which trade you actually made.</li>
+<li><strong>A multi-model ecosystem is a cost architecture.</strong> Routing complex work to frontier models and deterministic work to cheap, fast models preserves quality while systematically lowering token spend — paying frontier prices for a typo fix is the vibe-coding tax made literal.</li>
+</ul>
+</blockquote></div></section>
+<section class="panel" id="t09" role="tabpanel"><div class="card prose topic-body"><h1>Where to Start and the Durable Principles</h1>
+<p>The shift from syntax to intent is not a future state; it is the work in front of us today. Whether you read this as an individual builder or as a leader thinking about how a team or an organization adopts these tools, one principle holds across every level: <strong>AI amplifies the engineering culture it lands in.</strong> A team with strong tests, clear architecture, and healthy review gets a force multiplier; a team without them gets its weaknesses multiplied just as fast. The checklists below translate that principle into action at three scales, and the section closes with the three principles the authors expect to outlast any specific tool.</p>
+<h2>For Individual Developers</h2>
+<ol>
+<li><strong>Set up an AGENTS.md (or equivalent).</strong> Pick the convention that matches your coding agent. Start with ten lines: stack, conventions, hard rules, workflow. Add a rule every time the agent does something it should not do again.</li>
+<li><strong>Install a set of skills</strong> for your coding agents (such as Agents CLI) to build, evaluate, deploy, and optimize agents.</li>
+<li><strong>Make one repetitive workflow your first agent.</strong> A research workflow, a code-review process, a recurring report. Prototype it with a coding agent and graduate it to production when it earns its keep. Building one agent end to end teaches more than reading about a hundred.</li>
+<li><strong>Write the tests and evals before generating the code.</strong> Together they are the contract with the AI — they communicate intent more precisely than any prompt and turn vibe coding into agentic engineering.</li>
+<li><strong>Review every line that ships.</strong> Be skeptical of anything that looks clever, check imports for real packages, and verify error handling covers realistic failure modes. Code the team does not understand becomes debugging cost it cannot afford.</li>
+<li><strong>Maintain your own developer skills.</strong> Treat AI as a way to apply expertise at greater scale, not a substitute for it. Debugging, system design, and intuition for performance and correctness have to stay sharp.</li>
+</ol>
+<h2>For Engineering Leaders</h2>
+<ol>
+<li><strong>Make context engineering first-class.</strong> Treat AGENTS.md, system prompts, eval suites, and skill libraries as code: reviewed in PRs, versioned with the project, owned by named engineers. Otherwise the harness drifts and agent behavior becomes irreproducible across the team.</li>
+<li><strong>Set the bar at the eval, not the demo.</strong> A demo proves an agent can succeed once; a passing eval suite proves it succeeds reliably. Define an explicit rubric — task success, tool-use quality, trajectory compliance, hallucination, response quality — and require eval coverage before any agent ships into a shared workflow, the way test coverage gates a service deployment.</li>
+<li><strong>Re-shape code review for AI-generated code.</strong> It needs equal or greater scrutiny than human code, with extra attention to hallucinated dependencies, inadequate error handling, and subtle correctness gaps that look right at a glance. Train reviewers on those failure modes and tune checklists accordingly.</li>
+<li><strong>Distinguish prototyping from production in team norms.</strong> Make the boundary explicit — which projects, branches, and environments warrant vibe coding versus agentic engineering. Teams that keep this blurry ship prototypes by accident.</li>
+<li><strong>Invest in harness components as a shared team asset.</strong> Reusable prompts, skill libraries, MCP connections, and eval harnesses compound across projects. Build the harness once and refine it many times.</li>
+</ol>
+<h2>For Organizations</h2>
+<ol>
+<li><strong>Treat AI-assisted development as an engineering investment, not a productivity feature.</strong> The largest gains come from pairing AI tooling with eval coverage, observability, and architectural standards. Rolling out an agent without that scaffolding produces speed without quality — and technical debt faster than any team can repay.</li>
+<li><strong>Invest in the production substrate before scale.</strong> A vibe-coded prototype is not a production system. What graduates it is operational discipline: trajectory and final-response evals in CI, traces of every agent run, scoped permissions per agent, and security review tuned to generated-code failure modes. Build this before the first production agent ships.</li>
+<li><strong>Adopt open standards.</strong> MCP for tool access and A2A for cross-agent delegation are converging into the connective tissue of multi-agent systems. Choosing them now keeps the option to mix vendors and frameworks open and avoids re-platforming later.</li>
+<li><strong>Plan for hybrid human-plus-agent teams.</strong> The strongest results come from architectures where humans set direction, agents implement, and clear handoff protocols govern the boundary. Code review, on-call rotations, and team structures all evolve to reflect that agents are now participants, not just tools.</li>
+<li><strong>Reframe hiring around judgment, not implementation.</strong> As implementation gets faster, the bottleneck shifts to specification, evaluation, architectural judgment, and review. The most valuable engineers will be the ones who direct agents well, not the ones who write the most code.</li>
+</ol>
+<h2>The Three Durable Principles</h2>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>What it means</th>
+<th>Practical implication</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Structure scales, vibes don't</td>
+<td>Vibe coding is valid for exploration and personal projects, but software organizations depend on requires specs, tests, guardrails, and human oversight of architecture.</td>
+<td>Gate production work behind agentic-engineering discipline; the gap between "it seems to work" and "it works correctly under all conditions" is where outages and vulnerabilities live.</td>
+</tr>
+<tr>
+<td>AI amplifies your engineering culture</td>
+<td>AI is a force multiplier of both strengths and weaknesses; strong testing, clear standards, and healthy review compound, while their absence compounds too.</td>
+<td>Fix the culture and the harness first; tooling alone will not rescue a team without discipline.</td>
+</tr>
+<tr>
+<td>The human role is evolving, not diminishing</td>
+<td>The skills that matter shift from implementation to judgment — architecture, precise specification, critical evaluation, and designing constraints and feedback loops.</td>
+<td>Invest in judgment-centric skills and roles; the builders who direct agents well become more valuable, not less.</td>
+</tr>
+</tbody>
+</table>
+<h2>Adoption Path: Individual to Organization</h2>
+<pre class="mermaid">flowchart LR
+    A[Individual developer&lt;br/&gt;AGENTS.md, skills,&lt;br/&gt;first agent end to end] --&gt; B[Engineering team&lt;br/&gt;context as code,&lt;br/&gt;eval bar, shared harness]
+    B --&gt; C[Organization&lt;br/&gt;production substrate,&lt;br/&gt;open standards, hybrid teams]
+    C --&gt; D[Hiring and roles&lt;br/&gt;reframed around judgment]</pre>
+<h2>Intent as the New Interface</h2>
+<pre class="mermaid">flowchart TD
+    I[Intent&lt;br/&gt;the new interface] --&gt; P1[Structure scales,&lt;br/&gt;vibes don&#x27;t]
+    I --&gt; P2[AI amplifies your&lt;br/&gt;engineering culture]
+    I --&gt; P3[The human role is&lt;br/&gt;evolving, not diminishing]
+    P1 --&gt; C[Verification, judgment,&lt;br/&gt;and direction]
+    P2 --&gt; C
+    P3 --&gt; C
+    C --&gt; O[Software you can&lt;br/&gt;depend on]</pre>
+<blockquote>
+<p><strong>Generation is solved. Verification, judgment, and direction are the new craft.</strong></p>
+</blockquote></div></section>
+</main>
+
+<footer>
+  Built from <em>The New SDLC With Vibe Coding</em> (Osmani, Saboo, Kartakis, May 2026). Diagrams rendered with Mermaid. &nbsp;·&nbsp; <span>Generation is solved. Verification, judgment, and direction are the new craft.</span>
+</footer>
+
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+mermaid.initialize({
+  startOnLoad: false,
+  theme: "base",
+  fontFamily: "'Inter', sans-serif",
+  themeVariables: {
+    primaryColor: "#e6f4f3",
+    primaryBorderColor: "#0d9488",
+    primaryTextColor: "#16302e",
+    lineColor: "#6b7280",
+    secondaryColor: "#f1f5f9",
+    tertiaryColor: "#f8fafc",
+    fontSize: "14px"
+  }
+});
+
+const tabs = document.querySelectorAll(".tabbtn");
+const panels = document.querySelectorAll(".panel");
+
+async function renderMermaidIn(panel) {
+  const nodes = panel.querySelectorAll(".mermaid:not([data-processed])");
+  if (nodes.length) {
+    try { await mermaid.run({ nodes: [...nodes] }); }
+    catch (e) { console.error("mermaid render error", e); }
+  }
+}
+
+function activate(id) {
+  tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === id));
+  panels.forEach(p => p.classList.toggle("active", p.id === id));
+  const panel = document.getElementById(id);
+  if (panel) { renderMermaidIn(panel); window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" }); }
+  if (history.replaceState) history.replaceState(null, "", "#" + id);
+}
+
+tabs.forEach(t => t.addEventListener("click", () => activate(t.dataset.tab)));
+
+// initial tab from hash or default
+const initial = (location.hash || "#exec").slice(1);
+const valid = [...tabs].some(t => t.dataset.tab === initial);
+activate(valid ? initial : "exec");
+</script>
+</body>
+</html>
