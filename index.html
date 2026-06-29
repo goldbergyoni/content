@@ -35,53 +35,61 @@ body {
 a { color: var(--primary-strong); text-underline-offset: 3px; }
 a:hover { text-decoration: underline; }
 
-/* Header */
+/* Header — thin single-line bar */
 .hero {
-  background: linear-gradient(180deg, var(--card), var(--background));
-  border-bottom: 1px solid var(--border);
-  padding: 48px 24px 28px;
-}
-.hero-inner { max-width: 64rem; margin: 0 auto; }
-.kicker {
-  font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--primary-strong); margin: 0 0 12px;
-}
-.hero h1 {
-  font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.08; letter-spacing: -.02em;
-  font-weight: 800; margin: 0 0 14px;
-}
-.hero p.sub { font-size: 1.05rem; color: var(--muted-foreground); margin: 0; max-width: 46rem; }
-.hero .meta { margin-top: 16px; font-size: .82rem; color: var(--muted-foreground); }
-.hero .meta span { color: var(--foreground); font-weight: 600; }
-
-/* Tab bar */
-.tabbar {
-  position: sticky; top: 0; z-index: 50;
-  background: color-mix(in oklch, var(--card) 85%, transparent);
+  position: sticky; top: 0; z-index: 60;
+  background: color-mix(in oklch, var(--card) 92%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
-  padding: 10px 16px;
+  padding: 7px 24px;
 }
-.tabbar-inner { max-width: 72rem; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.tab-divider { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+.hero-inner {
+  max-width: 72rem; margin: 0 auto; display: flex; align-items: baseline; gap: 12px;
+}
+.hero h1 {
+  font-size: .98rem; line-height: 1.2; letter-spacing: -.01em;
+  font-weight: 700; margin: 0; white-space: nowrap;
+}
+.hero h1 .dot { color: var(--primary-strong); }
+.hero .sub {
+  font-size: .8rem; color: var(--muted-foreground); margin: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 720px) { .hero .sub { display: none; } }
+
+/* Tab bar — thin, two labeled rows */
+.tabbar {
+  position: sticky; top: 34px; z-index: 50;
+  background: color-mix(in oklch, var(--card) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  padding: 5px 16px;
+}
+.tabbar-inner { max-width: 72rem; margin: 0 auto; display: flex; flex-direction: column; gap: 3px; }
+.tabrow { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.tabrow + .tabrow { padding-top: 3px; border-top: 1px dashed var(--border); }
+.tab-label {
+  font-size: .6rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--muted-foreground); opacity: .65; width: 58px; flex: 0 0 58px;
+}
 .tabbtn {
-  font-family: inherit; font-size: .85rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
   border: 1px solid transparent; background: transparent; color: var(--muted-foreground);
-  padding: 7px 14px; border-radius: 999px; transition: all .18s ease; white-space: nowrap;
-  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 11px; border-radius: 999px; transition: all .18s ease; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px;
 }
 .tabbtn:hover { color: var(--foreground); background: var(--muted); }
 .tabbtn.overview { }
 .tabbtn .num {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 50%; font-size: .68rem; font-weight: 700;
+  width: 16px; height: 16px; border-radius: 50%; font-size: .64rem; font-weight: 700;
   background: var(--secondary); color: var(--primary-strong);
 }
 .tabbtn.active { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
 .tabbtn.active .num { background: rgba(255,255,255,.25); color: #fff; }
 
 /* Layout */
-main { max-width: 64rem; margin: 0 auto; padding: 36px 24px 80px; }
+main { max-width: 64rem; margin: 0 auto; padding: 26px 24px 80px; }
 .panel { display: none; animation: fade .25s ease; }
 .panel.active { display: block; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -160,6 +168,26 @@ main { max-width: 64rem; margin: 0 auto; padding: 36px 24px 80px; }
 /* All-insights spacing */
 .insights-all h2 { font-size: 1.25rem; }
 
+/* Topics index grid */
+.topic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (max-width: 700px) { .topic-grid { grid-template-columns: 1fr; } }
+.topic-index-card {
+  display: flex; align-items: flex-start; gap: 14px; text-align: left; cursor: pointer;
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 18px 20px; font-family: inherit; transition: all .22s ease; box-shadow: var(--shadow-sm);
+}
+.topic-index-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+.ti-num {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; background: var(--secondary);
+  color: var(--primary-strong); font-weight: 800; font-size: .95rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.ti-text { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.ti-title { font-weight: 700; font-size: 1.02rem; color: var(--foreground); letter-spacing: -.01em; }
+.ti-desc { font-size: .88rem; color: var(--muted-foreground); line-height: 1.5; }
+.ti-arrow { color: var(--primary); font-size: 1.1rem; align-self: center; opacity: 0; transition: opacity .2s ease; }
+.topic-index-card:hover .ti-arrow { opacity: 1; }
+
 footer { border-top: 1px solid var(--border); padding: 26px 24px; text-align: center; color: var(--muted-foreground); font-size: .82rem; }
 footer a { color: var(--primary-strong); }
 </style>
@@ -167,21 +195,24 @@ footer a { color: var(--primary-strong); }
 <body>
 <header class="hero">
   <div class="hero-inner">
-    <p class="kicker">Reading Companion</p>
-    <h1>The New SDLC With Vibe Coding</h1>
-    <p class="sub">From ad-hoc prompting to agentic engineering — an advanced companion to the Google whitepaper by Addy Osmani, Shubham Saboo &amp; Sokratis Kartakis.</p>
-    <p class="meta">Source: <span>Google whitepaper, May 2026</span> · 51 pages · 9 topics · 64 curated insights</p>
+    <h1>The New SDLC With Vibe Coding<span class="dot"> ·</span></h1>
+    <p class="sub">Reading companion to the Google whitepaper — Osmani, Saboo &amp; Kartakis, May 2026</p>
   </div>
 </header>
 
 <nav class="tabbar">
   <div class="tabbar-inner" role="tablist">
-    <button class="tabbtn overview" role="tab" data-tab="exec">Executive Summary</button>
+    <div class="tabrow">
+      <span class="tab-label">Overview</span>
+      <button class="tabbtn overview" role="tab" data-tab="exec">Executive Summary</button>
 <button class="tabbtn overview" role="tab" data-tab="top5">Top 5 Insights</button>
 <button class="tabbtn overview" role="tab" data-tab="all">All Insights</button>
 <button class="tabbtn overview" role="tab" data-tab="visuals">Key Visuals</button>
-    <span class="tab-divider"></span>
-    <button class="tabbtn topic" role="tab" data-tab="t01"><span class="num">1</span>Spectrum</button>
+<button class="tabbtn overview" role="tab" data-tab="topics">Topics</button>
+    </div>
+    <div class="tabrow">
+      <span class="tab-label">Topics</span>
+      <button class="tabbtn topic" role="tab" data-tab="t01"><span class="num">1</span>Spectrum</button>
 <button class="tabbtn topic" role="tab" data-tab="t02"><span class="num">2</span>Context Engineering</button>
 <button class="tabbtn topic" role="tab" data-tab="t03"><span class="num">3</span>New SDLC Phases</button>
 <button class="tabbtn topic" role="tab" data-tab="t04"><span class="num">4</span>Factory Model</button>
@@ -190,6 +221,7 @@ footer a { color: var(--primary-strong); }
 <button class="tabbtn topic" role="tab" data-tab="t07"><span class="num">7</span>Coding Agents</button>
 <button class="tabbtn topic" role="tab" data-tab="t08"><span class="num">8</span>Economics</button>
 <button class="tabbtn topic" role="tab" data-tab="t09"><span class="num">9</span>Adoption &amp; Principles</button>
+    </div>
   </div>
 </nav>
 
@@ -367,6 +399,43 @@ footer a { color: var(--primary-strong); }
     Traditional --&gt; AIDriven</pre></div>
   <p class="caption">The result of AI is not a faster version of the old SDLC but a differently-shaped one. Implementation that once took weeks now takes hours, yet requirements, architecture, and verification remain human-paced — so the slow phases become the new bottleneck and the highest-leverage place to invest human attention. The boundaries blur and the developer's role shifts from primary implementor to system designer and quality arbiter.</p>
 </div></div></section>
+<section class="panel" id="topics" role="tabpanel"><div class="topic-grid"><button class="topic-index-card" data-goto="t01">
+  <span class="ti-num">1</span>
+  <span class="ti-text"><span class="ti-title">Spectrum</span><span class="ti-desc">The continuum from casual vibe coding to disciplined agentic engineering — and why verification, not the model, is the real dividing line.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button><button class="topic-index-card" data-goto="t02">
+  <span class="ti-num">2</span>
+  <span class="ti-text"><span class="ti-title">Context Engineering</span><span class="ti-desc">The six context types and the static-vs-dynamic trade-off that Agent Skills exploit through progressive disclosure.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button><button class="topic-index-card" data-goto="t03">
+  <span class="ti-num">3</span>
+  <span class="ti-text"><span class="ti-title">New SDLC Phases</span><span class="ti-desc">How AI compresses each SDLC phase unevenly — implementation in hours, while requirements, architecture, and verification stay human-paced.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button><button class="topic-index-card" data-goto="t04">
+  <span class="ti-num">4</span>
+  <span class="ti-text"><span class="ti-title">Factory Model</span><span class="ti-desc">Why the developer&#x27;s real output becomes the system that builds software, not the code itself.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button><button class="topic-index-card" data-goto="t05">
+  <span class="ti-num">5</span>
+  <span class="ti-text"><span class="ti-title">Harness Engineering</span><span class="ti-desc">Agent = Model + Harness — why most agent behavior, and most failures, trace back to the scaffolding around the model.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button><button class="topic-index-card" data-goto="t06">
+  <span class="ti-num">6</span>
+  <span class="ti-text"><span class="ti-title">Roles &amp; 80% Problem</span><span class="ti-desc">Conductor vs. orchestrator modes, and the stubborn 20% of a feature that AI can&#x27;t finish on its own.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button><button class="topic-index-card" data-goto="t07">
+  <span class="ti-num">7</span>
+  <span class="ti-text"><span class="ti-title">Coding Agents</span><span class="ti-desc">Editor, terminal, and background agents — and the leap from prototype scripts to production-grade agents.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button><button class="topic-index-card" data-goto="t08">
+  <span class="ti-num">8</span>
+  <span class="ti-text"><span class="ti-title">Economics</span><span class="ti-desc">CapEx/OpEx and the token economy, with context engineering and model routing as the financial levers.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button><button class="topic-index-card" data-goto="t09">
+  <span class="ti-num">9</span>
+  <span class="ti-text"><span class="ti-title">Adoption &amp; Principles</span><span class="ti-desc">Where to start for individuals, leaders, and organizations — and the three durable principles.</span></span>
+  <span class="ti-arrow">&rarr;</span>
+</button></div></section>
 <section class="panel" id="t01" role="tabpanel"><div class="card prose topic-body"><h1>The Vibe Coding → Agentic Engineering Spectrum</h1>
 <p>The paper's foundational move is to reject the binary. "Vibe coding" and "agentic engineering" are not two camps but the endpoints of one continuum, and the axis that separates them is not <em>whether</em> you use AI — it's how much structure, verification, and human judgment surrounds the AI's output. For a senior engineer the load-bearing claim is precise and uncomfortable: without both tests and evals, the practice is always vibe coding regardless of how sophisticated the prompts are.</p>
 <h2>From syntax to intent — and why the term fractured</h2>
@@ -1318,6 +1387,10 @@ function activate(id) {
 }
 
 tabs.forEach(t => t.addEventListener("click", () => activate(t.dataset.tab)));
+
+// Topics index cards jump to the matching topic tab
+document.querySelectorAll("[data-goto]").forEach(c =>
+  c.addEventListener("click", () => activate(c.dataset.goto)));
 
 // initial tab from hash or default
 const initial = (location.hash || "#exec").slice(1);
