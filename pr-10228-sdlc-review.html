@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PR #10228 — Per-Skill SDLC Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#f8f9fa;--card:#fff;--fg:#28282a;--muted:#6b7280;--primary:#0d9488;--border:#e2e4e8;--radius:12px;
+    --pass:#059669;--fail:#dc2626;--na:#9ca3af;--error-bg:#fef2f2;--error-fg:#b91c1c;--warning-bg:#fff4ed;--warning-fg:#c2410c;--info-bg:#f0fdfa;--info-fg:#0f766e;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:64rem;margin:0 auto;padding:3rem 1.5rem 5rem;}
+  header h1{font-size:2.1rem;font-weight:800;letter-spacing:-.02em;margin:0 0 .25rem;}
+  header .label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--primary);}
+  header .sub{color:var(--muted);font-size:.95rem;margin:.5rem 0 0;}
+  header .sub a{color:var(--primary);text-decoration:none;}
+
+  nav.tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin:2rem 0 1.5rem;border-bottom:1px solid var(--border);}
+  nav.tabs button{font:inherit;font-weight:700;font-size:1.05rem;cursor:pointer;border:0;background:none;padding:.65rem 1rem;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
+  nav.tabs button.active{color:var(--primary);border-bottom-color:var(--primary);}
+  nav.tabs button .count{font-weight:500;opacity:.8;font-size:.85rem;}
+
+  nav.subtabs{display:flex;flex-wrap:wrap;gap:.4rem;margin:.25rem 0 1.5rem;border-bottom:1px solid var(--border);}
+  nav.subtabs button{font:inherit;font-weight:600;font-size:.9rem;cursor:pointer;border:0;background:none;padding:.5rem .8rem;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
+  nav.subtabs button.active{color:var(--primary);border-bottom-color:var(--primary);}
+  nav.subtabs button .b{font-size:.7rem;font-weight:700;color:var(--warning-fg);}
+  nav.subtabs button .b.err{color:var(--fail);}
+
+  .panel{display:none;}.panel.active{display:block;}
+  .subpanel{display:none;}.subpanel.active{display:block;}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.6rem 1.9rem;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:1.1rem;}
+  h2{font-size:1.35rem;font-weight:700;letter-spacing:-.01em;margin:0 0 .9rem;}
+  h3{font-size:1rem;font-weight:700;margin:1.3rem 0 .5rem;}
+  p{margin:0 0 .8rem;}
+  code{background:rgba(0,0,0,.06);padding:.1em .4em;border-radius:5px;font-size:.88em;}
+
+  .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin:1rem 0;}
+  .stat{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem .75rem;text-align:center;}
+  .stat .num{font-size:1.7rem;font-weight:800;letter-spacing:-.03em;line-height:1;}
+  .stat .lbl{font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.45rem;}
+  .stat.error .num{color:var(--fail);}.stat.warning .num{color:var(--warning-fg);}.stat.informative .num{color:var(--primary);}.stat.tok .num{color:var(--fg);}
+
+  .artifact-meta{color:var(--muted);font-size:.86rem;margin:0 0 1.1rem;}
+  .artifact-meta code{background:rgba(0,0,0,.06);padding:.1em .4em;border-radius:5px;color:var(--fg);}
+
+  .checklist{list-style:none;margin:0;padding:0;}
+  .check-item{border:1px solid var(--border);border-radius:10px;margin-bottom:.5rem;background:var(--card);overflow:hidden;}
+  .check-item.fail{border-color:#fecaca;}
+  .check-header{display:flex;align-items:center;gap:.75rem;width:100%;padding:.8rem 1rem;border:0;background:none;cursor:pointer;font:inherit;text-align:left;color:var(--fg);}
+  .check-header:hover{background:rgba(0,0,0,.02);}
+  .status-icon{flex-shrink:0;width:1.3rem;height:1.3rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;}
+  .status-icon.pass{background:#d1fae5;color:var(--pass);}.status-icon.fail{background:#fecaca;color:var(--fail);}.status-icon.na{background:#f3f4f6;color:var(--na);}
+  .check-title{flex:1;font-weight:600;font-size:.92rem;}
+  .check-badges{display:flex;align-items:center;gap:.5rem;}
+  .sev-badge{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2em .6em;border-radius:999px;white-space:nowrap;}
+  .sev-error{background:var(--error-bg);color:var(--error-fg);}.sev-warning{background:var(--warning-bg);color:var(--warning-fg);}.sev-informative{background:var(--info-bg);color:var(--info-fg);}.sev-good{background:#ecfdf5;color:#047857;}
+  .chevron{width:1rem;height:1rem;color:var(--muted);transition:transform .15s ease;}
+  .check-item.open .chevron{transform:rotate(180deg);}
+  .check-body{display:none;padding:0 1rem 1rem 3rem;font-size:.88rem;color:var(--muted);}
+  .check-item.open .check-body{display:block;}
+  .check-body .fail-reason{margin-top:.6rem;padding:.7rem .9rem;border-radius:8px;background:var(--warning-bg);color:var(--warning-fg);}
+  .check-body .fail-reason.error{background:var(--error-bg);color:var(--error-fg);}
+  .check-body .fail-reason.informative{background:var(--info-bg);color:var(--info-fg);}
+
+  .finding{border:1px solid var(--border);border-radius:10px;margin-bottom:.7rem;overflow:hidden;}
+  .finding.error{border-color:#fecaca;}.finding.warning{border-color:#fed7aa;}.finding.informative{border-color:#99f6e4;}
+  .finding-head{display:flex;align-items:center;gap:.75rem;padding:.85rem 1.05rem;}
+  .finding-title{flex:1;font-weight:700;font-size:.96rem;}
+  .finding-body{padding:0 1.05rem .95rem;font-size:.89rem;color:var(--muted);}
+  .finding-body .loc{display:block;font-family:ui-monospace,Menlo,monospace;font-size:.8rem;color:var(--fg);background:rgba(0,0,0,.04);padding:.45rem .65rem;border-radius:7px;margin:0 0 .55rem;white-space:pre-wrap;}
+  .finding-body p{margin:0 0 .45rem;}.finding-body strong{color:var(--fg);}
+  .fix{margin-top:.45rem;padding:.55rem .75rem;background:var(--info-bg);color:var(--info-fg);border-radius:7px;}
+
+  .acc{list-style:none;margin:0;padding:0;}
+  .acc li{display:flex;gap:.7rem;padding:.6rem 0;border-bottom:1px solid var(--border);font-size:.88rem;align-items:flex-start;}
+  .acc li:last-child{border-bottom:0;}
+  .acc .dot{flex-shrink:0;width:1.2rem;height:1.2rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;margin-top:.1rem;}
+  .acc .dot.ok{background:#d1fae5;color:var(--pass);}.acc .dot.no{background:#fecaca;color:var(--fail);}
+  .acc .claim{font-weight:600;color:var(--fg);}
+  .acc .detail{color:var(--muted);}
+
+  .ov-table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:.9rem;}
+  .ov-table th,.ov-table td{text-align:left;padding:.6rem .7rem;border-bottom:1px solid var(--border);}
+  .ov-table th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .ov-table td.n{font-weight:700;text-align:center;}
+  .pill{display:inline-block;font-size:.72rem;font-weight:700;padding:.15em .55em;border-radius:999px;}
+  .pill.err{background:var(--error-bg);color:var(--error-fg);}.pill.warn{background:var(--warning-bg);color:var(--warning-fg);}.pill.ok{background:#ecfdf5;color:#047857;}
+  .agent{font-size:.8rem;color:var(--muted);margin-top:.4rem;}
+  @media(max-width:760px){.summary-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">Per-Skill SDLC Review · sub-agents</div>
+    <h1>PR #10228 — Three skills, reviewed independently</h1>
+    <p class="sub"><code>feat(AT-598)</code> · ItayRafe · +511/−0 · 15 files ·
+      <a href="https://github.com/Global-Slice/mono-slice/pull/10228">PR #10228</a>
+      · each skill reviewed by its own sub-agent against <code>.cursor/skills/sdlc</code> <span id="genat"></span></p>
+  </header>
+
+  <nav class="tabs" id="maintabs"></nav>
+  <div id="panels"></div>
+</div>
+
+<script type="application/json" id="data-grouping">
+{
+  "skill":"grouping","agentId":"d05eed58-93d0-42d7-a987-d0f1a330afd0",
+  "files":[".cursor/skills/grouping/SKILL.md",".cursor/skills/grouping/references/api-surface.md",".cursor/skills/grouping/references/architecture.md",".cursor/skills/grouping/references/consumers-backend.md",".cursor/skills/grouping/references/consumers-frontend.md",".cursor/skills/grouping/references/domain-model-prisma.md",".cursor/skills/grouping/references/domain-model-types.md",".cursor/skills/grouping/references/federation.md"],
+  "tokenEstimateSkillMd":320,
+  "summaryParagraph":"A domain-knowledge skill documenting grouping-service: rule-based security-group membership persistence, its single security-groups module (Controller\u2192Service\u2192Repository/RuleResolver/SecurityDataProvider), Prisma and shared-type domain models, HTTP API surface, two-layer tartlet+Rift federation, and its backend/frontend consumers. SKILL.md is a thin router with seven on-demand references; it explicitly scopes itself out of authorization (Casbin).",
+  "sections":[
+    {"name":"Structure And Intent","kind":"container","items":[
+      {"num":1,"check":"Valid name","severity":"error","result":"PASS","note":"","description":"name matches the parent directory: 1-64 chars, lowercase letters/numbers/single hyphens."},
+      {"num":2,"check":"Complete frontmatter","severity":"error","result":"PASS","note":"name and description present (YAML folded scalar); no undocumented fields.","description":"name and description present; optional fields follow the spec."},
+      {"num":3,"check":"Explicit allowed-tools","severity":"warning","result":"FAIL","note":"Frontmatter (SKILL.md L1-6) omits allowed-tools; relies on defaults.","description":"The skill sets allowed-tools explicitly rather than leaning on defaults."},
+      {"num":4,"check":"Declared version","severity":"warning","result":"FAIL","note":"No version field in frontmatter (SKILL.md L1-6).","description":"The skill carries a version field."},
+      {"num":5,"check":"Actionable description","severity":"warning","result":"PASS","note":"","description":"Says what the skill does and when to use it, using concrete trigger phrases."},
+      {"num":6,"check":"Third-person voice","severity":"warning","result":"PASS","note":"","description":"Directives address the agent; no first/second-person drift."},
+      {"num":7,"check":"Honest scope","severity":"warning","result":"PASS","note":"Explicitly disambiguates from authorization/Casbin; distinct from secondary skill.","description":"No keyword stuffing or 'use first' language; distinct from siblings; states when not to use it."},
+      {"num":8,"check":"Calibrated activation","severity":"warning","result":"PASS","note":"","description":"The description's pull matches a scoped domain-knowledge role."},
+      {"num":9,"check":"Lean SKILL.md","severity":"error","result":"PASS","note":"Body ~320 tokens, far under the 2,000 budget.","description":"Routing/invariants/first steps only; body under 2,000 tokens."},
+      {"num":10,"check":"Real progressive disclosure","severity":"warning","result":"PASS","note":"Seven references one level deep, each cited with what it holds.","description":"Long detail lives outside SKILL.md and loads on demand."},
+      {"num":11,"check":"No slop, high density","severity":"informative","result":"PASS","note":"","description":"Every line earns its tokens."},
+      {"num":12,"check":"No emphasis inflation","severity":"warning","result":"PASS","note":"Only two scoped bold terms; no 'important'/'critical' shouting.","description":"Avoid strong attention words that compete for LLM attention."},
+      {"num":13,"check":"No broken links","severity":"error","result":"PASS","note":"All 7 referenced files added in PR; backend-testing pointer exists.","description":"Every relative path the skill names exists."},
+      {"num":14,"check":"Clean structure","severity":"error","result":"PASS","note":"Descriptive names, closed fences, no absolute paths, no duplication.","description":"Descriptive names, closed fences, no orphaned/duplicated content."},
+      {"num":15,"check":"Spec-conformant layout","severity":"error","result":"PASS","note":"Root holds only SKILL.md plus a references/ subfolder.","description":"Root holds SKILL.md plus the allowed subfolders only."}
+    ]},
+    {"name":"Security And Trust","kind":"container","items":[
+      {"num":21,"check":"No injection or exfil","severity":"error","result":"PASS","note":"","description":"No override/concealment/exfil sinks/credential reads/remote-exec."},
+      {"num":22,"check":"Least privilege, honest manifest","severity":"error","result":"PASS","note":"Read-only knowledge skill; no side effects (allowed-tools absence flagged in #3).","description":"allowed-tools minimal and used; declared scope matches behavior."}
+    ]},
+    {"name":"Testing And Evaluation","kind":"container","items":[
+      {"num":23,"check":"Evals when behavior matters","severity":"warning","result":"N/A","note":"No evals/ shipped; pure documentation skill, consistent with siblings.","description":"Trigger evals cover should/should-not-trigger prompts."},
+      {"num":24,"check":"Discriminating cases","severity":"warning","result":"N/A","note":"No evals present to assess.","description":"A broken/uninstalled skill fails the evals."},
+      {"num":25,"check":"Checked token cost","severity":"warning","result":"N/A","note":"No eval ships measurement; reviewer measured ~320 tokens.","description":"Measure body + expanded tokens; confirm references on-demand."},
+      {"num":26,"check":"Resource-metric eval","severity":"warning","result":"N/A","note":"No evals present.","description":"At least one eval tracks a resource budget."}
+    ]},
+    {"name":"Instruction And Rule References","kind":"container","items":[
+      {"num":27,"check":"Right home, no duplication","severity":"warning","result":"PASS","note":"SKILL.md is pure routing; the only procedure (federation recipe) lives in references/.","description":"Instruction detail lives in a reference doc, not SKILL.md."}
+    ]}
+  ],
+  "guideline":[
+    {"file":".cursor/skills/grouping/references/federation.md","items":[
+      {"num":1,"check":"Recipe step granularity","severity":"warning","result":"PASS","note":"Five numbered single-line steps, no padding.","description":"Concise \u2014 one clear instruction per step."},
+      {"num":2,"check":"Recipe placement","severity":"warning","result":"PASS","note":"Cross-service federation recipe sits in the federation reference doc.","description":"Right home \u2014 fits logically where it lives."},
+      {"num":3,"check":"Recipe force/tone","severity":"warning","result":"PASS","note":"Neutral imperative; no coercion.","description":"Calibrated force \u2014 no dramatic language."},
+      {"num":4,"check":"Recipe wording","severity":"informative","result":"PASS","note":"Scoped wording; no absolute always/never.","description":"Measured phrasing."},
+      {"num":5,"check":"Recipe uniqueness","severity":"error","result":"PASS","note":"No conflicting/duplicate federation recipe elsewhere.","description":"Not duplicated."}
+    ]},
+    {"file":".cursor/skills/grouping/references/consumers-frontend.md","items":[
+      {"num":1,"check":"Testing-guidance pointer","severity":"error","result":"PASS","note":"Delegates to backend-testing skill rather than restating; no duplication.","description":"Not duplicated / right home."}
+    ]}
+  ],
+  "headlineFindings":[
+    {"severity":"warning","title":"Missing version field in frontmatter","loc":".cursor/skills/grouping/SKILL.md L1-6","desc":"Frontmatter declares only name and description; no version.","fix":"Add version: \"1.0\" to the frontmatter."},
+    {"severity":"warning","title":"allowed-tools not declared explicitly","loc":".cursor/skills/grouping/SKILL.md L1-6","desc":"Skill leans on default tool access instead of an explicit allow-list.","fix":"Add an explicit allowed-tools list (e.g. Read, Grep, Glob)."}
+  ],
+  "accuracyChecks":[
+    {"claim":"grouping-service module tree (controller, service, repository, rule-resolver, data-provider, mappers, dto)","verified":true,"detail":"All files/subdirs present; also security-groups.module.ts and a types/ dir."},
+    {"claim":"@Controller('security-groups') base route","verified":true,"detail":"Confirmed at security-groups.controller.ts L21."},
+    {"claim":"security-groups.types.ts defines FlattenedSecurity, SecurityGroupConditions, SecurityGroupEntity, conflict types, GROUPING_METADATA_FIELDS","verified":true,"detail":"All symbols present; SecurityGroupConditions = RiftGroupConditions<FlattenedSecurity>."},
+    {"claim":"rift.ts exposes Rift.group(entities + conditions)","verified":true,"detail":"static group<TEntity extends BaseRiftEntity>(...) on abstract Rift; rule-resolver calls it."},
+    {"claim":"Prisma SecurityGroup + SecurityGroupManualOverride (INCLUDE|EXCLUDE)","verified":true,"detail":"Both models + ManualOverrideAction enum present."},
+    {"claim":"tartlet securities/flattened (GET) + securities/enrich (POST)","verified":true,"detail":"securities-flattened.controller.ts has both; enrich body { memberIds }."},
+    {"claim":"fetchSecurityGroup consumed by AllowanceCalculator, Participations, EngagementAudience","verified":true,"detail":"Confirmed across the three tartlet services."},
+    {"claim":"env var GLOBAL_SLICE_GROUPING_SERVICE_URL","verified":true,"detail":"GROUPING_SERVICE_ENV_VAR_NAME in grouping-api.service.ts."},
+    {"claim":"Glaze Security Groups UI path","verified":true,"detail":"glaze/.../SecondaryManagement/SecurityGroups/ exists."}
+  ]
+}
+</script>
+
+<script type="application/json" id="data-payments">
+{
+  "skill":"payments","agentId":"ef43be99-8707-4c91-bee1-95321429b7ee",
+  "files":[".cursor/skills/payments/SKILL.md"],
+  "tokenEstimateSkillMd":2600,
+  "summaryParagraph":"The payments SKILL.md is factually accurate \u2014 every cited path and value (port 8103, src/index.ts rawBody bootstrap, external-payments enums, payment-providers module files, frost pages, AGENTS.md) was verified against local main. Its weaknesses are structural: a ~2,600-token body that exceeds the 2,000-token lean budget with all dense tables and a multi-step provider procedure inline, NO references/ directory (unlike sibling skills in the same PR), plus missing allowed-tools and version frontmatter.",
+  "sections":[
+    {"name":"Structure And Intent","kind":"container","items":[
+      {"num":1,"check":"Valid name","severity":"error","result":"PASS","note":"","description":"name matches the parent directory."},
+      {"num":2,"check":"Complete frontmatter","severity":"error","result":"PASS","note":"","description":"name and description present; optional fields follow the spec."},
+      {"num":3,"check":"Explicit allowed-tools","severity":"warning","result":"FAIL","note":"Frontmatter sets only name+description; no allowed-tools.","description":"The skill sets allowed-tools explicitly rather than leaning on defaults."},
+      {"num":4,"check":"Declared version","severity":"warning","result":"FAIL","note":"No version field in frontmatter.","description":"The skill carries a version field."},
+      {"num":5,"check":"Actionable description","severity":"warning","result":"PASS","note":"","description":"Says what it does and when to use it with concrete trigger phrases."},
+      {"num":6,"check":"Third-person voice","severity":"warning","result":"PASS","note":"","description":"Directives address the agent."},
+      {"num":7,"check":"Honest scope","severity":"warning","result":"PASS","note":"","description":"No keyword stuffing or 'use first'; distinct from siblings."},
+      {"num":8,"check":"Calibrated activation","severity":"warning","result":"PASS","note":"","description":"Description pull matches scoped domain knowledge."},
+      {"num":9,"check":"Lean SKILL.md","severity":"error","result":"FAIL","note":"~2,600 tokens (10,683 chars / 928 words, table-dense) exceeds the 2,000-token budget; detail should move to references/.","description":"Body under 2,000 tokens; move detail to references/ if it nears 3,000."},
+      {"num":10,"check":"Real progressive disclosure","severity":"warning","result":"FAIL","note":"Everything inline; ships NO references/ dir while sibling skills do.","description":"Long procedures/tables/examples live outside SKILL.md and load on demand."},
+      {"num":11,"check":"No slop, high density","severity":"informative","result":"PASS","note":"","description":"Every line earns its tokens."},
+      {"num":12,"check":"No emphasis inflation","severity":"warning","result":"PASS","note":"","description":"No 'important'/'critical' shouting."},
+      {"num":13,"check":"No broken links","severity":"error","result":"PASS","note":"Cited backend-testing/SKILL.md and AGENTS.md both exist.","description":"Every relative path the skill names exists."},
+      {"num":14,"check":"Clean structure","severity":"error","result":"PASS","note":"","description":"Descriptive names, closed fences, no duplication, no absolute paths."},
+      {"num":15,"check":"Spec-conformant layout","severity":"error","result":"PASS","note":"","description":"Root holds only SKILL.md (references/ optional)."}
+    ]},
+    {"name":"Security And Trust","kind":"container","items":[
+      {"num":21,"check":"No injection or exfil","severity":"error","result":"PASS","note":"","description":"No override/exfil/credential-read/remote-exec."},
+      {"num":22,"check":"Least privilege, honest manifest","severity":"error","result":"PASS","note":"Read-only domain knowledge; no write/network steps.","description":"Declared scope matches behavior."}
+    ]},
+    {"name":"Testing And Evaluation","kind":"container","items":[
+      {"num":23,"check":"Evals when behavior matters","severity":"warning","result":"N/A","note":"No evals dir; pure domain-knowledge skill, consistent with siblings.","description":"Trigger + functional evals."},
+      {"num":24,"check":"Discriminating cases","severity":"warning","result":"N/A","note":"No evals exist to assess.","description":"Realistic prompts a broken skill would fail."},
+      {"num":25,"check":"Checked token cost","severity":"warning","result":"N/A","note":"No eval harness; body sizing flagged under #9/#10.","description":"Measure body + expanded tokens."},
+      {"num":26,"check":"Resource-metric eval","severity":"warning","result":"N/A","note":"No resource-budget threshold defined.","description":"At least one eval scores a resource budget."}
+    ]},
+    {"name":"Instruction And Rule References","kind":"container","items":[
+      {"num":27,"check":"Right home, no duplication","severity":"warning","result":"FAIL","note":"The 'Adding a Provider' 4-step procedure sits inline in SKILL.md rather than a reference doc.","description":"Instruction detail should live in a reference doc, not SKILL.md."}
+    ]}
+  ],
+  "guideline":[
+    {"file":".cursor/skills/payments/SKILL.md","items":[
+      {"num":1,"check":"'Adding a Provider' 4-step procedure","severity":"warning","result":"FAIL","note":"A how-to-extend procedure (L171-176) belongs in references/ per progressive disclosure.","description":"Right home \u2014 a multi-step procedure should not live inline in SKILL.md."},
+      {"num":2,"check":"'Invariants & Gotchas' bullets","severity":"warning","result":"PASS","note":"Invariants are explicitly allowed in SKILL.md; concise and scoped.","description":"Right home / concise \u2014 invariant lines fit SKILL.md."},
+      {"num":3,"check":"Raw-body / no body-parser gotcha","severity":"warning","result":"PASS","note":"Light bold emphasis, not coercion; factual constraint.","description":"Calibrated force \u2014 no coercive language."},
+      {"num":4,"check":"'Testing: follow backend-testing/SKILL.md' pointer","severity":"error","result":"PASS","note":"Delegates to the canonical testing skill instead of restating it.","description":"Not duplicated \u2014 points to existing location."}
+    ]}
+  ],
+  "headlineFindings":[
+    {"severity":"error","title":"SKILL.md exceeds the 2,000-token lean budget","loc":".cursor/skills/payments/SKILL.md L1-183","desc":"Body is ~2,600 tokens (10,683 chars / 928 words) of dense markdown tables, over the 2,000-token lean target.","fix":"Move dense tables (Stripe events, frontend touchpoints, config/env, exercise-workflow sequences) into references/ and keep only routing + invariants in SKILL.md."},
+    {"severity":"warning","title":"No progressive disclosure / no references directory","loc":".cursor/skills/payments/SKILL.md (whole file)","desc":"All procedures, tables, and examples are inline; the skill ships no references/ dir while sibling skills all use one.","fix":"Create references/ (e.g. architecture.md, stripe.md, exercise-workflow.md, config.md) and cite each from a routing table."},
+    {"severity":"warning","title":"Missing allowed-tools and version frontmatter","loc":".cursor/skills/payments/SKILL.md L1-9","desc":"Frontmatter declares only name and description.","fix":"Add explicit allowed-tools (e.g. Read, Grep, Glob) and a version field."},
+    {"severity":"warning","title":"'Adding a Provider' procedure embedded inline","loc":".cursor/skills/payments/SKILL.md L171-176","desc":"A multi-step extension procedure lives in SKILL.md instead of a reference doc.","fix":"Move it to references/adding-a-provider.md and link from the routing table."}
+  ],
+  "accuracyChecks":[
+    {"claim":"payments-service runs on port 8103","verified":true,"detail":"src/main.ts:3 \u2014 const DEFAULT_PORT = 8103."},
+    {"claim":"Raw body enabled at bootstrap in src/index.ts for Stripe webhook signatures","verified":true,"detail":"src/index.ts:15 \u2014 NestFactory.create(AppModule, { bufferLogs:true, rawBody:true })."},
+    {"claim":"payments-service/AGENTS.md exists","verified":true,"detail":"File present (does not itself mention the port, but exists as cited)."},
+    {"claim":"PaymentProviderType (STRIPE, PAPAYA) + PaymentReferenceType.EXERCISE","verified":true,"detail":"external-payments.enums.ts confirms both enums."},
+    {"claim":"payment-providers module files (service, factories, controllers, abstracts, stripe-client)","verified":true,"detail":"All present under src/modules/payment-providers/."},
+    {"claim":"blockExternalPaymentDeleteExtension hard-blocks deletes at Prisma layer","verified":true,"detail":"src/prisma/block-external-payment-delete.extension.ts applied via $extends."},
+    {"claim":"ExternalPayment status flow + PAYABLE_PAYMENT_STATUSES","verified":true,"detail":"enums.ts status values present; payment.constants.ts exports the payable set."},
+    {"claim":"frost touchpoints (success/cancel/status pages, PaymentsReconciliationPage, PaymentConfirmationModal, PaymentsPage.mcp.ts)","verified":true,"detail":"All paths exist."},
+    {"claim":"Skill ships no references/ directory while sibling skills do","verified":true,"detail":"Diff adds only payments/SKILL.md; grouping/ and secondary/ both add references/."}
+  ]
+}
+</script>
+
+<script type="application/json" id="data-secondary">
+{
+  "skill":"secondary","agentId":"e0a5f337-8bd0-4b6d-92ca-c3a46690751e",
+  "files":[".cursor/skills/secondary/SKILL.md",".cursor/skills/secondary/references/architecture.md",".cursor/skills/secondary/references/domain-model.md",".cursor/skills/secondary/references/lifecycle.md",".cursor/skills/secondary/references/permissions.md",".cursor/skills/secondary/references/security-groups.md"],
+  "tokenEstimateSkillMd":320,
+  "summaryParagraph":"A well-scoped, lean domain-knowledge skill for the secondary-sale flow; the SKILL.md body is small (~320 tokens), routing-only, with honest, well-disambiguated activation that explicitly excludes unrelated 'secondary' strings. Almost all cited codebase paths and symbols verify against main. Main gaps: no version or allowed-tools frontmatter, no evals despite an explicit should-not-trigger boundary, and one misattributed symbol location (deriveCustomerFacingStatus).",
+  "sections":[
+    {"name":"Structure And Intent","kind":"container","items":[
+      {"num":1,"check":"Valid name","severity":"error","result":"PASS","note":"","description":"name matches parent directory."},
+      {"num":2,"check":"Complete frontmatter","severity":"error","result":"PASS","note":"","description":"name and description present; optional fields follow spec."},
+      {"num":3,"check":"Explicit allowed-tools","severity":"warning","result":"FAIL","note":"Frontmatter omits allowed-tools; relies on defaults.","description":"Skill sets allowed-tools explicitly rather than leaning on defaults."},
+      {"num":4,"check":"Declared version","severity":"warning","result":"FAIL","note":"No version field in frontmatter.","description":"The skill carries a version field."},
+      {"num":5,"check":"Actionable description","severity":"warning","result":"PASS","note":"~95 tokens, under limits.","description":"Says what it does and when to use it with concrete triggers."},
+      {"num":6,"check":"Third-person voice","severity":"warning","result":"PASS","note":"","description":"Directives address the agent."},
+      {"num":7,"check":"Honest scope","severity":"warning","result":"PASS","note":"Explicitly disambiguates and states when not to use.","description":"No keyword stuffing; states when not to use it."},
+      {"num":8,"check":"Calibrated activation","severity":"warning","result":"PASS","note":"Explicit negative boundary prevents eager loading.","description":"Scoped domain-knowledge pull."},
+      {"num":9,"check":"Lean SKILL.md","severity":"error","result":"PASS","note":"Body ~320 tokens, well under 2,000.","description":"Routing/invariants/first-steps only; under 2,000 tokens."},
+      {"num":10,"check":"Real progressive disclosure","severity":"warning","result":"PASS","note":"Detail lives in references/ one level deep; each cited.","description":"Detail loads on demand."},
+      {"num":11,"check":"No slop, high density","severity":"informative","result":"PASS","note":"","description":"Every line earns its tokens."},
+      {"num":12,"check":"No emphasis inflation","severity":"warning","result":"PASS","note":"Bold only on a few domain terms.","description":"No 'important'/'critical' shouting."},
+      {"num":13,"check":"No broken links","severity":"error","result":"PASS","note":"All 5 references exist; cross-link to grouping/SKILL.md added in same PR.","description":"Every relative path exists."},
+      {"num":14,"check":"Clean structure","severity":"error","result":"PASS","note":"","description":"Descriptive names, no dup, no absolute paths."},
+      {"num":15,"check":"Spec-conformant layout","severity":"error","result":"PASS","note":"Sole subfolder is references/.","description":"Root holds only SKILL.md + allowed subfolders."}
+    ]},
+    {"name":"Security And Trust","kind":"container","items":[
+      {"num":21,"check":"No injection or exfil","severity":"error","result":"PASS","note":"","description":"No override/exfil/credential-read/remote-exec."},
+      {"num":22,"check":"Least privilege, honest manifest","severity":"error","result":"PASS","note":"Read-only knowledge skill; scope matches behavior.","description":"No over-granted tools or side effects."}
+    ]},
+    {"name":"Testing And Evaluation","kind":"container","items":[
+      {"num":23,"check":"Evals when behavior matters","severity":"warning","result":"FAIL","note":"No evals/ folder despite explicit should-not-trigger boundary in description.","description":"Trigger evals cover should/should-not-trigger including near-miss negatives."},
+      {"num":24,"check":"Discriminating cases","severity":"warning","result":"FAIL","note":"No evals exist to fail on a broken/uninstalled skill.","description":"Realistic, ambiguous prompts."},
+      {"num":25,"check":"Checked token cost","severity":"warning","result":"FAIL","note":"No eval measuring token cost; references are on-demand though.","description":"Measure body + expanded tokens."},
+      {"num":26,"check":"Resource-metric eval","severity":"warning","result":"FAIL","note":"No eval tracks a token/latency/cost budget.","description":"At least one eval scores a resource budget."}
+    ]},
+    {"name":"Instruction And Rule References","kind":"container","items":[
+      {"num":27,"check":"Right home, no duplication","severity":"warning","result":"PASS","note":"Procedural/lifecycle detail lives in references/, not SKILL.md.","description":"Instruction detail lives in references, not SKILL.md."}
+    ]}
+  ],
+  "guideline":[
+    {"file":".cursor/skills/secondary/references/domain-model.md","items":[
+      {"num":1,"check":"'Three status layers (do not conflate)' \u2014 not duplicated","severity":"error","result":"PASS","note":"Advice is unique.","description":"Search all guideline homes for same/conflicting instruction."},
+      {"num":2,"check":"Not lintable","severity":"informative","result":"PASS","note":"Conceptual advice; not automatable.","description":"Prefer ESLint/TS/Prettier when enforceable."},
+      {"num":3,"check":"Concise","severity":"warning","result":"PASS","note":"","description":"One clear rule, minimal example."},
+      {"num":4,"check":"Right home","severity":"warning","result":"PASS","note":"","description":"Fits the domain-model reference."},
+      {"num":5,"check":"Calibrated force","severity":"warning","result":"PASS","note":"","description":"No coercive language."},
+      {"num":6,"check":"Measured phrasing","severity":"informative","result":"PASS","note":"Scoped 'do not conflate'.","description":"Scoped rather than blanket always/never."}
+    ]},
+    {"file":".cursor/skills/secondary/references/lifecycle.md","items":[
+      {"num":1,"check":"Phases A-D narrative","severity":"error","result":"N/A","note":"Descriptive system documentation, not agent code advice.","description":"Not a discrete guideline line."}
+    ]}
+  ],
+  "headlineFindings":[
+    {"severity":"warning","title":"Misattributed symbol location (accuracy bug)","loc":".cursor/skills/secondary/references/domain-model.md L29 (status-layers table)","desc":"Claims deriveCustomerFacingStatus() is in secondary-configurations.types.ts; the function actually lives in secondary-workflows.service.ts (only the SecondaryCustomerFacingStatusValues type is in types.ts).","fix":"Point 'Where derived' to apps/backend/tartlet/src/modules/workflows/secondary-workflows/services/secondary-workflows.service.ts."},
+    {"severity":"warning","title":"No trigger evals for an explicit should-not-trigger boundary","loc":".cursor/skills/secondary/ (no evals/)","desc":"The description deliberately excludes unrelated 'secondary' strings (UI tokens, HRIS, transferSecondarySale) \u2014 exactly the near-miss negative evals should guard \u2014 but none exist.","fix":"Add evals/ with should-trigger (secondary-configurations work) and should-not-trigger (secondaryAddress, secondary color token) prompts."},
+    {"severity":"warning","title":"Missing version field","loc":".cursor/skills/secondary/SKILL.md L1-7","desc":"Frontmatter has no version, so the skill cannot be tracked across revisions.","fix":"Add version: \"1.0\" to frontmatter."},
+    {"severity":"warning","title":"allowed-tools not declared","loc":".cursor/skills/secondary/SKILL.md L1-7","desc":"Skill leans on default tool access instead of an explicit minimal manifest.","fix":"Add an explicit allowed-tools list (e.g. Read, Grep, Glob)."}
+  ],
+  "accuracyChecks":[
+    {"claim":"secondary-configurations.types.ts exists","verified":true,"detail":"File present on main."},
+    {"claim":"tartlet secondary-configurations + workflows/secondary-workflows modules exist","verified":true,"detail":"Both directories present; module split matches."},
+    {"claim":"DuplicateActiveSecondaryError in errors/secondary-configuration-errors.ts","verified":true,"detail":"Symbol found."},
+    {"claim":"WorkflowType.SECONDARY_SALE = 'secondarySale'","verified":true,"detail":"workflows.enums.ts:5 matches exactly."},
+    {"claim":"ItemType.SECONDARY_REQUEST = 'secondaryRequest'","verified":true,"detail":"item.types.ts:31 matches."},
+    {"claim":"Casbin resource secondary_requests","verified":true,"detail":"auth.enums.ts:197 SECONDARY_REQUEST = 'secondary_requests'."},
+    {"claim":"Resources.SECONDARY_CONFIGURATION used for permissions","verified":true,"detail":"Found in auth.enums.ts and controllers."},
+    {"claim":"fetchSecurityGroup used by AllowanceCalculator + Participations","verified":true,"detail":"Found in both services; client in grouping-api.service.ts."},
+    {"claim":"VALID_STATUS_TRANSITIONS in secondary-configurations.service.ts","verified":true,"detail":"Present under services/."},
+    {"claim":"deriveCustomerFacingStatus() is in secondary-configurations.types.ts","verified":false,"detail":"Function found only in secondary-workflows.service.ts; types.ts defines only the status-values type."},
+    {"claim":"frost/glaze secondary page paths exist","verified":true,"detail":"platform/secondary, workflow/SecondarySaleWorkflow.tsx, stakeholder/secondary, glaze SecondaryManagement all present."}
+  ]
+}
+</script>
+
+<script>
+  document.getElementById("genat").textContent = "\u00b7 " + new Date().toISOString().slice(0,10);
+  const skills = ["grouping","payments","secondary"].map(id => JSON.parse(document.getElementById("data-"+id).textContent));
+
+  const sevClass={error:"sev-error",warning:"sev-warning",informative:"sev-informative",good:"sev-good"};
+  const sevLabel={error:"Error",warning:"Warning",informative:"Info",good:"Good"};
+  function esc(s){return String(s).replace(/&(?![a-z#])/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function statusIcon(r){if(r==="PASS")return{cls:"pass",g:"\u2713"};if(r==="FAIL")return{cls:"fail",g:"\u2717"};return{cls:"na",g:"\u2014"};}
+
+  function allItems(sk){const a=[];sk.sections.forEach(s=>s.items.forEach(i=>a.push(i)));(sk.guideline||[]).forEach(g=>g.items.forEach(i=>a.push(i)));return a;}
+  function counts(sk){const c={error:0,warning:0,informative:0};allItems(sk).forEach(i=>{if(i.result==="FAIL"&&c[i.severity]!==undefined)c[i.severity]++;});return c;}
+  function secFails(items){return items.filter(i=>i.result==="FAIL").length;}
+
+  function renderCheck(it){
+    const st=statusIcon(it.result);
+    const hasBody=it.description||it.note;
+    const chev=hasBody?'<svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>':"";
+    let badges="";
+    if(it.result==="FAIL")badges='<span class="sev-badge '+sevClass[it.severity]+'">'+sevLabel[it.severity]+'</span>';
+    let body="";
+    if(hasBody){
+      const parts=[];
+      if(it.description)parts.push('<p><strong>What this checks</strong> \u2014 '+esc(it.description)+'</p>');
+      if(it.result==="FAIL"&&it.note)parts.push('<div class="fail-reason '+esc(it.severity)+'"><strong>Why it failed</strong> \u2014 '+esc(it.note)+'</div>');
+      else if(it.note)parts.push('<p><strong>Note</strong> \u2014 '+esc(it.note)+'</p>');
+      body='<div class="check-body">'+parts.join("")+'</div>';
+    }
+    const open=it.result==="FAIL";
+    const toggle=hasBody?'onclick="this.closest(\'.check-item\').classList.toggle(\'open\')"':"";
+    return '<li class="check-item '+st.cls+(open?' open':'')+'"><button type="button" class="check-header" '+toggle+'>'
+      +'<span class="status-icon '+st.cls+'">'+st.g+'</span><span class="check-title">'+esc(it.check)+'</span>'
+      +'<span class="check-badges">'+badges+chev+'</span></button>'+body+'</li>';
+  }
+  function renderContainer(sk,sec){
+    const f=secFails(sec.items);
+    return '<div class="card"><h2>'+esc(sec.name)+'</h2>'
+      +'<p class="artifact-meta">Skill \u00b7 <code>'+esc(sk.files[0])+'</code> \u00b7 checklist: <code>skill-checklist.md</code> \u00b7 '+sec.items.length+' checks \u00b7 '+f+' finding'+(f===1?'':'s')+'</p>'
+      +'<ul class="checklist">'+sec.items.map(renderCheck).join("")+'</ul></div>';
+  }
+  function renderGuideline(sk){
+    if(!sk.guideline||!sk.guideline.length)return '<div class="card"><p>No discrete embedded guideline lines scored.</p></div>';
+    return sk.guideline.map(g=>{
+      const f=secFails(g.items);
+      return '<div class="card"><h2>'+esc(g.file.split("/").pop())+'</h2>'
+        +'<p class="artifact-meta"><code>'+esc(g.file)+'</code> \u00b7 checklist: <code>guideline-rule-checklist.md</code> \u00b7 '+g.items.length+' line'+(g.items.length===1?'':'s')+' \u00b7 '+f+' finding'+(f===1?'':'s')+'</p>'
+        +'<ul class="checklist">'+g.items.map(renderCheck).join("")+'</ul></div>';
+    }).join("");
+  }
+  function renderAccuracy(sk){
+    const ok=sk.accuracyChecks.filter(a=>a.verified).length, no=sk.accuracyChecks.length-ok;
+    const rows=sk.accuracyChecks.map(a=>'<li><span class="dot '+(a.verified?'ok':'no')+'">'+(a.verified?'\u2713':'\u2717')+'</span>'
+      +'<span><span class="claim">'+esc(a.claim)+'</span><br><span class="detail">'+esc(a.detail)+'</span></span></li>').join("");
+    return '<div class="card"><h2>Accuracy spot-check</h2>'
+      +'<p class="artifact-meta">'+ok+' of '+sk.accuracyChecks.length+' cited claims verified against <code>main</code>'+(no?' \u00b7 '+no+' mismatch':'')+'.</p>'
+      +'<ul class="acc">'+rows+'</ul></div>';
+  }
+  function renderSkillSummary(sk){
+    const c=counts(sk);
+    const findings=(sk.headlineFindings||[]).map(f=>{
+      const fix=f.fix?'<div class="fix"><strong>Fix</strong> \u2014 '+esc(f.fix)+'</div>':"";
+      return '<div class="finding '+f.severity+'"><div class="finding-head"><span class="finding-title">'+esc(f.title)+'</span>'
+        +'<span class="sev-badge '+sevClass[f.severity]+'">'+sevLabel[f.severity]+'</span></div>'
+        +'<div class="finding-body"><span class="loc">'+esc(f.loc)+'</span><p>'+esc(f.desc)+'</p>'+fix+'</div></div>';
+    }).join("");
+    return '<div class="card"><h2>'+esc(sk.skill)+' \u2014 summary</h2><p>'+esc(sk.summaryParagraph)+'</p>'
+      +'<div class="summary-grid">'
+      +'<div class="stat error"><div class="num">'+c.error+'</div><div class="lbl">Errors</div></div>'
+      +'<div class="stat warning"><div class="num">'+c.warning+'</div><div class="lbl">Warnings</div></div>'
+      +'<div class="stat informative"><div class="num">'+c.informative+'</div><div class="lbl">Info</div></div>'
+      +'<div class="stat tok"><div class="num">~'+sk.tokenEstimateSkillMd+'</div><div class="lbl">SKILL.md tokens</div></div>'
+      +'</div>'
+      +'<p class="agent">Reviewed by sub-agent <code>'+esc(sk.agentId)+'</code> \u00b7 '+sk.files.length+' file'+(sk.files.length===1?'':'s')+'.</p></div>'
+      +(findings?'<div class="card"><h2>Headline findings</h2>'+findings+'</div>':'<div class="card"><p>No headline findings.</p></div>');
+  }
+
+  /* outer tabs */
+  const maintabs=document.getElementById("maintabs"), panels=document.getElementById("panels");
+  function addMain(id,label,countHtml,active){
+    const b=document.createElement("button");b.dataset.tab=id;b.innerHTML=label+(countHtml||"");if(active)b.classList.add("active");
+    b.addEventListener("click",()=>activateMain(id));maintabs.appendChild(b);
+    const p=document.createElement("section");p.className="panel"+(active?" active":"");p.id=id;panels.appendChild(p);return p;
+  }
+  function activateMain(id){
+    document.querySelectorAll("#maintabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));
+    document.querySelectorAll("#panels > .panel").forEach(p=>p.classList.toggle("active",p.id===id));
+  }
+
+  /* Overview */
+  (function(){
+    const p=addMain("overview","Overview","",true);
+    let tot={error:0,warning:0,informative:0};
+    const rows=skills.map(sk=>{
+      const c=counts(sk);tot.error+=c.error;tot.warning+=c.warning;tot.informative+=c.informative;
+      const ok=sk.accuracyChecks.filter(a=>a.verified).length;
+      return '<tr><td><strong>'+esc(sk.skill)+'</strong><br><span class="detail" style="font-size:.78rem;color:var(--muted)">'+sk.files.length+' files \u00b7 ~'+sk.tokenEstimateSkillMd+' tok</span></td>'
+        +'<td class="n">'+(c.error?'<span class="pill err">'+c.error+'</span>':'\u2014')+'</td>'
+        +'<td class="n">'+(c.warning?'<span class="pill warn">'+c.warning+'</span>':'\u2014')+'</td>'
+        +'<td class="n">'+c.informative+'</td>'
+        +'<td class="n">'+ok+'/'+sk.accuracyChecks.length+'</td></tr>';
+    }).join("");
+    p.innerHTML='<div class="card"><h2>Per-skill SDLC review \u2014 overview</h2>'
+      +'<p>Each of the three new skills in PR #10228 was reviewed independently by its own sub-agent against the local <code>.cursor/skills/sdlc</code> checklists. Open a skill\u2019s tab above for its dedicated multi-tab report.</p>'
+      +'<div class="summary-grid" style="grid-template-columns:repeat(3,1fr)">'
+      +'<div class="stat error"><div class="num">'+tot.error+'</div><div class="lbl">Errors (all skills)</div></div>'
+      +'<div class="stat warning"><div class="num">'+tot.warning+'</div><div class="lbl">Warnings</div></div>'
+      +'<div class="stat informative"><div class="num">'+tot.informative+'</div><div class="lbl">Info</div></div></div>'
+      +'<table class="ov-table"><thead><tr><th>Skill</th><th style="text-align:center">Errors</th><th style="text-align:center">Warnings</th><th style="text-align:center">Info</th><th style="text-align:center">Accuracy</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      +'</div>'
+      +'<div class="card"><h3 style="margin-top:0">Shared across all three</h3>'
+      +'<ul style="margin:0;padding-left:1.2rem"><li>Missing <code>allowed-tools</code> and <code>version</code> in frontmatter (warnings).</li>'
+      +'<li>No <code>evals/</code> shipped (N/A for grouping/payments as pure docs; a FAIL for <code>secondary</code> which declares an explicit should-not-trigger boundary).</li></ul></div>'
+      +'<div class="card"><h3 style="margin-top:0">Skill-specific highlights</h3>'
+      +'<ul style="margin:0;padding-left:1.2rem">'
+      +'<li><strong>payments</strong> \u2014 the only <span class="pill err">error</span>: ~2,600-token SKILL.md over the lean budget, no <code>references/</code> (sole skill in the PR without progressive disclosure).</li>'
+      +'<li><strong>secondary</strong> \u2014 an accuracy bug: <code>deriveCustomerFacingStatus()</code> is attributed to the wrong file.</li>'
+      +'<li><strong>grouping</strong> \u2014 cleanest: lean, well-disclosed, all 9 cited claims verified.</li>'
+      +'</ul></div>';
+  })();
+
+  /* one dedicated tab per skill, each with its own subtabs */
+  skills.forEach(sk=>{
+    const c=counts(sk);
+    const badge=(c.error?' <span class="count" style="color:var(--fail)">('+c.error+'e/'+c.warning+'w)</span>':' <span class="count">('+c.warning+'w)</span>');
+    const panel=addMain("skill-"+sk.skill, sk.skill, badge, false);
+    const subnav=document.createElement("nav");subnav.className="subtabs";
+    const subwrap=document.createElement("div");
+    panel.appendChild(subnav);panel.appendChild(subwrap);
+
+    const subtabs=[];
+    subtabs.push({id:"sum",label:"Summary",html:renderSkillSummary(sk),badge:""});
+    sk.sections.forEach((sec,i)=>{
+      const f=secFails(sec.items);
+      subtabs.push({id:"sec"+i,label:sec.name,html:renderContainer(sk,sec),
+        badge:f?' <span class="b'+(sec.items.some(x=>x.result==="FAIL"&&x.severity==="error")?' err':'')+'">'+f+'</span>':''});
+    });
+    const gf=(sk.guideline||[]).reduce((n,g)=>n+secFails(g.items),0);
+    subtabs.push({id:"guide",label:"Instruction & Rule",html:renderGuideline(sk),badge:gf?' <span class="b">'+gf+'</span>':''});
+    subtabs.push({id:"acc",label:"Accuracy",html:renderAccuracy(sk),badge:''});
+
+    subtabs.forEach((t,i)=>{
+      const b=document.createElement("button");b.innerHTML=t.label+t.badge;b.dataset.sub=sk.skill+"-"+t.id;if(i===0)b.classList.add("active");
+      b.addEventListener("click",()=>{
+        subnav.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.sub===b.dataset.sub));
+        subwrap.querySelectorAll(".subpanel").forEach(p=>p.classList.toggle("active",p.id===b.dataset.sub));
+      });
+      subnav.appendChild(b);
+      const sp=document.createElement("section");sp.className="subpanel"+(i===0?" active":"");sp.id=sk.skill+"-"+t.id;sp.innerHTML=t.html;subwrap.appendChild(sp);
+    });
+  });
+</script>
+</body>
+</html>
