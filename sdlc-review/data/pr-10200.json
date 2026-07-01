@@ -1,0 +1,194 @@
+{
+  "number": 10200,
+  "title": "feat(OCD-192): SDLC / Compliance - Create Structured Compliance Policies Skill Adjusted for SDLC Requirements",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/10200",
+  "status": "closed",
+  "state": "MERGED",
+  "creator": "EvelinSlice",
+  "changedFiles": 25,
+  "additions": 2090,
+  "deletions": 99,
+  "descriptionLength": {
+    "words": 164,
+    "paragraphs": 12
+  },
+  "fileBreakdown": [
+    {
+      "kind": "Markdown",
+      "count": 18,
+      "percentage": 72
+    },
+    {
+      "kind": "MJS",
+      "count": 3,
+      "percentage": 12
+    },
+    {
+      "kind": "JSON",
+      "count": 1,
+      "percentage": 4
+    },
+    {
+      "kind": "Cursor rule (.mdc)",
+      "count": 1,
+      "percentage": 4
+    },
+    {
+      "kind": "TOML",
+      "count": 1,
+      "percentage": 4
+    },
+    {
+      "kind": "YAML",
+      "count": 1,
+      "percentage": 4
+    }
+  ],
+  "summaryParagraphs": [
+    "This PR introduces a structured compliance policy workflow for AI-assisted SDLC work. It adds dedicated compliance policy agents for analysis, planning, test review, and verification; a command entrypoint; a Cursor rule that routes policy changes into the workflow; and a new skill with detailed references for policy patterns, workflow steps, PR summaries, traceability, and test review rules.",
+    "It also strengthens OPA coding guidance and adds GitHub CI enforcement scripts for compliance policy pairing, changed-test extraction, and linting. The shape is heavily documentation and workflow oriented, with a small amount of JavaScript automation and one workflow file to make the guidance enforceable in CI."
+  ],
+  "codeRabbitComments": 22,
+  "otherReviewerFeedback": {
+    "hasFeedback": true,
+    "reviewers": [
+      "netgnsh"
+    ],
+    "summary": "Yes: netgnsh (approved: 1)"
+  },
+  "didYoniReview": false,
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "findings": [],
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniPrComments": 0
+  },
+  "files": [
+    {
+      "path": ".cursor/agents/compliance-policy.analyzer.md",
+      "additions": 25,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/agents/compliance-policy.planner.md",
+      "additions": 25,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/agents/compliance-policy.test-reviewer.md",
+      "additions": 77,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/agents/compliance-policy.verifier.md",
+      "additions": 31,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/agents/policies-agent.json",
+      "additions": 0,
+      "deletions": 25
+    },
+    {
+      "path": ".cursor/commands/compliance-policy.md",
+      "additions": 25,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/rules/use-compliance-policy-workflow.mdc",
+      "additions": 14,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/SKILL.md",
+      "additions": 47,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/config.toml",
+      "additions": 66,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/references/policies.md",
+      "additions": 134,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/references/policy-patterns.md",
+      "additions": 140,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/references/policy-workflow.md",
+      "additions": 286,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/references/pr-logic-block-summary-template.md",
+      "additions": 231,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/references/pr-policy-summary-template.md",
+      "additions": 232,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/references/pr-traceability.md",
+      "additions": 130,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/compliance-policy-workflow/references/test-review-rules.md",
+      "additions": 35,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-coding/SKILL.md",
+      "additions": 8,
+      "deletions": 1
+    },
+    {
+      "path": ".cursor/skills/opa-coding/references/logic-blocks.md",
+      "additions": 57,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-coding/references/policies.md",
+      "additions": 0,
+      "deletions": 73
+    },
+    {
+      "path": ".cursor/skills/opa-coding/references/pr-workflow.md",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-coding/references/testing.md",
+      "additions": 41,
+      "deletions": 0
+    },
+    {
+      "path": ".github/scripts/check-compliance-policy-pairing.mjs",
+      "additions": 141,
+      "deletions": 0
+    },
+    {
+      "path": ".github/scripts/extract-changed-compliance-policy-tests.mjs",
+      "additions": 83,
+      "deletions": 0
+    },
+    {
+      "path": ".github/scripts/lint-compliance-policy-tests.mjs",
+      "additions": 194,
+      "deletions": 0
+    },
+    {
+      "path": ".github/workflows/compliance-policy-enforcement.yml",
+      "additions": 67,
+      "deletions": 0
+    }
+  ]
+}

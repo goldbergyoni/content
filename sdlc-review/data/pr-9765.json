@@ -1,0 +1,49 @@
+{
+  "number": 9765,
+  "title": "fix(GZ-107): update review guidelines for feature flags and UI rules …",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/9765",
+  "status": "open",
+  "state": "OPEN",
+  "creator": "galziv",
+  "changedFiles": 1,
+  "additions": 7,
+  "deletions": 0,
+  "descriptionLength": {
+    "words": 284,
+    "paragraphs": 24
+  },
+  "fileBreakdown": [
+    {
+      "kind": "YAML",
+      "count": 1,
+      "percentage": 100
+    }
+  ],
+  "summaryParagraphs": [
+    "This is a tiny CodeRabbit configuration update. It changes only .coderabbit.yaml, adding review guidance around feature flags and UI rules so automated review feedback better matches local project expectations.",
+    "The PR is small in code footprint but relatively detailed in its PR description. It is best understood as review-infrastructure tuning rather than a product or application behavior change."
+  ],
+  "codeRabbitComments": 2,
+  "otherReviewerFeedback": {
+    "hasFeedback": true,
+    "reviewers": [
+      "devorahmos"
+    ],
+    "summary": "Yes: devorahmos (commented: 1)"
+  },
+  "didYoniReview": false,
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "findings": [],
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniPrComments": 0
+  },
+  "files": [
+    {
+      "path": ".coderabbit.yaml",
+      "additions": 7,
+      "deletions": 0
+    }
+  ]
+}

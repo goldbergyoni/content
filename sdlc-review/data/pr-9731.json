@@ -1,0 +1,122 @@
+{
+  "number": 9731,
+  "title": "Speed up AI how-to: internal-gates manifest and Composer 2.5 fast default",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/9731",
+  "status": "open",
+  "state": "OPEN",
+  "creator": "arielgess1",
+  "changedFiles": 13,
+  "additions": 602,
+  "deletions": 10,
+  "descriptionLength": {
+    "words": 392,
+    "paragraphs": 15
+  },
+  "fileBreakdown": [
+    {
+      "kind": "TypeScript",
+      "count": 6,
+      "percentage": 46
+    },
+    {
+      "kind": "JavaScript",
+      "count": 5,
+      "percentage": 38
+    },
+    {
+      "kind": "AGENTS.md",
+      "count": 1,
+      "percentage": 8
+    },
+    {
+      "kind": "TSX",
+      "count": 1,
+      "percentage": 8
+    }
+  ],
+  "summaryParagraphs": [
+    "This PR improves the AI how-to service by adding a manifest of Frost internal gated features, prompt support for that manifest, and model-routing changes that make Composer 2.5 fast the default path for the workflow. It also updates the Glaze AI how-to page and shared AI how-to types to support the new flow.",
+    "The enforcement layer is notable: it adds custom ESLint rules to keep the internal-gates manifest in sync and to provide hints when Frost code introduces gated behavior. Unlike the pure skill PRs, this one mixes backend service TypeScript, frontend TSX, shared types, and lint plugin JavaScript."
+  ],
+  "codeRabbitComments": 6,
+  "otherReviewerFeedback": {
+    "hasFeedback": false,
+    "reviewers": [],
+    "summary": "No human reviewer feedback found"
+  },
+  "didYoniReview": false,
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "findings": [],
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniPrComments": 0
+  },
+  "files": [
+    {
+      "path": "apps/backend/ai-how-to-service/AGENTS.md",
+      "additions": 4,
+      "deletions": 0
+    },
+    {
+      "path": "apps/backend/ai-how-to-service/src/modules/ai-raw-model-integration/services/cursor-ai-raw-model-integration.service.ts",
+      "additions": 4,
+      "deletions": 1
+    },
+    {
+      "path": "apps/backend/ai-how-to-service/src/modules/questions/frost-internal-gated-features.manifest.ts",
+      "additions": 176,
+      "deletions": 0
+    },
+    {
+      "path": "apps/backend/ai-how-to-service/src/modules/questions/frost-internal-gated-features.prompt.ts",
+      "additions": 21,
+      "deletions": 0
+    },
+    {
+      "path": "apps/backend/ai-how-to-service/src/modules/questions/resolve-ai-how-to-model.ts",
+      "additions": 36,
+      "deletions": 0
+    },
+    {
+      "path": "apps/backend/ai-how-to-service/src/modules/questions/services/frost-question-prompt.service.ts",
+      "additions": 13,
+      "deletions": 8
+    },
+    {
+      "path": "apps/frontend/glaze/src/pages/AiHowTo/AiHowToPage.tsx",
+      "additions": 8,
+      "deletions": 1
+    },
+    {
+      "path": "libraries/config/eslint-config/custom-rules-plugin/custom-rules-plugin.js",
+      "additions": 4,
+      "deletions": 0
+    },
+    {
+      "path": "libraries/config/eslint-config/custom-rules-plugin/rules/ai-how-to-internal-gates-manifest-sync.js",
+      "additions": 145,
+      "deletions": 0
+    },
+    {
+      "path": "libraries/config/eslint-config/custom-rules-plugin/rules/frost-internal-gate-hint.js",
+      "additions": 177,
+      "deletions": 0
+    },
+    {
+      "path": "libraries/config/eslint-config/node.js",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "path": "libraries/config/eslint-config/react.js",
+      "additions": 9,
+      "deletions": 0
+    },
+    {
+      "path": "libraries/shared/types/src/ai-how-to/ai-how-to.types.ts",
+      "additions": 3,
+      "deletions": 0
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "number": 10186,
+  "title": "chore(AT-584): AI Frontend Page Summary For How-to Skill",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/10186",
+  "status": "open",
+  "state": "OPEN",
+  "creator": "devorahmos",
+  "changedFiles": 6,
+  "additions": 368,
+  "deletions": 0,
+  "descriptionLength": {
+    "words": 172,
+    "paragraphs": 12
+  },
+  "fileBreakdown": [
+    {
+      "kind": "Markdown",
+      "count": 6,
+      "percentage": 100
+    }
+  ],
+  "summaryParagraphs": [
+    "This PR adds a page-docs skill that teaches agents how to create AI frontend page summaries for the how-to system. It includes the skill entrypoint, authoring rules, a document template, and workflow guidance.",
+    "It also lightly updates backend and frontend coding skill entrypoints to reference the new documentation workflow. The change is entirely markdown, focused on documenting page behavior in a reusable format rather than modifying app code."
+  ],
+  "codeRabbitComments": 3,
+  "otherReviewerFeedback": {
+    "hasFeedback": false,
+    "reviewers": [],
+    "summary": "No human reviewer feedback found"
+  },
+  "didYoniReview": false,
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "findings": [],
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniPrComments": 0
+  },
+  "files": [
+    {
+      "path": ".cursor/skills/backend-coding/SKILL.md",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/frontend-coding/SKILL.md",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/page-docs/SKILL.md",
+      "additions": 58,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/page-docs/references/authoring-rules.md",
+      "additions": 83,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/page-docs/references/doc-template.md",
+      "additions": 135,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/page-docs/references/workflow.md",
+      "additions": 90,
+      "deletions": 0
+    }
+  ]
+}

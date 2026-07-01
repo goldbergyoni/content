@@ -1,0 +1,79 @@
+{
+  "number": 10187,
+  "title": "docs(cursor): add lexical skill for document template filters",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/10187",
+  "status": "open",
+  "state": "OPEN",
+  "creator": "yablonka-dev",
+  "changedFiles": 6,
+  "additions": 728,
+  "deletions": 1,
+  "descriptionLength": {
+    "words": 205,
+    "paragraphs": 12
+  },
+  "fileBreakdown": [
+    {
+      "kind": "Markdown",
+      "count": 5,
+      "percentage": 83
+    },
+    {
+      "kind": "AGENTS.md",
+      "count": 1,
+      "percentage": 17
+    }
+  ],
+  "summaryParagraphs": [
+    "This PR adds a Lexical skill for document template filters. The new skill and references cover adding filters, Lexical React plugins, the matching engine, and the paste pipeline, making the document-template editing stack more discoverable for agents.",
+    "It also updates libraries/frontend/lexical-react/AGENTS.md, so local package guidance points agents toward the new skill. The change is documentation-heavy, mostly markdown, with no executable application code changes."
+  ],
+  "codeRabbitComments": 5,
+  "otherReviewerFeedback": {
+    "hasFeedback": true,
+    "reviewers": [
+      "goldbergyoni"
+    ],
+    "summary": "Yes: goldbergyoni"
+  },
+  "didYoniReview": false,
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "findings": [],
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniPrComments": 1
+  },
+  "files": [
+    {
+      "path": ".cursor/skills/lexical/SKILL.md",
+      "additions": 96,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/lexical/references/add-filter-playbook.md",
+      "additions": 252,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/lexical/references/lexical-react-plugins.md",
+      "additions": 188,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/lexical/references/matching-engine.md",
+      "additions": 185,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/lexical/references/paste-pipeline.md",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "path": "libraries/frontend/lexical-react/AGENTS.md",
+      "additions": 5,
+      "deletions": 1
+    }
+  ]
+}

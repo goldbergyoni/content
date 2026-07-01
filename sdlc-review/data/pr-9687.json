@@ -1,0 +1,102 @@
+{
+  "number": 9687,
+  "title": "Ignore - feat(AT-369): Add OPA policy analyst agent for SliceAI user-facing alert explanations",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/9687",
+  "status": "open",
+  "state": "OPEN",
+  "creator": "YarinYomTov",
+  "changedFiles": 9,
+  "additions": 542,
+  "deletions": 1,
+  "descriptionLength": {
+    "words": 186,
+    "paragraphs": 16
+  },
+  "fileBreakdown": [
+    {
+      "kind": "Markdown",
+      "count": 6,
+      "percentage": 67
+    },
+    {
+      "kind": "JSON",
+      "count": 1,
+      "percentage": 11
+    },
+    {
+      "kind": "Shell",
+      "count": 1,
+      "percentage": 11
+    },
+    {
+      "kind": "AGENTS.md",
+      "count": 1,
+      "percentage": 11
+    }
+  ],
+  "summaryParagraphs": [
+    "This PR adds an OPA policy analyst agent for explaining SliceAI user-facing alert behavior. It defines the agent, an opa-analyze command, a new skill, and reference material for diagnosis templates, expected inputs, output style, and policy tracing.",
+    "The implementation is mostly markdown documentation with one JSON agent definition and a shell helper for finding policy rules. It also amends the root AGENTS.md, so the change affects top-level agent guidance as well as the new specialized OPA analysis workflow."
+  ],
+  "codeRabbitComments": 5,
+  "otherReviewerFeedback": {
+    "hasFeedback": false,
+    "reviewers": [],
+    "summary": "No human reviewer feedback found"
+  },
+  "didYoniReview": false,
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "findings": [],
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniPrComments": 0
+  },
+  "files": [
+    {
+      "path": ".cursor/agents/opa-policy-analyst.json",
+      "additions": 23,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/commands/opa-analyze.md",
+      "additions": 32,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-policy-analyst/SKILL.md",
+      "additions": 152,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-policy-analyst/references/diagnosis-template.md",
+      "additions": 75,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-policy-analyst/references/input-schema.md",
+      "additions": 45,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-policy-analyst/references/output-style.md",
+      "additions": 44,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-policy-analyst/references/policy-tracing.md",
+      "additions": 102,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/opa-policy-analyst/scripts/find-rule.sh",
+      "additions": 56,
+      "deletions": 0
+    },
+    {
+      "path": "AGENTS.md",
+      "additions": 13,
+      "deletions": 1
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "number": 9704,
+  "title": "feat(AT-377): Update React agent instructions",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/9704",
+  "status": "open",
+  "state": "OPEN",
+  "creator": "tomshudev",
+  "changedFiles": 2,
+  "additions": 56,
+  "deletions": 21,
+  "descriptionLength": {
+    "words": 153,
+    "paragraphs": 17
+  },
+  "fileBreakdown": [
+    {
+      "kind": "Markdown",
+      "count": 2,
+      "percentage": 100
+    }
+  ],
+  "summaryParagraphs": [
+    "This PR updates frontend React guidance inside the Cursor frontend-coding skill references. It touches the full-page example and the core React guidance document, tightening how agents should write or review React code.",
+    "The footprint is small and entirely markdown. Because it edits central frontend instructions, the effect is broad despite the small diff: future agent work in React pages and components can inherit these conventions."
+  ],
+  "codeRabbitComments": 4,
+  "otherReviewerFeedback": {
+    "hasFeedback": true,
+    "reviewers": [
+      "goldbergyoni"
+    ],
+    "summary": "Yes: goldbergyoni"
+  },
+  "didYoniReview": false,
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "findings": [],
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniPrComments": 1
+  },
+  "files": [
+    {
+      "path": ".cursor/skills/frontend-coding/references/full-page-example.md",
+      "additions": 4,
+      "deletions": 3
+    },
+    {
+      "path": ".cursor/skills/frontend-coding/references/react.md",
+      "additions": 52,
+      "deletions": 18
+    }
+  ]
+}

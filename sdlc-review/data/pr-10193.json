@@ -1,0 +1,72 @@
+{
+  "number": 10193,
+  "title": "feat(AT-586): SDLC - add Documents Room agent guide, invariants, and Cursor …",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/10193",
+  "status": "open",
+  "state": "OPEN",
+  "creator": "danielmishan85",
+  "changedFiles": 4,
+  "additions": 430,
+  "deletions": 0,
+  "descriptionLength": {
+    "words": 202,
+    "paragraphs": 13
+  },
+  "fileBreakdown": [
+    {
+      "kind": "Markdown",
+      "count": 3,
+      "percentage": 75
+    },
+    {
+      "kind": "AGENTS.md",
+      "count": 1,
+      "percentage": 25
+    }
+  ],
+  "summaryParagraphs": [
+    "This PR adds Documents Room frontend agent guidance. It introduces a dedicated skill, a testing playbook, and local AGENTS.md guidance under the Documents Room page area, plus an INVARIANTS.md file documenting important behavioral constraints.",
+    "The PR is designed to reduce accidental regressions in a complex frontend surface by giving agents explicit domain context, testing expectations, and invariants. It is fully documentation-based and touches only four files."
+  ],
+  "codeRabbitComments": 2,
+  "otherReviewerFeedback": {
+    "hasFeedback": true,
+    "reviewers": [
+      "danielpenso",
+      "galziv",
+      "goldbergyoni",
+      "netgnsh"
+    ],
+    "summary": "Yes: danielpenso, galziv, goldbergyoni, netgnsh (commented: 3, dismissed: 1, approved: 1)"
+  },
+  "didYoniReview": false,
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "findings": [],
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniPrComments": 1
+  },
+  "files": [
+    {
+      "path": ".cursor/skills/documents-room-frontend/SKILL.md",
+      "additions": 49,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/documents-room-frontend/references/testing-playbook.md",
+      "additions": 114,
+      "deletions": 0
+    },
+    {
+      "path": "apps/frontend/frost/src/pages/platform/documents/AGENTS.md",
+      "additions": 218,
+      "deletions": 0
+    },
+    {
+      "path": "apps/frontend/frost/src/pages/platform/documents/INVARIANTS.md",
+      "additions": 49,
+      "deletions": 0
+    }
+  ]
+}
