@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PR #9687 — OPA policy analyst agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #28282a; --muted: #6b7280;
+    --primary: #0d9488; --border: #e2e4e8; --radius: 12px;
+    --green: #15803d; --amber: #b45309; --red: #b91c1c; --slate: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
+  .wrap { max-width: 66rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .35rem; }
+  header .label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header .meta { color: var(--muted); font-size: .92rem; margin-top: .4rem; }
+  header .meta a { color: var(--primary); text-decoration: none; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); }
+  nav.tabs button { font: inherit; font-weight: 600; font-size: .85rem; cursor: pointer; border: 0; background: none;
+    padding: .6rem .85rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  nav.tabs .grp { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#9aa1ab; align-self:center; padding:0 .35rem 0 .6rem; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .2s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.5rem 1.8rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 1.2rem; }
+  h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 1.3rem 0 .5rem; }
+  .seclabel { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); margin-bottom: .3rem; }
+  code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .85em; }
+  pre { background: rgba(0,0,0,.04); padding: 1rem 1.25rem; border-radius: 10px; overflow-x: auto; font-size: .85em; }
+  a { color: var(--primary); }
+  ul, ol { padding-left: 1.2rem; } li { margin: .3rem 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: .7rem; margin: 1rem 0 .25rem; }
+  .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: .85rem 1rem; }
+  .stat .n { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
+  .stat .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: .87rem; margin: .5rem 0 .25rem; }
+  th, td { text-align: left; padding: .48rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  td.cnum { color: var(--muted); width: 1.8rem; }
+  .pill { display: inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+  .pass { color: var(--green); background: #dcfce7; }
+  .fail { color: var(--red); background: #fee2e2; }
+  .na { color: var(--slate); background: #e2e8f0; }
+  .sev-error { color: var(--red); font-weight: 700; }
+  .sev-warning { color: var(--amber); font-weight: 700; }
+  .sev-informative { color: var(--slate); font-weight: 700; }
+  .verdict { border-left: 4px solid var(--primary); padding: .25rem 0 .25rem 1rem; margin: 1rem 0; }
+  .alert { border-left: 4px solid var(--amber); background:#fffbeb; padding: .6rem 1rem; border-radius: 8px; margin: 1rem 0; font-size:.92rem; }
+  .danger { border-left: 4px solid var(--red); background:#fef2f2; padding: .6rem 1rem; border-radius: 8px; margin: 1rem 0; font-size:.92rem; }
+  .tag { display:inline-block; font-size:.72rem; font-weight:600; color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:.1rem .55rem; margin:.15rem .25rem .15rem 0; }
+  .muted { color: var(--muted); }
+  .filehdr { font-weight: 700; font-size: .92rem; margin: 1.4rem 0 .2rem; }
+  .findings li { margin: .5rem 0; }
+  .dup th, .dup td { font-size:.83rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">PR Review · yoni-dx</div>
+    <h1>PR #9687 — OPA policy analyst agent for SliceAI</h1>
+    <div class="meta">
+      <code>Ignore - feat(AT-369): Add OPA policy analyst agent for SliceAI user-facing alert explanations</code><br/>
+      by <strong>YarinYomTov</strong> · 9 files · +542 / −1 · docs + one config + one agent + one script ·
+      <a href="https://github.com/Global-Slice/mono-slice/pull/9687">github.com/Global-Slice/mono-slice/pull/9687</a>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-tab="summary">Summary</button>
+    <span class="grp">SDLC</span>
+    <button data-tab="sdlc-overview">Overview</button>
+    <button data-tab="sdlc-structure">Skill · Structure</button>
+    <button data-tab="sdlc-security">Skill · Security</button>
+    <button data-tab="sdlc-testing">Skill · Testing</button>
+    <button data-tab="sdlc-rulerefs">Skill · Rule Refs</button>
+    <button data-tab="sdlc-context">Context File</button>
+    <button data-tab="sdlc-guidelines">Instruction &amp; Rule</button>
+  </nav>
+
+  <section class="panel active" id="summary">
+    <div class="card">
+      <div class="seclabel">OPA basics, for newcomers</div>
+      <h2>What is OPA, and what is this actually about?</h2>
+      <p><strong>OPA (Open Policy Agent)</strong> is an off-the-shelf engine for writing "rules that decide things" as code, kept separate from the main application. Instead of burying a rule like <em>"warn the user if this grant might have a tax problem"</em> inside application code, you write it as a small, declarative rule in OPA's own language, called <strong>Rego</strong>. The app feeds OPA some data (a "grant", a "stakeholder", etc.), and OPA answers yes/no (or attaches structured info) for each rule.</p>
+      <p>In this codebase, the <code>opa/</code> folder holds ~900+ of these Rego rule files, mostly under <code>opa/compliance/</code>. Each rule is Slice's codified version of a real compliance/tax/legal requirement — e.g. "flag this grant if it's under Israeli Section 102 tax treatment <em>and</em> it has double-trigger acceleration." When the conditions match, Slice shows the user a <strong>compliance alert</strong> banner in the product. Every such rule has an internal identifier called a <strong>ruleId</strong> (e.g. <code>israel102GrantDoubleTrigger</code>) — a technical name, not something a customer ever sees; what the customer sees in the product is just the alert's plain-language title.</p>
+      <p><strong>The problem this PR solves:</strong> when a customer opens a support ticket asking "why am I seeing this warning on my grant?", someone (a support/CS person, or SliceAI — Slice's in-product AI assistant) has to answer in plain English. Today that means an engineer or support person manually digs through the Rego file for that rule to figure out every condition it checks. This PR automates that lookup: give the new agent one <code>ruleId</code>, and it reads the matching Rego file(s), lists every condition in plain business language, and writes a customer-safe explanation — while deliberately never mentioning the ruleId, the file path, the word "OPA"/"Rego", or any raw internal field name in what gets shown to the customer (those are meaningless, and arguably inappropriate, to expose outside engineering).</p>
+      <p class="muted">Analogy: think of OPA/Rego rules as a big rulebook of "if X and Y, then flag this" written in a technical shorthand only engineers read. This PR adds a translator that takes one rulebook entry and rewrites it as a paragraph a customer or support agent can actually understand — without pointing at the rulebook itself.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">What is it about</div>
+      <h2>A read-only "explain one compliance alert" agent for SliceAI tickets</h2>
+      <p>This PR adds a new Cursor <strong>agent + skill + slash command</strong> bundle: given a single compliance-alert <code>ruleId</code>, it investigates the matching <code>.rego</code> policy under <code>opa/compliance/</code> and produces a plain-language, customer-safe explanation — title, all trigger conditions, when it stays silent, and next steps — with ruleIds, file paths, OPA/Rego, and data-model field names deliberately scrubbed from the output. It's meant to be called from SliceAI ticket workflows and by CS/account teams, one alert at a time (explicitly <em>not</em> a jurisdiction/catalog browser).</p>
+      <div class="grid">
+        <div class="stat"><div class="n">9</div><div class="k">Files added/changed</div></div>
+        <div class="stat"><div class="n">+542</div><div class="k">Lines added</div></div>
+        <div class="stat"><div class="n">1</div><div class="k">New agent</div></div>
+        <div class="stat"><div class="n">1</div><div class="k">New skill</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">The nine files</div>
+      <table>
+        <thead><tr><th>File</th><th>Lines</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>.cursor/agents/opa-policy-analyst.json</code></td><td>+23</td><td>New agent. <code>gemini-3-pro</code>, temp 0.1, <code>tools: ["terminal"]</code>, loads the <code>opa-policy-analyst</code> skill. Prompt repeats the single-ruleId / no-catalog / scrub rules inline.</td></tr>
+          <tr><td><code>.cursor/commands/opa-analyze.md</code></td><td>+32</td><td>New <code>/opa-analyze &lt;ruleId&gt;</code> command doc — arguments, examples, unsupported requests, output shape, hands off to the skill.</td></tr>
+          <tr><td><code>.cursor/skills/opa-policy-analyst/SKILL.md</code></td><td>+152</td><td>New skill, <code>disable-model-invocation: true</code>. Six-step procedure: parse request → locate policy via script → read conditions → optional test cross-reference → trace against ticket data → write the deliverable.</td></tr>
+          <tr><td><code>…/references/diagnosis-template.md</code></td><td>+75</td><td>Two markdown report templates: "Policy brief" (always) and "Instance explanation" (when ticket context is given), plus a canned decline reply for catalog requests.</td></tr>
+          <tr><td><code>…/references/input-schema.md</code></td><td>+45</td><td>Documents the OPA evaluation input JSON shape (<code>opa/input.json</code>) for internal investigation use.</td></tr>
+          <tr><td><code>…/references/output-style.md</code></td><td>+44</td><td>The "never say / say instead" scrub list and terminology map (ruleId → alert title, <code>il-102</code> → "Section 102", etc.) plus tone guidance.</td></tr>
+          <tr><td><code>…/references/policy-tracing.md</code></td><td>+102</td><td>Internal map of the <code>opa/</code> tree, ruleId conventions, the modular alert/dismissal pattern, and how to find related tests.</td></tr>
+          <tr><td><code>…/scripts/find-rule.sh</code></td><td>+56</td><td>Bash helper: greps/ripgreps <code>opa/compliance</code> (+ business_logic/legal_tax) and the compliance-engine test folder for a ruleId, prints an occurrence count.</td></tr>
+          <tr><td><code>AGENTS.md</code></td><td>+13/−1</td><td>Adds an <code>/opa-analyze &lt;ruleId&gt;</code> section to the root Slack-routing block and mentions the new prefix in the "No prefix" fallback reply.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Core mechanics it encodes</div>
+      <ul>
+        <li><strong>One alert per request, no catalogs.</strong> Every layer (agent prompt, command doc, skill body, templates) repeats: require a <code>ruleId</code>; never list alerts by country/jurisdiction; ask rather than guess when ambiguous.</li>
+        <li><strong>Two-layer model.</strong> "Investigation" (ruleId, <code>.rego</code>, logic blocks, tests, input JSON) is internal-only; the "Deliverable" is scrubbed prose for the ticket/CS/customer.</li>
+        <li><strong>Strict output scrub list.</strong> No ruleIds, UUIDs, file paths, OPA/Rego/WASM/compliance-engine vocabulary, or raw data-model field names — with an explicit internal-term → customer-phrasing table.</li>
+        <li><strong>Grounded policy map.</strong> <code>policy-tracing.md</code> and <code>find-rule.sh</code> point at real paths (<code>opa/compliance/</code>, <code>opa/business_logic/</code>, <code>opa/legal_tax/</code>, <code>apps/backend/compliance-engine/test</code>) — verified these all exist and the test search pattern (<code>const RULE_ID = '...'</code>) matches real test files.</li>
+        <li><strong>Escalation path.</strong> If the policy logic itself looks wrong, the skill tells the operator (not the ticket) to use the existing <code>policies-agent</code> — a sensible, non-duplicative handoff to the agent that actually edits <code>.rego</code>.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Current status</div>
+      <p>
+        <span class="tag">Open</span>
+        <span class="tag">Mergeable: CONFLICTING</span>
+        <span class="tag">CI: Validate PR title — FAILURE (latest run)</span>
+        <span class="tag">Snyk: SUCCESS</span>
+        <span class="tag">CodeRabbit: 2 unresolved major (same issue)</span>
+        <span class="tag">No human reviewer feedback</span>
+        <span class="tag">No tests</span>
+      </p>
+      <ul>
+        <li><strong>CodeRabbit's major, raised twice and still unresolved:</strong> the agent grants <code>"tools": ["terminal"]</code> with no runtime read-only enforcement, while the skill and agent both advertise themselves as read-only — flagged as inconsistent with the "highly secured platform" learning CodeRabbit has on file for this repo.</li>
+        <li><strong>CodeRabbit minor:</strong> <code>find-rule.sh</code> passes the ruleId straight into <code>rg</code>/<code>grep</code> as a regex pattern instead of a literal string (no <code>-F</code>), so metacharacters in a ruleId could match unintended files. I confirmed this by reading the script — the fix is a one-line <code>-F</code> flag.</li>
+        <li>PR description "What"/"How" are the empty template, and the testing checkbox is unselected. CodeRabbit's automated description/docstring checks are both failing.</li>
+        <li>Linked to Linear <code>AT-369</code>. No human review comments yet; nine files, ~12 min estimated review effort per CodeRabbit.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-overview">
+    <div class="card">
+      <div class="seclabel">SDLC reviewer · per <code>.cursor/skills/sdlc/references/review-change.md</code></div>
+      <h2>Review summary</h2>
+      <p>Scope: every file under <code>.cursor/</code> plus the changed root <code>AGENTS.md</code> hunk. Container checklists exist and are scored for the <strong>skill</strong> (<code>SKILL.md</code>) and the <strong>context file</strong> (<code>AGENTS.md</code>). The <strong>subagent</strong>, <strong>command</strong>, and <strong>skill-script</strong> checklists are marked "not ready yet" in this repo, so <code>opa-policy-analyst.json</code>, <code>opa-analyze.md</code>, and <code>find-rule.sh</code> get no container tab — per the review process, their embedded instruction lines still flow into the merged Instruction &amp; Rule tab. The four reference docs under <code>references/</code> are graded only through that same guideline pass (they hold no independent container checklist).</p>
+      <div class="grid">
+        <div class="stat"><div class="n sev-error">3</div><div class="k">Error findings</div></div>
+        <div class="stat"><div class="n sev-warning">11</div><div class="k">Warning findings</div></div>
+        <div class="stat"><div class="n sev-informative">1</div><div class="k">Informative</div></div>
+        <div class="stat"><div class="n">~4.5k</div><div class="k">Est. total tokens</div></div>
+      </div>
+    </div>
+
+    <div class="danger">
+      <strong>Rank-5 finding — the AGENTS.md target already moved.</strong> This PR patches the Slack-routing block that used to live inline in root <code>AGENTS.md</code>. PR <a href="https://github.com/Global-Slice/mono-slice/commit/13ef950f04e0af730ff6fe2f601abf4c1933b6bc">#10210</a> (merged Jun 24, after this PR was opened) relocated that entire block to <code>.cursor/skills/cloud-agent-asks/references/slack-commands.md</code> and trimmed <code>AGENTS.md</code> down to a one-line pointer. That's exactly why GitHub reports this PR as <code>mergeable: CONFLICTING</code> — on rebase, the new <code>/opa-analyze</code> section belongs in <code>slack-commands.md</code> next to <code>/ai-do</code> and <code>/ai-ask</code>, not back into <code>AGENTS.md</code>.
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Token budget — measured (char/4 ↔ word×1.3 bracket)</div>
+      <table>
+        <thead><tr><th>File</th><th>Chars</th><th>Words</th><th>~Tokens</th><th>Budget</th></tr></thead>
+        <tbody>
+          <tr><td><code>SKILL.md</code></td><td>5,797</td><td>864</td><td>~1,100–1,450</td><td><span class="pill pass">PASS</span> &lt;2k</td></tr>
+          <tr><td><code>diagnosis-template.md</code></td><td>1,973</td><td>314</td><td>~400–500</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>input-schema.md</code></td><td>1,617</td><td>214</td><td>~280–400</td><td><span class="pill fail">N/A</span> never loaded — see Structure #10/#14</td></tr>
+          <tr><td><code>output-style.md</code></td><td>2,432</td><td>364</td><td>~475–610</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>policy-tracing.md</code></td><td>3,216</td><td>389</td><td>~505–805</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>opa-analyze.md</code></td><td>1,056</td><td>139</td><td>~180–265</td><td><span class="pill na">N/A</span> command doc</td></tr>
+          <tr><td><code>opa-policy-analyst.json</code></td><td>1,108</td><td>150</td><td>~195–280</td><td><span class="pill na">N/A</span> agent config</td></tr>
+          <tr><td><code>AGENTS.md</code> (added hunk)</td><td>833</td><td>106</td><td>~140–210</td><td><span class="pill pass">PASS</span> whole file stays &lt;2k with headroom</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Method per <code>sdlc/SKILL.md</code> ("rough estimate within ~20%"). Only <code>SKILL.md</code> (~1.1–1.5k) and the <code>AGENTS.md</code> hunk load unconditionally; the four reference docs and the script load on demand — except <code>input-schema.md</code>, which never loads at all (see below).</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Headline findings</div>
+      <ol class="findings">
+        <li><span class="sev-error">error</span> — <strong>Read-only claim, unrestricted terminal grant.</strong> <code>SKILL.md</code> declares "Read-only" and the agent's own description says the same, but <code>opa-policy-analyst.json</code> grants <code>tools: ["terminal"]</code> with no read-only enforcement, and <code>SKILL.md</code> sets no <code>allowed-tools</code> at all. CodeRabbit flagged this exact gap twice as an unresolved major. Skill checklist #22 + #3.</li>
+        <li><span class="sev-error">error</span> — <strong>Orphaned reference file.</strong> <code>references/input-schema.md</code> is never linked from <code>SKILL.md</code> or any other file in the PR (verified via full-diff search) — it will never load. Skill checklist #14 (+ #10).</li>
+        <li><span class="sev-error">error</span> — <strong>Pervasive cross-file duplication.</strong> The "one alert only", "never expose ruleId/paths/OPA", "always full conditions list", and "internal addendum only if asked" rules are each restated 2–6× across the agent prompt, <code>SKILL.md</code>, <code>output-style.md</code>, <code>diagnosis-template.md</code>, <code>opa-analyze.md</code>, and <code>AGENTS.md</code>. Guideline #1. Full evidence in the Instruction &amp; Rule tab.</li>
+        <li><span class="sev-warning">warning</span> — <strong><code>AGENTS.md</code> patch target is stale</strong> (see callout above) — Guideline #4 / Right home.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Missing <code>allowed-tools</code> and <code>version</code></strong> in <code>SKILL.md</code> frontmatter. Skill checklist #3, #4.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Heavy bold / ALL-CAPS emphasis</strong> throughout nearly every new file ("Never", "do not guess", "ALL conditions", "Do NOT expose"). Skill #12, Context-file #3, Guideline #5.</li>
+        <li><span class="sev-warning">warning</span> — <strong>No evals, no measured token cost, no resource-metric eval</strong> for the new skill. Skill #23/#25/#26.</li>
+      </ol>
+      <p class="muted">What is <em>good</em>: name/frontmatter shape and layout are otherwise valid; the skill's scope is honestly narrow and explicitly non-overlapping with the existing <code>policies-agent</code>; every <em>cited</em> path (<code>opa/compliance/</code>, <code>opa/business_logic/</code>, <code>opa/legal_tax/</code>, <code>opa/input.json</code>, the compliance-engine test folder) actually resolves; the escalation handoff to <code>policies-agent</code> for policy-logic bugs is a sound design choice.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-structure">
+    <div class="card">
+      <div class="filehdr">Skill — Structure And Intent</div>
+      <p class="muted"><code>.cursor/skills/opa-policy-analyst/SKILL.md</code> · checklist: skill-checklist.md · measured body ~1,100–1,450 tokens (5,797 chars / 864 words — under the 2,000 budget). <strong>Workflows category (#16–#20): N/A</strong> — Steps 0–5 execute within a single response (parse → locate → read → optionally cross-reference → trace → write); there's no cross-turn state, resumability, or reviewer subagent this warrants, so it reads as a stepped procedure rather than a tracked/resumable workflow — the process drops that tab for this shape of skill.</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Valid name</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>matches parent dir <code>opa-policy-analyst</code></td></tr>
+          <tr><td class="cnum">2</td><td>Complete frontmatter</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>name + description present</td></tr>
+          <tr><td class="cnum">3</td><td>Explicit allowed-tools</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>allowed-tools</code> field at all — relies entirely on the paired agent's unrestricted tool list</td></tr>
+          <tr><td class="cnum">4</td><td>Declared version</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>version</code> field</td></tr>
+          <tr><td class="cnum">5</td><td>Actionable description</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>~85 tokens, explicit "does NOT" boundaries</td></tr>
+          <tr><td class="cnum">6</td><td>Third-person voice</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>imperative, addresses the agent</td></tr>
+          <tr><td class="cnum">7</td><td>Honest scope</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>distinct from <code>policies-agent</code> (edits policies); this one only explains them</td></tr>
+          <tr><td class="cnum">8</td><td>Calibrated activation</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td><code>disable-model-invocation: true</code> — explicit-invocation only, matches narrow domain</td></tr>
+          <tr><td class="cnum">9</td><td>Lean SKILL.md</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>~1,100–1,450 tokens measured</td></tr>
+          <tr><td class="cnum">10</td><td>Real progressive disclosure</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td><code>references/input-schema.md</code> is never cited from <code>SKILL.md</code> or any other file — dead weight</td></tr>
+          <tr><td class="cnum">11</td><td>No slop, high density</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>tight tables, no filler phrasing</td></tr>
+          <tr><td class="cnum">12</td><td>No emphasis inflation</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>bold "Not your job", bold "never repeat it", "**do not guess**", "**do not produce a list**" repeated throughout</td></tr>
+          <tr><td class="cnum">13</td><td>No broken links</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td><code>output-style.md</code>, <code>diagnosis-template.md</code>, <code>policy-tracing.md</code>, <code>scripts/find-rule.sh</code>, <code>opa/compliance/</code>, <code>opa/input.json</code> all verified to exist</td></tr>
+          <tr><td class="cnum">14</td><td>Clean structure / no duplication</td><td class="sev-error">error</td><td><span class="pill fail">FAIL</span></td><td>orphaned <code>input-schema.md</code>; scrub-list and conditions-list rules restated near-verbatim vs. <code>output-style.md</code>/<code>diagnosis-template.md</code></td></tr>
+          <tr><td class="cnum">15</td><td>Spec-conformant layout</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>root <code>SKILL.md</code> + <code>references/</code> + <code>scripts/</code> only</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 1 · warnings: 4 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-security">
+    <div class="card">
+      <div class="filehdr">Skill — Security And Trust</div>
+      <p class="muted"><code>SKILL.md</code> (read together with its paired agent <code>opa-policy-analyst.json</code>) · checklist: skill-checklist.md</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">21</td><td>No injection or exfil</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>no overrides, exfil sinks, secrets, or remote-exec instructions</td></tr>
+          <tr><td class="cnum">22</td><td>Least privilege, honest manifest</td><td class="sev-error">error</td><td><span class="pill fail">FAIL</span></td><td>both <code>SKILL.md</code> and the agent describe themselves as read-only, but the agent grants <code>tools: ["terminal"]</code> with no read-only enforcement and <code>SKILL.md</code> declares no <code>allowed-tools</code> — CodeRabbit raised this as an unresolved major, twice, citing the platform's sensitivity</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 1 · warnings: 0 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-testing">
+    <div class="card">
+      <div class="filehdr">Skill — Testing And Evaluation</div>
+      <p class="muted"><code>SKILL.md</code> · checklist: skill-checklist.md</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">23</td><td>Evals when behavior matters</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>evals/</code> directory; nothing tests should-trigger/should-not-trigger or output correctness</td></tr>
+          <tr><td class="cnum">24</td><td>Discriminating cases</td><td class="sev-warning">warning</td><td><span class="pill na">N/A</span></td><td>no evals to assess</td></tr>
+          <tr><td class="cnum">25</td><td>Checked token cost</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no measured token cost recorded in the PR</td></tr>
+          <tr><td class="cnum">26</td><td>Resource-metric eval</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no token/latency/cost threshold eval</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 3 · informative: 0. CodeRabbit's own automated summary independently flags "❌ No tests included."</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-rulerefs">
+    <div class="card">
+      <div class="filehdr">Skill — Instruction And Rule References</div>
+      <p class="muted"><code>SKILL.md</code> · checklist: skill-checklist.md (per-line scoring lives in the Instruction &amp; Rule tab)</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">27</td><td>Right home, no duplication</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>see Instruction &amp; Rule tab — same rules repeated across agent/skill/references/command/AGENTS.md</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 1 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-context">
+    <div class="card">
+      <div class="filehdr">Context File — Checks</div>
+      <p class="muted">Root <code>AGENTS.md</code> (added hunk) · checklist: context-file-checklist.md · whole file measured ~1,050–1,700 tokens currently; this hunk adds ~140–210 more.</p>
+      <div class="alert">This hunk patches a Slack-routing block that was <strong>fully relocated</strong> to <code>.cursor/skills/cloud-agent-asks/references/slack-commands.md</code> by PR #10210 (merged Jun 24), which is why the PR shows as <code>CONFLICTING</code>. See the Overview tab for detail.</div>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Lean budget (&lt;2k tokens)</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>whole file stays well under 2k even with this hunk</td></tr>
+          <tr><td class="cnum">2</td><td>Bounded topics</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>short numbered list, 2–3 sentences per item</td></tr>
+          <tr><td class="cnum">3</td><td>No begging / emphasis inflation</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>bold "Single-alert policy explanation" lead-in, "Do NOT expose", "Do NOT edit" (caps)</td></tr>
+          <tr><td class="cnum">4</td><td>Covers the basics</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>routing addition only — doesn't regress the file's existing coverage</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 1 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-guidelines">
+    <div class="card">
+      <div class="filehdr">Instruction &amp; Rule lines — guideline pass</div>
+      <p class="muted">Every discrete instruction scored with <code>guideline-rule-checklist.md</code>, merged across <code>opa-policy-analyst.json</code>, <code>opa-analyze.md</code>, <code>SKILL.md</code>, the four reference docs, and the <code>AGENTS.md</code> hunk. (<code>find-rule.sh</code> carries no prose instructions to score — pure implementation.)</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Not duplicated</td><td class="sev-error">error</td><td><span class="pill fail">FAIL</span></td><td>4 core rules each repeated 2–6× across the six prose files — see table below</td></tr>
+          <tr><td class="cnum">2</td><td>Not lintable</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>domain/tone rules, not auto-enforceable</td></tr>
+          <tr><td class="cnum">3</td><td>Concise</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>each individual instance is a short, single-idea line</td></tr>
+          <tr><td class="cnum">4</td><td>Right home</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>(a) <code>/opa-analyze</code> routing belongs in <code>cloud-agent-asks/references/slack-commands.md</code>, not root <code>AGENTS.md</code> — see Overview; (b) the canonical scrub-list lives in <code>output-style.md</code> but is restated in <code>SKILL.md</code>'s "Output rules (strict)" and again in the agent prompt instead of being referenced</td></tr>
+          <tr><td class="cnum">5</td><td>Calibrated force</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>bold "Never"/"do not guess"/"do not produce", ALL-CAPS "ALL conditions", "Do NOT expose" — repeated across nearly every file</td></tr>
+          <tr><td class="cnum">6</td><td>Measured phrasing</td><td class="sev-informative">informative</td><td><span class="pill fail">FAIL</span></td><td>frequent Never / Always / Do not, including 2× "Never" inside the 15-line agent prompt alone</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 1 · warnings: 2 · informative: 1</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Duplicated instructions (evidence for check #1)</div>
+      <table class="dup">
+        <thead><tr><th>Instruction</th><th>Appears in</th></tr></thead>
+        <tbody>
+          <tr><td>Exactly one alert/ruleId per request — never list by country/jurisdiction, never a catalog</td><td>agent prompt (×2) · <code>opa-analyze.md</code> (×2) · <code>SKILL.md</code> (description, intro, Query modes, output rules) · <code>diagnosis-template.md</code> (Requests to decline) · <code>output-style.md</code> · <code>AGENTS.md</code></td></tr>
+          <tr><td>Never expose ruleIds / UUIDs / file paths / OPA / Rego / data-model fields in the deliverable</td><td>agent prompt · <code>SKILL.md</code> (intro + Output rules strict) · <code>output-style.md</code> (canonical, most detailed) · <code>AGENTS.md</code></td></tr>
+          <tr><td>Always include the full/complete conditions list, in plain language</td><td>agent prompt · <code>opa-analyze.md</code> · <code>SKILL.md</code> (Step 2, Output rules, ticket-integration list) · <code>diagnosis-template.md</code> · <code>output-style.md</code> · <code>AGENTS.md</code></td></tr>
+          <tr><td>Internal/technical notes only when the operator explicitly asks; default is to omit</td><td><code>SKILL.md</code> (Internal addendum) · <code>output-style.md</code> (Optional internal addendum) — near-verbatim</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Combined total (all tabs)</div>
+      <p><strong>Errors: 3 · Warnings: 11 · Informative: 1.</strong> No prompt-injection or exfil risk, and the domain modeling itself is sound and non-duplicative of the existing <code>policies-agent</code>. The real blockers are the terminal/read-only mismatch (security), the stale <code>AGENTS.md</code> patch target (will not apply cleanly and points at the wrong file going forward), and the repeated restatement of the same four rules across every artifact in the bundle. Fixing those three, plus wiring in <code>allowed-tools</code>/<code>version</code> and toning down the bold/caps, would clear the bulk of the findings.</p>
+    </div>
+  </section>
+</div>
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  }));
+</script>
+</body>
+</html>
