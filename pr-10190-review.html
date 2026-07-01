@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PR #10190 — Vortex + date/timezone skills</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #28282a; --muted: #6b7280;
+    --primary: #0d9488; --border: #e2e4e8; --radius: 12px;
+    --green: #15803d; --amber: #b45309; --red: #b91c1c; --slate: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
+  .wrap { max-width: 66rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .35rem; }
+  header .label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header .meta { color: var(--muted); font-size: .92rem; margin-top: .4rem; }
+  header .meta a { color: var(--primary); text-decoration: none; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); }
+  nav.tabs button { font: inherit; font-weight: 600; font-size: .85rem; cursor: pointer; border: 0; background: none;
+    padding: .6rem .85rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  nav.tabs .grp { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#9aa1ab; align-self:center; padding:0 .35rem 0 .6rem; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .2s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.5rem 1.8rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 1.2rem; }
+  h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 1.3rem 0 .5rem; }
+  .seclabel { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); margin-bottom: .3rem; }
+  code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .85em; }
+  pre { background: rgba(0,0,0,.04); padding: 1rem 1.25rem; border-radius: 10px; overflow-x: auto; font-size: .82em; line-height:1.5; }
+  a { color: var(--primary); }
+  ul, ol { padding-left: 1.2rem; } li { margin: .3rem 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: .7rem; margin: 1rem 0 .25rem; }
+  .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: .85rem 1rem; }
+  .stat .n { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
+  .stat .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: .87rem; margin: .5rem 0 .25rem; }
+  th, td { text-align: left; padding: .48rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  td.cnum { color: var(--muted); width: 1.8rem; }
+  .pill { display: inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+  .pass { color: var(--green); background: #dcfce7; }
+  .fail { color: var(--red); background: #fee2e2; }
+  .na { color: var(--slate); background: #e2e8f0; }
+  .sev-error { color: var(--red); font-weight: 700; }
+  .sev-warning { color: var(--amber); font-weight: 700; }
+  .sev-informative { color: var(--slate); font-weight: 700; }
+  .verdict { border-left: 4px solid var(--primary); padding: .25rem 0 .25rem 1rem; margin: 1rem 0; }
+  .alert { border-left: 4px solid var(--amber); background:#fffbeb; padding: .6rem 1rem; border-radius: 8px; margin: 1rem 0; font-size:.92rem; }
+  .danger { border-left: 4px solid var(--red); background:#fef2f2; padding: .6rem 1rem; border-radius: 8px; margin: 1rem 0; font-size:.92rem; }
+  .good { border-left: 4px solid var(--green); background:#f0fdf4; padding: .6rem 1rem; border-radius: 8px; margin: 1rem 0; font-size:.92rem; }
+  .tag { display:inline-block; font-size:.72rem; font-weight:600; color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:.1rem .55rem; margin:.15rem .25rem .15rem 0; }
+  .muted { color: var(--muted); }
+  .filehdr { font-weight: 700; font-size: .92rem; margin: 1.4rem 0 .2rem; }
+  .findings li { margin: .5rem 0; }
+  .flow { margin: 1.1rem 0 .4rem; }
+  .flow .lane { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin:.2rem 0 .6rem; }
+  .flow .box { background: var(--bg); border:1px solid var(--border); border-radius:10px; padding:.6rem .85rem; }
+  .flow .box .t { font-weight:700; font-size:.85rem; }
+  .flow .box .s { color:var(--muted); font-size:.76rem; }
+  .flow .pair { display:flex; gap:.8rem; align-items:stretch; }
+  .flow .pair .box { flex:1; }
+  .flow .between { text-align:center; color:var(--red); font-size:.76rem; font-weight:600; margin:.55rem 0 0; }
+  .flow .accent { border-color: var(--primary); background:#f0fdfa; }
+  .flow .down { text-align:center; color:var(--muted); font-size:.8rem; margin:.4rem 0; }
+  .flow .leaves { display:flex; gap:.6rem; }
+  .flow .leaves .box { flex:1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">PR Review · yoni-dx</div>
+    <h1>PR #10190 — Vortex conversion + date/timezone skills</h1>
+    <div class="meta">
+      <code>Add vortex timezone skills and command</code><br/>
+      by <strong>NativLevy1</strong> · 7 files · +234 / −0 · all markdown (skills, one command, four reference docs) ·
+      <a href="https://github.com/Global-Slice/mono-slice/pull/10190">github.com/Global-Slice/mono-slice/pull/10190</a>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-tab="summary">Summary</button>
+    <span class="grp">SDLC</span>
+    <button data-tab="sdlc-overview">Overview</button>
+    <button data-tab="sdlc-structure">Skill · Structure</button>
+    <button data-tab="sdlc-workflow">Skill · Workflow</button>
+    <button data-tab="sdlc-security">Skill · Security</button>
+    <button data-tab="sdlc-testing">Skill · Testing</button>
+    <button data-tab="sdlc-rulerefs">Skill · Rule Refs</button>
+    <button data-tab="sdlc-guidelines">Instruction &amp; Rule</button>
+    <span class="grp">Proposal</span>
+    <button data-tab="sdlc-redesign">Workflow Redesign</button>
+  </nav>
+
+  <!-- ============================ SUMMARY ============================ -->
+  <section class="panel active" id="summary">
+    <div class="card">
+      <div class="seclabel">The 30-second version</div>
+      <h2>What this PR actually is</h2>
+      <p>This is a <strong>pure documentation / AI-guidance PR</strong> — 234 added lines, zero deletions, all Markdown. It doesn't ship any product feature or runtime code. Instead it teaches the repo's <em>AI coding agents</em> (Cursor) two unrelated things, bundled into one PR:</p>
+      <ol>
+        <li><strong>How to convert a backend flow to "Vortex"</strong> — a new <code>/convert-vortex</code> slash command, a <code>vortex</code> skill, and a 119-line conversion recipe.</li>
+        <li><strong>How to handle dates &amp; timezones safely</strong> — two new "dates &amp; timezones" reference docs (one backend, one frontend) plus one new pointer row in each coding skill.</li>
+      </ol>
+      <p class="muted">Because the two topics are independent, the PR title ("vortex timezone skills") is slightly misleading — they're two separate concerns that happen to travel together.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Domain primer · for someone new to this</div>
+      <h2>What is "Vortex"?</h2>
+      <p>Slice is an equity / cap-table platform. Many actions have a <strong>ripple effect</strong>: e.g. editing a <em>vesting schedule</em> (the rules for how equity is earned over time) means every <em>grant</em>, <em>share</em>, and <em>warrant</em> that uses that schedule must be recalculated. Today, one API call does the edit <em>and</em> re-runs all that dependent work inline, synchronously, in a single request.</p>
+      <p><strong>Vortex</strong> is Slice's in-house orchestration layer built on <a href="https://temporal.io">Temporal</a>. It turns that one big synchronous call into a <strong>DAG</strong> (a directed graph of steps): a "parent node" does the core edit, and "child nodes" fan out — one per affected domain — to redo their piece, in parallel, each retryable on its own. The payoff is durability (a crash mid-way can resume), independent retries, batching over large sets, and per-step progress shown in the UI.</p>
+      <p>Concretely, each node is just a <em>controller method</em> tagged with a decorator (<code>@VortexParent</code> / <code>@VortexChild</code>). A build script (<code>scripts/generate-topology.ts</code>) scans those decorators and produces the graph that a worker service (<code>vortex-brain</code>) executes. This PR's recipe uses the real <strong>vesting-schedule → grants/shares/warrants</strong> conversion (which already exists in the codebase) as its worked example. I verified those controllers, decorators, and the topology script all exist on <code>main</code>.</p>
+      <div class="grid">
+        <div class="stat"><div class="n">DAG</div><div class="k">Directed graph of steps</div></div>
+        <div class="stat"><div class="n">Temporal</div><div class="k">Durable workflow engine</div></div>
+        <div class="stat"><div class="n">1&#8594;7</div><div class="k">Nodes in the vesting example</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Domain primer · for someone new to this</div>
+      <h2>What is the "date / timezone" problem?</h2>
+      <p>Two kinds of dates behave very differently, and mixing them up is a classic source of "off-by-one-day" bugs:</p>
+      <ul>
+        <li><strong>Calendar-day values</strong> (a grant date, a vesting date, a 409A valuation date) mean "this exact day, everywhere." <em>2024-01-01 must stay Jan 1</em> for a user in Tokyo and in Los Angeles alike.</li>
+        <li><strong>Instants</strong> (<code>createdAt</code>, an event timestamp) mean "this exact moment," and <em>should</em> be shown converted into each viewer's local timezone.</li>
+      </ul>
+      <p>The bug the docs guard against: JavaScript's <code>new Date('2024-01-01')</code> is UTC midnight, but <code>dayjs(value)</code> parses in the browser's local zone — so in a positive-offset zone (e.g. Israel, UTC+2/3) a bare <code>YYYY-MM-DD</code> silently rolls back to <em>the previous day</em>. The two new reference docs give a concrete <strong>"shift audit"</strong> (Construct → Parse/Pick → Anchor/Transport → Round-trip → Display) and point at the project's real helpers (<code>getStartOfDateUTC</code>, <code>ParseUTCIsoDatePipe</code>, the UTC-default <code>SliceDatePicker</code>, <code>formatDateInUtcTimezone</code>) so agents stop reintroducing the shift. I confirmed all of those symbols exist.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">The seven files</div>
+      <table>
+        <thead><tr><th>File</th><th>Lines</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>.cursor/skills/vortex/SKILL.md</code></td><td>+40</td><td><strong>New skill.</strong> On-demand only, invoked via <code>/convert-vortex</code>. Explains the parent/child DAG model, when to use it, and to also load backend-coding + backend-testing skills.</td></tr>
+          <tr><td><code>.cursor/skills/vortex/references/conversion-recipe.md</code></td><td>+119</td><td><strong>The recipe.</strong> "Decide the node graph first" reasoning (most flows need 1 node or none), 8 ordered steps, real code snippets, and a conversion audit checklist.</td></tr>
+          <tr><td><code>.cursor/commands/convert-vortex.md</code></td><td>+22</td><td><strong>New <code>/convert-vortex &lt;flow&gt;</code> command.</strong> Argument + no-flow validation, then 6 steps that hand off to the skill and regenerate topology.</td></tr>
+          <tr><td><code>…/backend-coding/references/dates-timezones.md</code></td><td>+32</td><td>New backend reference: calendar-day vs instant, the shift audit (Construct/Parse/Anchor/Compare/Serialize), helper list, a real UTC-anchored <code>from</code>/<code>to</code> example.</td></tr>
+          <tr><td><code>…/frontend-coding/references/dates-timezones.md</code></td><td>+19</td><td>New frontend reference: the 5-step shift audit (Construct/Pick/Transport/Round-trip/Display) and the "import <code>dayjs</code> from <code>@slice/shared-utils</code>" rule.</td></tr>
+          <tr><td><code>.cursor/skills/backend-coding/SKILL.md</code></td><td>+1</td><td>One routing-table row pointing at the new backend dates reference.</td></tr>
+          <tr><td><code>.cursor/skills/frontend-coding/SKILL.md</code></td><td>+1</td><td>One routing-table row pointing at the new frontend dates reference.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">What's genuinely good here</div>
+      <ul>
+        <li><strong>Grounded, not hallucinated.</strong> Every code path the docs cite resolves in the repo — the vortex controllers, the <code>@VortexParent/@VortexChild</code> decorators, <code>generate-topology.ts</code>, the date helpers, the pipes, the <code>@slice/ui</code> pickers, and the <code>report-params.types.ts</code> snippet all exist and match.</li>
+        <li><strong>Good taste on when <em>not</em> to use Vortex.</strong> The recipe repeatedly tells the agent to default to <em>one node or none</em> and not to over-engineer — a mature bias against premature complexity.</li>
+        <li><strong>Additive &amp; safe.</strong> The recipe insists the original synchronous controller stays untouched, so both paths coexist.</li>
+        <li><strong>The timezone docs are technically accurate</strong> and pin down a real, recurring off-by-one bug class with concrete helpers.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Current status</div>
+      <p>
+        <span class="tag">Open</span>
+        <span class="tag">All markdown, no code</span>
+        <span class="tag">CodeRabbit: 3 actionable (1 major, 2 minor)</span>
+        <span class="tag">Pre-merge: Description check ⚠️ (empty template)</span>
+        <span class="tag">No human review yet</span>
+        <span class="tag">No tests / no evals</span>
+      </p>
+      <ul>
+        <li><strong>One real correctness bug</strong> (CodeRabbit "major", which I independently confirmed): the backend "Anchor" rule is self-contradictory — see the Overview tab.</li>
+        <li>PR description is the untouched template (What/How blank, testing box unselected) — the automated Description check is failing on it.</li>
+        <li><a href="https://github.com/goldbergyoni">goldbergyoni</a> commented "I'll review this tomorrow" — no human review content exists on the PR yet.</li>
+        <li>The frontend test-coverage bot flags 26% coverage, but that's about an <em>unrelated</em> concurrent branch state, not this doc-only PR.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================ SDLC OVERVIEW ============================ -->
+  <section class="panel" id="sdlc-overview">
+    <div class="card">
+      <div class="seclabel">SDLC reviewer · per <code>.cursor/skills/sdlc/references/review-change.md</code></div>
+      <h2>Review summary</h2>
+      <p>Scope: all seven changed files (every one under <code>.cursor/</code>). Only <code>vortex/SKILL.md</code> gets a full <strong>container</strong> grade (the <em>skill</em> checklist). <code>convert-vortex.md</code> is a <strong>command</strong> whose container checklist is a stub ("not ready yet"), so it gets no container tab — its instruction lines still flow into the Instruction &amp; Rule pass. The three reference docs and the two one-line <code>SKILL.md</code> routing rows carry no independent container checklist, so they too are graded only through the guideline pass.</p>
+      <div class="grid">
+        <div class="stat"><div class="n sev-error">1</div><div class="k">Error findings</div></div>
+        <div class="stat"><div class="n sev-warning">13</div><div class="k">Warning findings</div></div>
+        <div class="stat"><div class="n sev-informative">2</div><div class="k">Informative</div></div>
+        <div class="stat"><div class="n">~2.9k</div><div class="k">Est. total tokens</div></div>
+      </div>
+    </div>
+
+    <div class="danger">
+      <strong>Rank-5 finding — the one real bug: the backend "Anchor" rule is inverted/contradictory.</strong>
+      In <code>backend-coding/references/dates-timezones.md</code>, the Anchor bullet says <em>"range lower / as-of bound → <code>getEndOfDateUTC</code>; range start → <code>getStartOfDateUTC</code>."</em> That contradicts itself (a "range lower" bound <em>is</em> the "range start") and contradicts the doc's own example 10 lines later, where the lower bound <code>from</code> uses <code>startOf('day')</code>. I verified against the cited real code — <code>libraries/shared/types/src/reports/report-params.types.ts</code> lines 14–19 — where <code>from</code> = <code>startOf('day')</code> and <code>to</code> = <code>endOf('day')</code>. An agent following this line literally would anchor the lower bound with <code>getEndOfDateUTC</code> and drop a day from every range query. CodeRabbit flagged the same as a Major. Fix: <code>range lower / from → getStartOfDateUTC; range upper / as-of → getEndOfDateUTC; instant → preserve</code>.
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Token budget — measured (char/4 estimate, ±20%)</div>
+      <table>
+        <thead><tr><th>File</th><th>~Chars</th><th>~Tokens</th><th>Budget</th></tr></thead>
+        <tbody>
+          <tr><td><code>vortex/SKILL.md</code></td><td>1,500</td><td>~375</td><td><span class="pill pass">PASS</span> &lt;2k, loads on <code>/convert-vortex</code> only</td></tr>
+          <tr><td><code>conversion-recipe.md</code></td><td>4,200</td><td>~1,050</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>backend/dates-timezones.md</code></td><td>1,700</td><td>~430</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>frontend/dates-timezones.md</code></td><td>1,400</td><td>~350</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>convert-vortex.md</code></td><td>1,100</td><td>~275</td><td><span class="pill na">N/A</span> command doc</td></tr>
+          <tr><td><code>backend/frontend SKILL.md rows</code></td><td>650</td><td>~160</td><td><span class="pill pass">PASS</span> each adds one table row</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Nothing loads unconditionally except the two one-line routing rows. The heavy content (recipe, references) is genuinely progressive-disclosure — loaded only when the matching task/command fires.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Headline findings</div>
+      <ol class="findings">
+        <li><span class="sev-warning">warning</span> — <strong>Inverted anchor rule</strong> in <code>backend/dates-timezones.md</code> (see callout). Guideline #3 (clear, non-contradictory). Tagged a warning by the checklist, but the <em>highest business impact</em> finding — it actively induces off-by-one bugs.</li>
+        <li><span class="sev-error">error</span> — <strong>Side-effecting skill without honest manifest.</strong> <code>vortex/SKILL.md</code> writes code yet sets no <code>allowed-tools</code> and no <code>disable-model-invocation: true</code>; on-demand control is asserted only in prose. Skill #22 (error severity).</li>
+        <li><span class="sev-warning">warning</span> — <strong>Workflow with no instrumentation.</strong> The <code>/convert-vortex</code> bundle drives a genuine 6–8 step workflow but has no task tracking, no run-time progress artifacts, and no reviewer agent. Skill #16/#19/#20 (see the Skill · Workflow tab).</li>
+        <li><span class="sev-warning">warning</span> — <strong>Missing <code>version</code> and <code>allowed-tools</code></strong> in <code>vortex/SKILL.md</code> frontmatter. Skill #3, #4.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Activation control via prose, not the flag.</strong> The skill enforces "on-demand only" with a caps sentence in the <em>description</em> instead of <code>disable-model-invocation: true</code>. Skill #8.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Ambiguous relative path</strong> in <code>convert-vortex.md</code> step 1: <code>references/conversion-recipe.md</code> should be the repo-relative <code>.cursor/skills/vortex/references/conversion-recipe.md</code>. CodeRabbit minor. Guideline #4.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Emphasis inflation:</strong> caps/bold "Do NOT auto-load", "Never send…", bold <strong>before</strong>. Skill #12, Guideline #5.</li>
+        <li><span class="sev-warning">warning</span> — <strong>No evals, no recorded token cost</strong> for the new skill. Skill #23/#25/#26.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Fenced code blocks lack a language</strong> (MD040) in <code>conversion-recipe.md</code>. CodeRabbit minor; auto-lintable.</li>
+        <li><span class="sev-informative">informative</span> — <strong>Absolute phrasing</strong> ("Never", "always", "Do not") recurs across the docs. Guideline #6.</li>
+      </ol>
+      <p class="muted">Net: the design and grounding are strong; the blockers are one inverted rule (real bug), a few frontmatter/activation gaps on the new skill, and the empty PR description. None are security or architecture problems.</p>
+    </div>
+  </section>
+
+  <!-- ============================ SKILL · STRUCTURE ============================ -->
+  <section class="panel" id="sdlc-structure">
+    <div class="card">
+      <div class="filehdr">Skill — Structure And Intent</div>
+      <p class="muted"><code>.cursor/skills/vortex/SKILL.md</code> · checklist: skill-checklist.md · measured body ~375 tokens (well under the 2,000 budget).</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Valid name</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td><code>vortex</code> matches parent dir</td></tr>
+          <tr><td class="cnum">2</td><td>Complete frontmatter</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td><code>name</code> + <code>description</code> present</td></tr>
+          <tr><td class="cnum">3</td><td>Explicit allowed-tools</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>allowed-tools</code> field — the skill writes controllers/DTOs/tests, so it should declare its tools</td></tr>
+          <tr><td class="cnum">4</td><td>Declared version</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>version</code> field</td></tr>
+          <tr><td class="cnum">5</td><td>Actionable description</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>says what + when; mildly leaks mechanism ("reads this file directly by path") but stays useful</td></tr>
+          <tr><td class="cnum">6</td><td>Third-person voice</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>imperative, addresses the agent</td></tr>
+          <tr><td class="cnum">7</td><td>Honest scope</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>explicitly "Not for new non-fan-out CRUD"; distinct, narrow</td></tr>
+          <tr><td class="cnum">8</td><td>Calibrated activation</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>relies on a prose "On-demand only. Do NOT auto-load" line instead of the <code>disable-model-invocation: true</code> frontmatter flag that actually enforces it</td></tr>
+          <tr><td class="cnum">9</td><td>Lean SKILL.md</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>~375 tokens measured</td></tr>
+          <tr><td class="cnum">10</td><td>Real progressive disclosure</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>recipe lives in <code>references/</code>, cited with what it holds + when to load</td></tr>
+          <tr><td class="cnum">11</td><td>No slop, high density</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>dense; no filler</td></tr>
+          <tr><td class="cnum">12</td><td>No emphasis inflation</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>"Do NOT auto-load" (caps), bold <strong>before</strong>, "exclusively"</td></tr>
+          <tr><td class="cnum">13</td><td>No broken links</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td><code>references/conversion-recipe.md</code>, <code>backend-coding/SKILL.md</code>, <code>backend-testing/SKILL.md</code> all exist</td></tr>
+          <tr><td class="cnum">14</td><td>Clean structure / no duplication</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>no orphaned files, no user paths, no stale model names</td></tr>
+          <tr><td class="cnum">15</td><td>Spec-conformant layout</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>root <code>SKILL.md</code> + <code>references/</code> only</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 4 · informative: 0</p>
+    </div>
+  </section>
+
+  <!-- ============================ SKILL · WORKFLOW ============================ -->
+  <section class="panel" id="sdlc-workflow">
+    <div class="card">
+      <div class="filehdr">Skill — Workflows</div>
+      <p class="muted">Classification note: <code>vortex/SKILL.md</code> read alone is thin — knowledge + a route to the recipe — and the step-by-step procedure actually lives in <code>convert-vortex.md</code> (6 steps) + <code>conversion-recipe.md</code> (8 steps). But the Workflows checks exist to ask "is this multi-step agent work tracked, resumable, and reviewed?", so the <strong>bundle</strong> is the right unit to grade. It is unambiguously a multi-step workflow, so this category applies (it is <em>not</em> skipped as it would be for a pure guideline skill).</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">16</td><td>Tracked multi-step execution</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>the command has 6 ordered steps and the recipe 8, but nothing backs the run with a to-do / <code>task.md</code> tracked checklist</td></tr>
+          <tr><td class="cnum">17</td><td>Observable steps</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>ordered, visible steps; "state the decision before writing code" is an explicit checkpoint</td></tr>
+          <tr><td class="cnum">18</td><td>Not over-rigid</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>recipe leaves judgment open ("most flows need one node or none")</td></tr>
+          <tr><td class="cnum">19</td><td>Progress artifacts</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>the flow emits no durable, inspectable, resume-after-failure artifacts as it runs — the final code/topology is the <em>output</em>, not a run trace. A conversion abandoned at step 4 leaves nothing to resume from</td></tr>
+          <tr><td class="cnum">20</td><td>Reviewer in the loop</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>the only "review" is the step-6 audit the same agent runs on itself; the backend-testing Double Gate reviews the <em>test</em>, not the conversion. No reviewer agent guarantees the conversion's outcomes</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 3 · informative: 0. This bundle is a genuine multi-step workflow but is built as an untracked, single-agent, non-resumable linear procedure: no task tracking (#16), no run-time progress artifacts (#19), and no reviewer agent (#20). Only observability (#17) and flexibility (#18) hold.</p>
+    </div>
+  </section>
+
+  <!-- ============================ SKILL · SECURITY ============================ -->
+  <section class="panel" id="sdlc-security">
+    <div class="card">
+      <div class="filehdr">Skill — Security And Trust</div>
+      <p class="muted"><code>vortex/SKILL.md</code> · checklist: skill-checklist.md</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">21</td><td>No injection or exfil</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>no overrides, exfil sinks, secrets, or remote-exec instructions</td></tr>
+          <tr><td class="cnum">22</td><td>Least privilege, honest manifest</td><td class="sev-error">error</td><td><span class="pill fail">FAIL</span></td><td>the skill produces code (controllers, DTOs, tests) — a side-effecting skill — yet declares no <code>allowed-tools</code> and doesn't set <code>disable-model-invocation: true</code>; on-demand control is only asserted in prose</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 1 · warnings: 0 · informative: 0. #22 is an error-severity check: a side-effecting (code-writing) skill should set <code>disable-model-invocation: true</code> and a minimal <code>allowed-tools</code>; the on-demand intent is asserted only in prose, so it isn't enforced.</p>
+    </div>
+  </section>
+
+  <!-- ============================ SKILL · TESTING ============================ -->
+  <section class="panel" id="sdlc-testing">
+    <div class="card">
+      <div class="filehdr">Skill — Testing And Evaluation</div>
+      <p class="muted"><code>vortex/SKILL.md</code> · checklist: skill-checklist.md</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">23</td><td>Evals when behavior matters</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>evals/</code>; nothing tests should-trigger / should-not-trigger (relevant since the skill leans on "don't auto-load")</td></tr>
+          <tr><td class="cnum">24</td><td>Discriminating cases</td><td class="sev-warning">warning</td><td><span class="pill na">N/A</span></td><td>no evals to assess</td></tr>
+          <tr><td class="cnum">25</td><td>Checked token cost</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no measured token cost recorded in the PR</td></tr>
+          <tr><td class="cnum">26</td><td>Resource-metric eval</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no token/latency/cost threshold eval</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 3 · informative: 0. Note these are standard for a first documentation-only skill; the produced <em>code</em> the recipe generates is separately covered by the backend-testing Double Gate it invokes.</p>
+    </div>
+  </section>
+
+  <!-- ============================ SKILL · RULE REFS ============================ -->
+  <section class="panel" id="sdlc-rulerefs">
+    <div class="card">
+      <div class="filehdr">Skill — Instruction And Rule References</div>
+      <p class="muted"><code>vortex/SKILL.md</code> and the two coding-skill routing rows · checklist: skill-checklist.md (per-line scoring lives in the Instruction &amp; Rule tab)</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">27</td><td>Right home, no duplication</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>detail lives in <code>references/</code>, not in <code>SKILL.md</code>; the two coding-skill edits are correct one-line routing rows pointing at the new refs</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 0 · informative: 0</p>
+    </div>
+  </section>
+
+  <!-- ============================ INSTRUCTION & RULE ============================ -->
+  <section class="panel" id="sdlc-guidelines">
+    <div class="card">
+      <div class="filehdr">Instruction &amp; Rule lines — guideline pass</div>
+      <p class="muted">Every discrete instruction scored with <code>guideline-rule-checklist.md</code>, merged across <code>convert-vortex.md</code>, <code>conversion-recipe.md</code>, both <code>dates-timezones.md</code> refs, and the two <code>SKILL.md</code> routing rows.</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Not duplicated</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>the "calendar-day vs instant" framing is intentionally mirrored across the backend/frontend refs for two audiences; each doc's rules are stack-specific — acceptable, not a conflict</td></tr>
+          <tr><td class="cnum">2</td><td>Not lintable</td><td class="sev-informative">informative</td><td><span class="pill fail">FAIL</span></td><td>the MD040 "fenced block needs a language" issue in <code>conversion-recipe.md</code> is auto-enforceable by markdownlint — fix in the linter, not by hand</td></tr>
+          <tr><td class="cnum">3</td><td>Concise / clear</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>the backend "Anchor" bullet is self-contradictory ("range lower … → <code>getEndOfDateUTC</code>; range start → <code>getStartOfDateUTC</code>") and conflicts with its own example — the one real correctness bug (see Overview)</td></tr>
+          <tr><td class="cnum">4</td><td>Right home</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td><code>convert-vortex.md</code> step 1 uses the ambiguous <code>references/conversion-recipe.md</code>; from a command it should be the full repo-relative path</td></tr>
+          <tr><td class="cnum">5</td><td>Calibrated force</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>caps/bold coercion: "Do NOT auto-load", "Never send a bare local-parsed", bold <strong>before</strong></td></tr>
+          <tr><td class="cnum">6</td><td>Measured phrasing</td><td class="sev-informative">informative</td><td><span class="pill fail">FAIL</span></td><td>frequent absolute "Never" / "always" / "Do not" across the date rules</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 3 · informative: 2</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Per-file notes</div>
+      <table>
+        <thead><tr><th>File</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><code>conversion-recipe.md</code></td><td>Strong, grounded, well-reasoned. Only nits: MD040 fence languages; a few caps/bold. Node-count heuristic and audit checklist are genuinely useful.</td></tr>
+          <tr><td><code>backend/dates-timezones.md</code></td><td>Accurate <em>except</em> the inverted Anchor bullet (the headline error). Helper list and the real <code>from</code>/<code>to</code> snippet are correct.</td></tr>
+          <tr><td><code>frontend/dates-timezones.md</code></td><td>Accurate and tight. The <code>dayjs</code>-from-<code>@slice/shared-utils</code> rule and the round-trip warning are real, verified pitfalls.</td></tr>
+          <tr><td><code>convert-vortex.md</code></td><td>Clean 6-step command; only the ambiguous recipe path needs fixing.</td></tr>
+          <tr><td>two <code>SKILL.md</code> rows</td><td>Correct progressive-disclosure registration — one row each, pointing at the new refs. No issues.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Combined total (all tabs)</div>
+      <p><strong>Errors: 1 · Warnings: 13 · Informative: 2.</strong> No injection/exfil or architecture concerns, and the technical content is unusually well-grounded in real repo code. Two things stand out: (1) the inverted backend Anchor rule — a warning by the checklist's tag but the highest-impact defect, since anyone following it drops a day from range queries; and (2) this <code>/convert-vortex</code> bundle is a real multi-step <strong>workflow</strong> shipped with none of the workflow scaffolding the skill checklist expects — no tracked checklist (#16), no run-time progress artifacts / resumability (#19), and no reviewer agent (#20). The rest is polish: add <code>version</code> + <code>allowed-tools</code> and <code>disable-model-invocation: true</code>, make the command's recipe path explicit, add fence languages, dial back the caps/bold, and fill in the PR description.</p>
+    </div>
+  </section>
+
+  <!-- ============================ WORKFLOW REDESIGN ============================ -->
+  <section class="panel" id="sdlc-redesign">
+    <div class="card">
+      <div class="seclabel">Design idea · reviewer's proposal</div>
+      <h2>Put the workflow in one file; hang knowledge and sub-agents off each step</h2>
+      <p>The conversion workflow is currently authored twice. <code>convert-vortex.md</code> defines a 6-step sequence and <code>conversion-recipe.md</code> defines an overlapping 8-step sequence plus the audit, so the command and the recipe are both steering the same ordered process, each holding part of it. "Decide the node graph first", "regenerate topology", and "run the audit" all appear in both, and the command's step 5 ("apply the recipe steps in order") exists only to defer to the other file. The result is that there is no single source of truth for what the steps are or when the gates fire: changing the process means editing two files in sync, and drift between them is the natural failure mode. It also conflates two different kinds of content — <em>orchestration</em> (the ordered steps and their pass/fail gates) and <em>knowledge</em> (how to actually write a parent controller, a batched child, the DTOs).</p>
+      <p>The cleaner shape is to keep the workflow in exactly one file: the canonical ordered steps, with every validation and audit check inlined as a gate the run must pass. Everything else becomes leaf content the workflow pulls in on demand — one knowledge doc per step (or topic) for the "how", and, for the heavier or independently verifiable steps, a sub-agent that owns that step end-to-end and reports its outcome back. The command collapses to a thin entry point (identify the target flow, then run the workflow), <code>SKILL.md</code> stays as routing and positioning, the recipe's step bodies move into the per-step knowledge docs, and the audit becomes the workflow's closing gate — ideally enforced by a reviewer sub-agent. You get one place to read and change the process, single-source-of-truth restored, and, as a bonus, exactly the structure that closes the workflow-instrumentation gaps flagged earlier: tracked steps, per-step artifacts, and a reviewer in the loop.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Today vs proposed</div>
+      <div class="flow">
+        <div class="lane">Today — one workflow, authored across two files</div>
+        <div class="pair">
+          <div class="box">
+            <div class="t">convert-vortex.md</div>
+            <div class="s">command · 6 ordered steps</div>
+          </div>
+          <div class="box">
+            <div class="t">conversion-recipe.md</div>
+            <div class="s">reference · 8 ordered steps + audit</div>
+          </div>
+        </div>
+        <div class="between">&#8646; same workflow in both — "decide node graph", "regenerate topology", "run audit" duplicated; command step 5 just defers to the recipe</div>
+      </div>
+
+      <div class="flow">
+        <div class="lane">Proposed — one workflow file, knowledge &amp; sub-agents per step</div>
+        <div class="box">
+          <div class="t">convert-vortex.md</div>
+          <div class="s">thin entry — identify the target flow, then run the workflow</div>
+        </div>
+        <div class="down">&#8595;</div>
+        <div class="box accent">
+          <div class="t">convert-workflow.md — the single ordered process</div>
+          <div class="s">step 1 &#8594; step 2 &#8594; step 3 &#8594; … &#8594; closing gate: conversion audit</div>
+        </div>
+        <div class="down">&#8595;&nbsp;&nbsp;each step pulls in&nbsp;&nbsp;&#8595;</div>
+        <div class="leaves">
+          <div class="box">
+            <div class="t">knowledge docs</div>
+            <div class="s">parent/child controllers, DTOs, topology rules — the "how" per step</div>
+          </div>
+          <div class="box">
+            <div class="t">sub-agents</div>
+            <div class="s">heavier / verifiable steps own themselves and report back</div>
+          </div>
+          <div class="box accent">
+            <div class="t">reviewer sub-agent</div>
+            <div class="s">enforces the audit as the final gate</div>
+          </div>
+        </div>
+      </div>
+      <p class="muted">The <code>vortex</code> case is the concrete instance, but the same split shows up wherever a command and its recipe both enumerate steps — worth treating as a general pattern in the SDLC skill, not a one-off.</p>
+    </div>
+  </section>
+</div>
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  }));
+</script>
+</body>
+</html>
