@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PR #10193 — Documents Room agent guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #28282a; --muted: #6b7280;
+    --primary: #0d9488; --border: #e2e4e8; --radius: 12px;
+    --green: #15803d; --amber: #b45309; --red: #b91c1c; --slate: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
+  .wrap { max-width: 66rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .35rem; }
+  header .label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header .meta { color: var(--muted); font-size: .92rem; margin-top: .4rem; }
+  header .meta a { color: var(--primary); text-decoration: none; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); }
+  nav.tabs button { font: inherit; font-weight: 600; font-size: .85rem; cursor: pointer; border: 0; background: none;
+    padding: .6rem .85rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  nav.tabs .grp { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#9aa1ab; align-self:center; padding:0 .35rem 0 .6rem; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .2s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.5rem 1.8rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 1.2rem; }
+  h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 1.3rem 0 .5rem; }
+  .seclabel { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); margin-bottom: .3rem; }
+  code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .85em; }
+  pre { background: rgba(0,0,0,.04); padding: 1rem 1.25rem; border-radius: 10px; overflow-x: auto; font-size: .85em; }
+  a { color: var(--primary); }
+  ul, ol { padding-left: 1.2rem; } li { margin: .3rem 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: .7rem; margin: 1rem 0 .25rem; }
+  .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: .85rem 1rem; }
+  .stat .n { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
+  .stat .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: .87rem; margin: .5rem 0 .25rem; }
+  th, td { text-align: left; padding: .48rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  td.cnum { color: var(--muted); width: 1.8rem; }
+  .pill { display: inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+  .pass { color: var(--green); background: #dcfce7; }
+  .fail { color: var(--red); background: #fee2e2; }
+  .na { color: var(--slate); background: #e2e8f0; }
+  .sev-error { color: var(--red); font-weight: 700; }
+  .sev-warning { color: var(--amber); font-weight: 700; }
+  .sev-informative { color: var(--slate); font-weight: 700; }
+  .verdict { border-left: 4px solid var(--primary); padding: .25rem 0 .25rem 1rem; margin: 1rem 0; }
+  .alert { border-left: 4px solid var(--amber); background:#fffbeb; padding: .6rem 1rem; border-radius: 8px; margin: 1rem 0; font-size:.92rem; }
+  .tag { display:inline-block; font-size:.72rem; font-weight:600; color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:.1rem .55rem; margin:.15rem .25rem .15rem 0; }
+  .muted { color: var(--muted); }
+  .filehdr { font-weight: 700; font-size: .92rem; margin: 1.4rem 0 .2rem; }
+  .findings li { margin: .5rem 0; }
+  .dup th, .dup td { font-size:.83rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">PR Review · yoni-dx</div>
+    <h1>PR #10193 — Documents Room agent guide</h1>
+    <div class="meta">
+      <code>feat(AT-586): SDLC - add Documents Room agent guide, invariants, and Cursor skill</code><br/>
+      by <strong>danielmishan85</strong> · 4 files · +430 / −0 · docs-only ·
+      <a href="https://github.com/Global-Slice/mono-slice/pull/10193">github.com/Global-Slice/mono-slice/pull/10193</a>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-tab="summary">Summary</button>
+    <button data-tab="review">My Review</button>
+    <span class="grp">SDLC</span>
+    <button data-tab="sdlc-overview">Overview</button>
+    <button data-tab="sdlc-structure">Skill · Structure</button>
+    <button data-tab="sdlc-security">Skill · Security</button>
+    <button data-tab="sdlc-testing">Skill · Testing</button>
+    <button data-tab="sdlc-rulerefs">Skill · Rule Refs</button>
+    <button data-tab="sdlc-context">Context File</button>
+    <button data-tab="sdlc-guidelines">Guidelines</button>
+  </nav>
+
+  <section class="panel active" id="summary">
+    <div class="card">
+      <div class="seclabel">What is it about</div>
+      <h2>Documentation that teaches AI agents how to work safely in Documents Room</h2>
+      <p>A <strong>docs-only</strong> PR that adds AI-steering context for the Documents Room surface in <code>frost</code>. No runtime code changes — it gives agents domain knowledge, hard invariants, and a test-routing playbook so future automated changes to a complex, security-sensitive screen don't introduce regressions.</p>
+      <div class="grid">
+        <div class="stat"><div class="n">4</div><div class="k">Files added</div></div>
+        <div class="stat"><div class="n">+430</div><div class="k">Lines</div></div>
+        <div class="stat"><div class="n">0</div><div class="k">Deletions</div></div>
+        <div class="stat"><div class="n">12</div><div class="k">Invariants</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">The four files</div>
+      <table>
+        <thead><tr><th>File</th><th>Lines</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>.cursor/skills/documents-room-frontend/SKILL.md</code></td><td>49</td><td>New Cursor skill. Read-only tools (Read/Grep/Glob). Routes to <code>AGENTS.md</code> + <code>INVARIANTS.md</code>, with a workflow + change checklist.</td></tr>
+          <tr><td><code>…/references/testing-playbook.md</code></td><td>114</td><td>Maps a change type → the existing page test file to extend, plus shared helpers, route mocks, and run commands.</td></tr>
+          <tr><td><code>apps/frontend/frost/src/pages/platform/documents/AGENTS.md</code></td><td>218</td><td>Domain guide: associations, visibility, bulk actions, permissions, AI suggestions, auditability, key files, PR checklist.</td></tr>
+          <tr><td><code>…/documents/INVARIANTS.md</code></td><td>49</td><td>12 frontend rules, each grounded in a named code file (store, hooks, utils).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Core ideas it encodes</div>
+      <ul>
+        <li><strong>Document → Associations</strong>, not Entity → Attachments. One document links to many legal objects and stakeholders via <code>DocumentWithRelations</code>.</li>
+        <li><strong>Module-level gating</strong> via <code>DOCUMENTS_ROOM_MODULE</code> (<code>read:documents</code>); no per-action role checks in the UI — backend authorization enforces mutations.</li>
+        <li><strong>Bulk actions are high-blast-radius</strong>: act on explicitly selected rows only, show counts, require confirmation, emit audit events.</li>
+        <li><strong>AI suggestions are advisory</strong> until the user explicitly resolves them — never persisted on hover/preview/navigation.</li>
+        <li><strong>Extend an existing page test</strong> before creating a new one (24 page tests/helpers already exist).</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Current status</div>
+      <p>
+        <span class="tag">Open</span>
+        <span class="tag">React preview: ready</span>
+        <span class="tag">netgnsh: approved</span>
+        <span class="tag">galziv: dismissed</span>
+        <span class="tag">CodeRabbit: 1 outside-diff (major)</span>
+        <span class="tag">Test review: no tests changed</span>
+      </p>
+      <ul>
+        <li><strong>CodeRabbit</strong> — "No actionable comments" inline, plus 1 outside-diff <em>major</em>: the leaf <code>AGENTS.md</code> is <strong>missing a commands/run section</strong>.</li>
+        <li><strong>goldbergyoni</strong> — "I'll review this tomorrow."</li>
+        <li>PR description body is the empty template (What / How left blank).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel" id="review">
+    <div class="card">
+      <div class="seclabel">My review</div>
+      <h2>Approve once the duplication is resolved</h2>
+      <div class="verdict">
+        High value, near-zero runtime risk — and the invariants are <em>grounded in real code</em> (I verified the cited symbols all exist), which makes them checkable rather than aspirational. But this is <strong>not</strong> a clean "ship it": the same rules are written out across all three docs, and the language leans on forced emphasis. Both cut against the very SDLC standards a skill PR should model. Fix the duplication and tone, then merge.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">What's strong</div>
+      <ul>
+        <li><strong>Right shape for a skill.</strong> <code>SKILL.md</code> is lean and routes outward; read-only <code>allowed-tools</code> is honest for a domain guide.</li>
+        <li><strong>Invariants tied to code.</strong> Every rule names the file that enforces it — <code>canChangeStakeholderVisibility.ts</code>, <code>buildSecurityStakeholderItems</code>, <code>useDeleteManyDocuments</code>, <code>AISuggestionsModal → resolveActiveStep</code>, <code>selectAll: 'currentPage'</code>. I checked: they all resolve.</li>
+        <li><strong>The test matrix is the headline value.</strong> A change-type → test-file map across a 24-file suite removes the single most expensive question an agent faces here.</li>
+        <li><strong>Security framing is correct.</strong> Visibility/bulk flagged as high-blast-radius, and the frontend is correctly described as not the enforcement layer.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">What must change before merge</div>
+      <ol>
+        <li><strong>Kill the three-way duplication (blocking).</strong> ~12 rules are restated across <code>SKILL.md</code>, <code>AGENTS.md</code>, and <code>INVARIANTS.md</code> — several near-verbatim (e.g. "Never check <code>user.role === 'admin'</code>" appears word-for-word in two files; module-gating and "AI advisory until save" appear in all three). One home per fact: <code>SKILL.md</code> routes only, <code>AGENTS.md</code> explains concepts, <code>INVARIANTS.md</code> holds the enforceable rules. See the <strong>Guidelines</strong> tab for the full list.</li>
+        <li><strong>Tone down forced language.</strong> "must not regress", "non-negotiable", a bold lead-in on all 12 invariants, "high-risk", repeated "Never/Always/Do not". When everything shouts, nothing does.</li>
+        <li><strong>Add a commands section to <code>AGENTS.md</code></strong> (CodeRabbit's major). The run command lives only in the playbook; the leaf <code>AGENTS.md</code> should carry it inline.</li>
+        <li><strong>Trim <code>AGENTS.md</code>.</strong> ~218 lines loaded every Documents Room turn; the generic example lists (visibility/bulk/action categories) can drop ~25%.</li>
+        <li><strong>Fill the PR description.</strong> What/How are blank — a docs-about-good-context PR should model it.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Open question</div>
+      <p>Does <code>INVARIANTS.md</code> need to be a separate file? It's a non-standard name (loads only when pointed to) and it overlaps heavily with <code>AGENTS.md</code>. Folding it in as an "Invariants" section would remove most of the duplication in one move.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-overview">
+    <div class="card">
+      <div class="seclabel">SDLC reviewer · per <code>.cursor/skills/sdlc/references/review-change.md</code></div>
+      <h2>Review summary</h2>
+      <div class="alert"><strong>Correction to the first pass:</strong> the earlier "0 errors" was wrong. Duplication is an <span class="sev-error">error</span>-severity check in both the skill checklist (#14) and the guideline checklist (#1), and this PR fails both. Corrected totals below.</div>
+      <p>Scope: the two files under <code>.cursor/</code> (skill + reference) plus the changed context file <code>AGENTS.md</code>; <code>INVARIANTS.md</code> is graded through the guideline pass since it ships rule lines. Tabs follow the review process: one tab per container category, plus a single Guidelines tab for all rule lines.</p>
+      <div class="grid">
+        <div class="stat"><div class="n sev-error">2</div><div class="k">Error findings</div></div>
+        <div class="stat"><div class="n sev-warning">7</div><div class="k">Warning findings</div></div>
+        <div class="stat"><div class="n sev-informative">3</div><div class="k">Informative</div></div>
+        <div class="stat"><div class="n">~4.3k</div><div class="k">Est. total tokens</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Token budget — measured (char/4 ↔ word×1.3 bracket)</div>
+      <table>
+        <thead><tr><th>File</th><th>Chars</th><th>Words</th><th>~Tokens</th><th>Budget</th></tr></thead>
+        <tbody>
+          <tr><td><code>SKILL.md</code></td><td>3,131</td><td>331</td><td>~600</td><td><span class="pill pass">PASS</span> &lt;2k</td></tr>
+          <tr><td><code>AGENTS.md</code></td><td>6,927</td><td>959</td><td>~1,600</td><td><span class="pill pass">PASS</span> &lt;2k, headroom</td></tr>
+          <tr><td><code>INVARIANTS.md</code></td><td>3,937</td><td>522</td><td>~850</td><td><span class="pill na">N/A</span> guideline doc</td></tr>
+          <tr><td><code>testing-playbook.md</code></td><td>7,660</td><td>678</td><td>~1,300</td><td><span class="pill pass">PASS</span> on-demand</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Method per <code>sdlc/SKILL.md</code> ("rough estimate within ~20%"). Table-heavy files (playbook) skew the char/4 figure up; the bracketed range is shown. Full expanded set ≈ 4.3k tokens, but only <code>AGENTS.md</code> (~1,600) loads on every turn — the rest are on-demand.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Headline findings</div>
+      <ol class="findings">
+        <li><span class="sev-error">error</span> — <strong>Pervasive cross-file duplication.</strong> ~12 instructions restated across SKILL/AGENTS/INVARIANTS, some verbatim. Skill #14 (clean structure) + Guideline #1 (not duplicated). Full list in the Guidelines tab.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Forced / begging language.</strong> "must not regress", "non-negotiable", bold on every invariant, "high-risk", repeated Never/Always/Do not. Context-file #3, Skill #11/#12, Guideline #5.</li>
+        <li><span class="sev-warning">warning</span> — <strong><code>AGENTS.md</code> missing commands/run section</strong> (context-file #4). Matches CodeRabbit's outside-diff major.</li>
+        <li><span class="sev-warning">warning</span> — <strong>No evals</strong> for the new skill (skill #23/#26); triggering accuracy matters for a domain skill.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Rule lines not in their right home</strong> (skill #27, guideline #4): domain detail sits in <code>SKILL.md</code>; rules are split between AGENTS and INVARIANTS.</li>
+      </ol>
+      <p class="muted">What is <em>good</em>: name/frontmatter/layout valid, lean <code>SKILL.md</code>, read-only least-privilege tools, no injection/exfil, and every cited code symbol and test file path resolves (verified against the repo).</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-structure">
+    <div class="card">
+      <div class="filehdr">Skill — Structure And Intent</div>
+      <p class="muted"><code>.cursor/skills/documents-room-frontend/SKILL.md</code> · checklist: skill-checklist.md · measured body ~600 tokens (3,131 chars / 331 words — well under the 2,000 budget). <strong>Workflows category (#16–#20): N/A</strong> — this is a routing/guideline skill, not a tracked multi-step workflow, so the process drops that tab. All other categories (Structure #1–#15, Security #21–#22, Testing #23–#26, Rule Refs #27) are scored across these tabs — full 27-check sweep.</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Valid name</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>matches parent dir</td></tr>
+          <tr><td class="cnum">2</td><td>Complete frontmatter</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>name + description + allowed-tools + version</td></tr>
+          <tr><td class="cnum">3</td><td>Explicit allowed-tools</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>Read/Grep/Glob</td></tr>
+          <tr><td class="cnum">4</td><td>Declared version</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>"1.0"</td></tr>
+          <tr><td class="cnum">5</td><td>Actionable description</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>clear path + when-to-use triggers</td></tr>
+          <tr><td class="cnum">6</td><td>Third-person voice</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>addresses the agent</td></tr>
+          <tr><td class="cnum">7</td><td>Honest scope</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>distinct domain, scoped</td></tr>
+          <tr><td class="cnum">8</td><td>Calibrated activation</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>scoped domain knowledge</td></tr>
+          <tr><td class="cnum">9</td><td>Lean SKILL.md</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>~560 tokens</td></tr>
+          <tr><td class="cnum">10</td><td>Real progressive disclosure</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>routes to refs, one level deep</td></tr>
+          <tr><td class="cnum">11</td><td>No slop, high density</td><td class="sev-informative">informative</td><td><span class="pill fail">FAIL</span></td><td>"Domain Reminders" restate AGENTS content</td></tr>
+          <tr><td class="cnum">12</td><td>No emphasis inflation</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>SKILL.md body itself is calm</td></tr>
+          <tr><td class="cnum">13</td><td>No broken links</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>all 5 referenced paths exist (verified)</td></tr>
+          <tr><td class="cnum">14</td><td>Clean structure / no duplication</td><td class="sev-error">error</td><td><span class="pill fail">FAIL</span></td><td>Domain Reminders + workflow duplicate AGENTS/INVARIANTS</td></tr>
+          <tr><td class="cnum">15</td><td>Spec-conformant layout</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>root SKILL.md + references/</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 1 · warnings: 0 · informative: 1</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-security">
+    <div class="card">
+      <div class="filehdr">Skill — Security And Trust</div>
+      <p class="muted"><code>SKILL.md</code> · checklist: skill-checklist.md</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">21</td><td>No injection or exfil</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>no overrides, sinks, or remote-exec instructions</td></tr>
+          <tr><td class="cnum">22</td><td>Least privilege, honest manifest</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>read-only tools match read-only behavior</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 0 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-testing">
+    <div class="card">
+      <div class="filehdr">Skill — Testing And Evaluation</div>
+      <p class="muted"><code>SKILL.md</code> · checklist: skill-checklist.md</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">23</td><td>Evals when behavior matters</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>evals/</code>; no should-trigger / should-not cases</td></tr>
+          <tr><td class="cnum">24</td><td>Discriminating cases</td><td class="sev-warning">warning</td><td><span class="pill na">N/A</span></td><td>no evals to assess</td></tr>
+          <tr><td class="cnum">25</td><td>Checked token cost</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no measured token cost recorded</td></tr>
+          <tr><td class="cnum">26</td><td>Resource-metric eval</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no token/latency/cost threshold eval</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 2 · informative: 1 (treating #25 as informative-grade detail)</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-rulerefs">
+    <div class="card">
+      <div class="filehdr">Skill — Instruction And Rule References</div>
+      <p class="muted"><code>SKILL.md</code> · checklist: skill-checklist.md (per-line scoring is in the Guidelines tab)</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">27</td><td>Right home, no duplication</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>Domain Reminders / workflow detail belong in AGENTS, not SKILL.md</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 1 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-context">
+    <div class="card">
+      <div class="filehdr">Context File — Checks</div>
+      <p class="muted"><code>apps/frontend/frost/src/pages/platform/documents/AGENTS.md</code> · checklist: context-file-checklist.md · measured ~1,600 tokens (6,927 chars / 959 words — loads on every Documents Room turn).</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Lean budget (&lt;2k tokens)</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>~1.6k measured — comfortable headroom; still worth trimming generic examples</td></tr>
+          <tr><td class="cnum">2</td><td>Bounded topics</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>short bulleted sections</td></tr>
+          <tr><td class="cnum">3</td><td>No begging / emphasis inflation</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>"high-risk", "Never assume", "Always think/verify", bold module-level</td></tr>
+          <tr><td class="cnum">4</td><td>Covers the basics (incl. commands)</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no run/commands section inline — only a pointer to the playbook</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 2 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-guidelines">
+    <div class="card">
+      <div class="filehdr">Instruction &amp; Rule lines — guideline pass</div>
+      <p class="muted">Every discrete rule line scored with guideline-rule-checklist.md, merged across files (INVARIANTS.md = 12 rules; advice lines in AGENTS.md and testing-playbook.md).</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Not duplicated</td><td class="sev-error">error</td><td><span class="pill fail">FAIL</span></td><td>~12 rules repeated across SKILL/AGENTS/INVARIANTS — see table below</td></tr>
+          <tr><td class="cnum">2</td><td>Not lintable</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>domain rules, not auto-enforceable</td></tr>
+          <tr><td class="cnum">3</td><td>Concise</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>each rule = one line + brief rationale + code ref</td></tr>
+          <tr><td class="cnum">4</td><td>Right home</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>same rule lives in both AGENTS and INVARIANTS; pick one</td></tr>
+          <tr><td class="cnum">5</td><td>Calibrated force</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>bold lead-in on all 12 invariants + "must not regress" framing</td></tr>
+          <tr><td class="cnum">6</td><td>Measured phrasing</td><td class="sev-informative">informative</td><td><span class="pill fail">FAIL</span></td><td>frequent Never / Always / Do not</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 1 · warnings: 2 · informative: 1</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Duplicated instructions (evidence for check #1)</div>
+      <table class="dup">
+        <thead><tr><th>Instruction</th><th>Appears in</th></tr></thead>
+        <tbody>
+          <tr><td>Document → Associations, not Entity → Attachments</td><td>SKILL (Domain Reminders) · AGENTS (Core Principle) · INVARIANTS #1</td></tr>
+          <tr><td>Use <code>DocumentWithRelations</code>; never assume a single <code>associationId</code></td><td>AGENTS (Core Principle + Associations) · INVARIANTS #1</td></tr>
+          <tr><td>One document → many legal objects / stakeholders</td><td>SKILL · AGENTS (Purpose + Associations) · INVARIANTS #2</td></tr>
+          <tr><td>Module gating via <code>DOCUMENTS_ROOM_MODULE</code>; backend is the enforcement layer</td><td>SKILL · AGENTS (Permissions) · INVARIANTS #3</td></tr>
+          <tr><td>Never check <code>user.role === 'admin'</code> (verbatim)</td><td>AGENTS (Permissions) · INVARIANTS #5</td></tr>
+          <tr><td>Eligibility lives in <code>canChangeStakeholderVisibility</code>; disabled states explain why</td><td>AGENTS (Visibility + Permissions) · INVARIANTS #4/#5</td></tr>
+          <tr><td>Bulk = selected rows · show count · require confirmation · audit</td><td>SKILL · AGENTS (Bulk Actions) · INVARIANTS #6/#7</td></tr>
+          <tr><td>AI suggestions advisory until save; don't persist on hover/preview/nav</td><td>SKILL · AGENTS (AI Suggestions) · INVARIANTS #11</td></tr>
+          <tr><td>Reset transient state on page leave</td><td>AGENTS (AI Suggestions) · INVARIANTS #12</td></tr>
+          <tr><td>System vs custom folders are different primitives</td><td>AGENTS (Associations) · INVARIANTS #9</td></tr>
+          <tr><td>Every document action should be auditable</td><td>SKILL · AGENTS (Auditability)</td></tr>
+          <tr><td>Extend an existing page test before creating a new one</td><td>SKILL · AGENTS (Testing) · testing-playbook (Golden rule)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Combined total (all tabs)</div>
+      <p><strong>Errors: 2 · Warnings: 7 · Informative: 3.</strong> No security, privilege, or correctness blockers — the cited code symbols and test paths all resolve. The two errors are both the same root cause: duplication. Consolidating each fact to a single home (and softening the forced language) clears the bulk of the findings and makes this a clean merge.</p>
+    </div>
+  </section>
+</div>
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  }));
+</script>
+</body>
+</html>
