@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PR #10187 — Lexical skill for document template filters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #28282a; --muted: #6b7280;
+    --primary: #0d9488; --border: #e2e4e8; --radius: 12px;
+    --green: #15803d; --amber: #b45309; --red: #b91c1c; --slate: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
+  .wrap { max-width: 66rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  header h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 .35rem; }
+  header .label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); }
+  header .meta { color: var(--muted); font-size: .92rem; margin-top: .4rem; }
+  header .meta a { color: var(--primary); text-decoration: none; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); }
+  nav.tabs button { font: inherit; font-weight: 600; font-size: .85rem; cursor: pointer; border: 0; background: none;
+    padding: .6rem .85rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+  nav.tabs .grp { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#9aa1ab; align-self:center; padding:0 .35rem 0 .6rem; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .2s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.5rem 1.8rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 1.2rem; }
+  h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 1.3rem 0 .5rem; }
+  .seclabel { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--primary); margin-bottom: .3rem; }
+  code { background: rgba(0,0,0,.06); padding: .1em .35em; border-radius: 5px; font-size: .85em; }
+  pre { background: rgba(0,0,0,.04); padding: 1rem 1.25rem; border-radius: 10px; overflow-x: auto; font-size: .85em; }
+  a { color: var(--primary); }
+  ul, ol { padding-left: 1.2rem; } li { margin: .3rem 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: .7rem; margin: 1rem 0 .25rem; }
+  .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: .85rem 1rem; }
+  .stat .n { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
+  .stat .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: .87rem; margin: .5rem 0 .25rem; }
+  th, td { text-align: left; padding: .48rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  td.cnum { color: var(--muted); width: 1.8rem; }
+  .pill { display: inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+  .pass { color: var(--green); background: #dcfce7; }
+  .fail { color: var(--red); background: #fee2e2; }
+  .na { color: var(--slate); background: #e2e8f0; }
+  .sev-error { color: var(--red); font-weight: 700; }
+  .sev-warning { color: var(--amber); font-weight: 700; }
+  .sev-informative { color: var(--slate); font-weight: 700; }
+  .verdict { border-left: 4px solid var(--primary); padding: .25rem 0 .25rem 1rem; margin: 1rem 0; }
+  .alert { border-left: 4px solid var(--amber); background:#fffbeb; padding: .6rem 1rem; border-radius: 8px; margin: 1rem 0; font-size:.92rem; }
+  .danger { border-left: 4px solid var(--red); background:#fef2f2; padding: .6rem 1rem; border-radius: 8px; margin: 1rem 0; font-size:.92rem; }
+  .tag { display:inline-block; font-size:.72rem; font-weight:600; color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:.1rem .55rem; margin:.15rem .25rem .15rem 0; }
+  .muted { color: var(--muted); }
+  .filehdr { font-weight: 700; font-size: .92rem; margin: 1.4rem 0 .2rem; }
+  .findings li { margin: .5rem 0; }
+  .dup th, .dup td { font-size:.83rem; }
+  .stackbar { display: flex; width: 100%; height: 34px; border-radius: 8px; overflow: hidden; margin: 1rem 0 1.1rem; box-shadow: inset 0 0 0 1px var(--border); }
+  .stackbar .seg { display: flex; align-items: center; justify-content: center; font-size: .68rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; transition: filter .15s ease; }
+  .stackbar .seg:hover { filter: brightness(1.08); }
+  .legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px,1fr)); gap: .4rem .9rem; margin: .25rem 0 1rem; }
+  .legend .row { display: flex; align-items: center; gap: .5rem; font-size: .84rem; }
+  .legend .sw { width: .7rem; height: .7rem; border-radius: 3px; flex-shrink: 0; }
+  .legend .row .lbl { flex: 1; }
+  .legend .row .val { color: var(--muted); font-weight: 600; font-size: .8rem; }
+  .donut-wrap { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; margin: .5rem 0; }
+  .donut { width: 160px; height: 160px; border-radius: 50%; flex-shrink: 0; position: relative;
+    background: conic-gradient(
+      #15803d 0% 18%,
+      #b45309 18% 42%,
+      #b91c1c 42% 86%,
+      #94a3b8 86% 100%
+    ); }
+  .donut::after { content: ""; position: absolute; inset: 26px; border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 1px var(--border); }
+  .donut .donut-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; }
+  .donut .donut-label .n { font-size: 1.5rem; font-weight: 800; }
+  .donut .donut-label .k { font-size: .62rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">PR Review · yoni-dx</div>
+    <h1>PR #10187 — Lexical skill for document template filters</h1>
+    <div class="meta">
+      <code>docs(cursor): add lexical skill for document template filters</code><br/>
+      by <strong>yablonka-dev</strong> · 6 files · +728 / −1 · docs-only (5 markdown + 1 <code>AGENTS.md</code> hunk) ·
+      <a href="https://github.com/Global-Slice/mono-slice/pull/10187">github.com/Global-Slice/mono-slice/pull/10187</a>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-tab="summary">Summary</button>
+    <span class="grp">SDLC</span>
+    <button data-tab="sdlc-overview">Overview</button>
+    <button data-tab="sdlc-structure">Skill · Structure</button>
+    <button data-tab="sdlc-workflows">Skill · Workflows</button>
+    <button data-tab="sdlc-security">Skill · Security</button>
+    <button data-tab="sdlc-testing">Skill · Testing</button>
+    <button data-tab="sdlc-rulerefs">Skill · Rule Refs</button>
+    <button data-tab="sdlc-context">Context File</button>
+    <button data-tab="sdlc-guidelines">Instruction &amp; Rule</button>
+    <span class="grp">Data</span>
+    <button data-tab="sdlc-history">Change History</button>
+  </nav>
+
+  <section class="panel active" id="summary">
+    <div class="card">
+      <div class="seclabel">Domain basics, for newcomers</div>
+      <h2>What does "document template matching" even mean, and where does Lexical fit in?</h2>
+      <p>Slice manages employee equity (stock options, RSUs, etc.). Every time something happens to a grant — it's issued, exercised, a share certificate is produced — the platform needs to generate a real legal <strong>document</strong> (an award letter, an exercise notice, a share certificate). Companies configure reusable <strong>document templates</strong> for these, and the system must automatically pick the <em>right</em> template for each grant.</p>
+      <p>That's where <strong>template filters</strong> come in: a filter is a field on a template (e.g. "which grant types", "which equity plan(s)", "early-exercise allowed?") that narrows when it's allowed to match. The rule is simple but easy to get subtly wrong: <strong>an empty filter is a wildcard</strong> (matches anything), <strong>a filled filter must intersect</strong> the grant's actual value. There are also two parallel <strong>matching modes</strong> — "strict" (evaluates one grant at a time, the default) and "loose" (evaluates a batch of grants together, gated by a feature flag) — and every new filter has to be wired into <em>both</em> code paths or it silently misbehaves for whichever mode wasn't updated. That exact bug shipped once before, in PR #9703 (the "plan filter" / <code>equityPlanIds</code> feature), and is now the running example throughout this PR's docs.</p>
+      <p class="muted"><strong>Where "Lexical" comes in:</strong> Lexical is Meta's open-source rich-text editor framework; Slice's <code>@slice/lexical-react</code> package wraps it to power the actual text-editing surface used when a company customizes the wording inside a document template (plus paste handling for content copied in from Google Docs / Word). It has no code-level connection to the matching-filter logic above — they only share a skill file because Slice bundled "things related to document templates and the editor" under one skill named after the editor. More on that naming choice in the SDLC review.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">What is it about</div>
+      <h2>A documentation-only PR: two new Cursor-agent playbooks, zero application code changes</h2>
+      <p>This PR adds a brand-new <code>.cursor/skills/lexical/</code> skill (<code>SKILL.md</code> + 4 reference docs) that teaches a future coding agent exactly how to (1) add or change a document-template matching filter across all 4 affected layers without repeating the strict/loose bug, and (2) add a new Lexical editor plugin (paste handler, node transform, or UI overlay) the way the existing ones are built. It also repoints <code>libraries/frontend/lexical-react/AGENTS.md</code> at the new skill instead of the old in-package <code>PASTE.md</code> file, which this PR renames/moves into the skill's <code>references/</code> folder. Nothing under <code>apps/</code> or <code>libraries/*/src</code> changes — no behavior, no tests, no risk to production.</p>
+      <div class="grid">
+        <div class="stat"><div class="n">6</div><div class="k">Files added/changed</div></div>
+        <div class="stat"><div class="n">+728</div><div class="k">Lines added</div></div>
+        <div class="stat"><div class="n">1</div><div class="k">New skill</div></div>
+        <div class="stat"><div class="n">4</div><div class="k">New reference docs</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">The six files</div>
+      <table>
+        <thead><tr><th>File</th><th>Lines</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>.cursor/skills/lexical/SKILL.md</code></td><td>+96</td><td>New skill entry point. Routing table to the 4 reference docs, the 4-layer architecture diagram (types → frost UI → workflow-logic engine → tartlet plumbing), the strict-vs-loose "critical gotcha", and verification commands.</td></tr>
+          <tr><td><code>…/references/add-filter-playbook.md</code></td><td>+252</td><td>Step-by-step checklist for adding/changing a filter across all 6 layers (types, persistence, frontend UI, matching engine, plumbing callers, tests), using <code>equityPlanIds</code> as the worked example throughout.</td></tr>
+          <tr><td><code>…/references/matching-engine.md</code></td><td>+185</td><td>Deep reference for <code>matching-template.utils.ts</code>: filter semantics, specificity scoring, strict/loose call graphs (with mermaid diagrams), conflict result kinds, and an engine-only checklist.</td></tr>
+          <tr><td><code>…/references/lexical-react-plugins.md</code></td><td>+188</td><td>New reference for adding a Lexical editor plugin: anatomy, plugin types (paste/command/lifecycle/node-transform/UI), wiring into <code>SliceLexical.tsx</code>, tests, docs to update.</td></tr>
+          <tr><td><code>…/references/paste-pipeline.md</code></td><td>+2 (renamed)</td><td>Renamed from <code>libraries/frontend/lexical-react/src/components/plugins/PASTE.md</code> into the skill; adds one cross-link back to the new plugin playbook.</td></tr>
+          <tr><td><code>libraries/frontend/lexical-react/AGENTS.md</code></td><td>+5/−1</td><td>Adds an "Agent skills" pointer to the new skill; updates the paste-pipeline paragraph's file paths and its doc pointer (old <code>PASTE.md</code> path → new skill).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Core mechanics it encodes</div>
+      <ul>
+        <li><strong>4-layer filter model.</strong> Shared Zod types → frost filter UI → <code>workflow-logic</code> matching engine → tartlet/workflow-api plumbing, each with its own file list and an "engine-only checklist" of 8 exact touch points (verified against the real <code>matching-template.utils.ts</code> — the referenced functions, line-area comments, and code samples all match the current source).</li>
+        <li><strong>Strict vs. loose parity, by design.</strong> Both playbooks repeat, at different depths, that any new filter must be forwarded into the loose path or it silently breaks for companies with the <code>disableStrictTemplateMatching</code> flag on — codifying the real regression from PR #9703 (confirmed already fixed and merged on <code>main</code>).</li>
+        <li><strong>Plugin taxonomy for the editor.</strong> <code>lexical-react-plugins.md</code> categorizes existing plugins (paste-source, command/selection, lifecycle, node-transform, UI-overlay) with real file examples (<code>keepGoogleDocsFormattingPastePlugin.ts</code>, <code>TableActionMenuPlugin/</code>, etc.) — all verified to exist at the cited paths.</li>
+        <li><strong>Clean rename.</strong> The old <code>src/components/plugins/PASTE.md</code> is moved into the skill and its only other reference (in <code>AGENTS.md</code>) is updated in the same PR — no dangling links left behind.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Current status</div>
+      <p>
+        <span class="tag">Open</span>
+        <span class="tag">Mergeable, but BLOCKED (review required)</span>
+        <span class="tag">CI: Validate PR tested — FAIL</span>
+        <span class="tag">CI: Validate PR title — FAIL</span>
+        <span class="tag">Snyk: FAIL (quota, unrelated)</span>
+        <span class="tag">CodeRabbit: PASS, no remaining actionable comments</span>
+        <span class="tag">Size: XL</span>
+        <span class="tag">Reviewer: goldbergyoni ("I'll review this tomorrow")</span>
+      </p>
+      <ul>
+        <li>PR description's "How" section and both checklists (documented / tested) are left as the empty template — that's why "Validate PR tested" and "Validate PR title"'s pre-merge description check fail; harmless for a docs-only change but technically unresolved.</li>
+        <li>CodeRabbit raised two earlier rounds of actionable comments (MD040 — fenced code blocks without a language tag) against <code>add-filter-playbook.md</code> and <code>lexical-react-plugins.md</code>; its final summary shows no remaining actionable items, but reading the current diff directly, the "Progress:" and "Quick grep anchors" fenced blocks in <em>both</em> files are still un-tagged — CodeRabbit simply didn't re-scan those two files in its last pass since they had no further edits.</li>
+        <li>No linked Linear ticket. CodeRabbit estimates trivial/~5 min review effort (it only assesses correctness, not the SDLC checklist below).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-overview">
+    <div class="card">
+      <div class="seclabel">SDLC reviewer · per <code>.cursor/skills/sdlc/references/review-change.md</code></div>
+      <h2>Review summary</h2>
+      <p>Scope: every file under <code>.cursor/</code> plus the changed <code>libraries/frontend/lexical-react/AGENTS.md</code> hunk. Container checklists exist and are scored for the <strong>skill</strong> (<code>SKILL.md</code>) and the <strong>context file</strong> (<code>AGENTS.md</code>). The <strong>Workflows</strong> category also applies here — see below — scored specifically against <code>add-filter-playbook.md</code> and <code>lexical-react-plugins.md</code>, which both drive a real tracked checklist. <code>matching-engine.md</code> and the renamed <code>paste-pipeline.md</code> hold no independent container checklist — they're graded only through the merged guideline pass.</p>
+      <div class="grid">
+        <div class="stat"><div class="n sev-error">2</div><div class="k">Error findings</div></div>
+        <div class="stat"><div class="n sev-warning">9</div><div class="k">Warning findings</div></div>
+        <div class="stat"><div class="n sev-informative">0</div><div class="k">Informative</div></div>
+        <div class="stat"><div class="n">~1.1k</div><div class="k">SKILL.md est. tokens</div></div>
+      </div>
+    </div>
+
+    <div class="danger">
+      <strong>Rank-5 finding — the skill's name doesn't match roughly half its content.</strong> <code>.cursor/skills/lexical/SKILL.md</code> is named and described around the Lexical rich-text editor, but its first and largest half (<code>SKILL.md</code>'s "Document template filters" section plus the entire <code>add-filter-playbook.md</code> and <code>matching-engine.md</code>, 437 of the 721 new lines) is about backend/frontend <em>template matching</em> — a concern that lives in <code>@slice/types</code>, frost form UI, <code>@slice/workflow-logic</code>, and tartlet, and has zero technical relationship to the Lexical editor. Verified: <code>grep -ri lexical</code> across <code>matching-template.utils.ts</code> and <code>TemplateFiltersSection.tsx</code> returns no matches. An agent working on the matching engine has no reason to think to load a skill called "lexical", and an agent that loads "lexical" for an editor-plugin task pulls in ~1,400 unrelated tokens of matching-engine documentation it doesn't need. This would be cleaner as two skills (e.g. <code>document-template-filters</code> and <code>lexical</code>), or at minimum a name that reflects both domains.
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Token budget — measured (char/4 ↔ word×1.3 bracket)</div>
+      <table>
+        <thead><tr><th>File</th><th>Chars</th><th>Words</th><th>~Tokens</th><th>Budget</th></tr></thead>
+        <tbody>
+          <tr><td><code>SKILL.md</code></td><td>5,828</td><td>595</td><td>~775–1,460</td><td><span class="pill pass">PASS</span> &lt;2k</td></tr>
+          <tr><td><code>add-filter-playbook.md</code></td><td>9,887</td><td>1,063</td><td>~1,380–2,470</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>matching-engine.md</code></td><td>7,693</td><td>818</td><td>~1,060–1,925</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>lexical-react-plugins.md</code></td><td>7,544</td><td>880</td><td>~1,145–1,885</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>paste-pipeline.md</code> (added hunk)</td><td>156</td><td>7</td><td>~10–40</td><td><span class="pill na">N/A</span> on-demand ref</td></tr>
+          <tr><td><code>AGENTS.md</code> (whole file, post-PR)</td><td>2,877</td><td>341</td><td>~445–720</td><td><span class="pill pass">PASS</span> well under 2k</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Method per <code>sdlc/SKILL.md</code> ("rough estimate within ~20%"). Only <code>SKILL.md</code> (~1.1k) and the small <code>AGENTS.md</code> hunk load unconditionally; the three large reference docs and the tiny paste-pipeline addition are cited from <code>SKILL.md</code>'s routing table and load on demand only.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Headline findings</div>
+      <ol class="findings">
+        <li><span class="sev-error">error</span> — <strong>Skill naming/scope mismatch</strong> — see callout above. Skill checklist #8 (calibrated activation), also #14 (clean structure — see next).</li>
+        <li><span class="sev-error">error</span> — <strong>The "add +1 to specificity score" rule is restated in 3 places</strong> (<code>SKILL.md</code>, and twice within <code>matching-engine.md</code>), and the "forward into the loose path or it breaks" gotcha is restated across all 3 of <code>SKILL.md</code>, <code>add-filter-playbook.md</code>, and <code>matching-engine.md</code>. Skill checklist #14 + Guideline #1. Full evidence in the Instruction &amp; Rule tab.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Missing <code>allowed-tools</code> and <code>version</code></strong> in <code>SKILL.md</code> frontmatter. Skill checklist #3, #4.</li>
+        <li><span class="sev-warning">warning</span> — <strong>No evals, no measured token cost, no resource-metric eval</strong> for the new skill. Skill #23/#25/#26.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Both playbooks are genuine tracked workflows (Workflows category applies), but neither specifies a durable place to persist the "Progress:" checklist</strong> — a session interrupted mid-playbook has no specified way to recover which of the 6 layers/steps were already done. Skill #19. See the new Skill · Workflows tab.</li>
+        <li><span class="sev-warning">warning</span> — <strong>Markdown-lint nit (MD040)</strong> — the "Progress:" and "Quick grep anchors" fenced code blocks in <code>add-filter-playbook.md</code> and <code>lexical-react-plugins.md</code> have no language tag; CodeRabbit flagged this twice and it's still present in the current diff. Not part of the formal checklist, noted for completeness.</li>
+      </ol>
+      <p class="muted">What is <em>good</em>: every cited file path, function name, and code sample was cross-checked against the real source and is accurate — including the historical <code>equityPlanIds</code>/PR #9703 bug, which is confirmed fixed on <code>main</code>. The rename of <code>PASTE.md</code> is clean with no dangling references. Layer separation across the 3 reference docs is otherwise sound, and the <code>AGENTS.md</code> hunk is a model example — lean, on-topic, no emphasis inflation.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-structure">
+    <div class="card">
+      <div class="filehdr">Skill — Structure And Intent</div>
+      <p class="muted"><code>.cursor/skills/lexical/SKILL.md</code> · checklist: skill-checklist.md · measured body ~775–1,460 tokens (5,828 chars / 595 words — under the 2,000 budget). <strong>Workflows category (#16–#20): scored, not skipped</strong> — <code>add-filter-playbook.md</code> and <code>lexical-react-plugins.md</code> both open with an explicit "Progress:" checklist the agent is told to copy and tick off across 6 real steps/layers, which is a genuine tracked workflow, not just a set of guidelines. See the dedicated <strong>Skill · Workflows</strong> tab (<code>matching-engine.md</code> and <code>paste-pipeline.md</code> stay pure reference lookups and are excluded from that pass).</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Valid name</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>matches parent dir <code>lexical</code></td></tr>
+          <tr><td class="cnum">2</td><td>Complete frontmatter</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>name + description present</td></tr>
+          <tr><td class="cnum">3</td><td>Explicit allowed-tools</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>allowed-tools</code> field at all</td></tr>
+          <tr><td class="cnum">4</td><td>Declared version</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>version</code> field</td></tr>
+          <tr><td class="cnum">5</td><td>Actionable description</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>~98–195 tokens (upper edge of the ~100 guidance), but unusually concrete — real symbol names, file names, and trigger phrases from both domains</td></tr>
+          <tr><td class="cnum">6</td><td>Third-person voice</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>imperative, addresses the agent ("Use when editing…")</td></tr>
+          <tr><td class="cnum">7</td><td>Honest scope</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>not deceptive or keyword-stuffed — it does disclose both domains up front — but see #8 for the resulting activation problem</td></tr>
+          <tr><td class="cnum">8</td><td>Calibrated activation</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>bundles two technically unrelated domains (backend template-matching filters vs. the Lexical editor) under one name and one description — see Overview callout</td></tr>
+          <tr><td class="cnum">9</td><td>Lean SKILL.md</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>~775–1,460 tokens measured</td></tr>
+          <tr><td class="cnum">10</td><td>Real progressive disclosure</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>all 4 reference docs are cited from the routing table and load on demand</td></tr>
+          <tr><td class="cnum">11</td><td>No slop, high density</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>tight tables and diagrams, no filler phrasing</td></tr>
+          <tr><td class="cnum">12</td><td>No emphasis inflation</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>no bold/ALL-CAPS shouting; "**Rule:**"/"**Gotcha:**" used only as section labels</td></tr>
+          <tr><td class="cnum">13</td><td>No broken links</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>all 4 references, and every cited app file path/function name, verified to exist and match the current source</td></tr>
+          <tr><td class="cnum">14</td><td>Clean structure / no duplication</td><td class="sev-error">error</td><td><span class="pill fail">FAIL</span></td><td>the specificity-score rule and the strict/loose forwarding gotcha are each restated across <code>SKILL.md</code> and the reference docs instead of stated once and referenced — see Instruction &amp; Rule tab</td></tr>
+          <tr><td class="cnum">15</td><td>Spec-conformant layout</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>root holds only <code>SKILL.md</code> + <code>references/</code></td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 2 · warnings: 3 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-workflows">
+    <div class="card">
+      <div class="filehdr">Skill — Workflows</div>
+      <p class="muted"><code>add-filter-playbook.md</code> &amp; <code>lexical-react-plugins.md</code> · checklist: skill-checklist.md · scored because both files drive a real multi-step task via an explicit tracked checklist, not just a set of guidelines. <code>SKILL.md</code> itself, <code>matching-engine.md</code>, and <code>paste-pipeline.md</code> are pure routing/reference lookups and don't drive a workflow, so they're excluded here.</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">16</td><td>Tracked multi-step execution</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>both files open with a "Progress:" checklist ("Copy the checklist and tick each item") covering 6 real layers/steps each — a genuine instructed-to-update tracked list, even though it doesn't explicitly hook into the harness's own to-do tool</td></tr>
+          <tr><td class="cnum">17</td><td>Observable steps</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>each step names its files and has an implicit completion gate (e.g. "run <code>pnpm --filter=@slice/types build</code> before downstream edits"); no explicit checkpoint/resume guidance for a run that gets interrupted mid-checklist, but that's a minor gap at this severity</td></tr>
+          <tr><td class="cnum">18</td><td>Not over-rigid</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>steps give patterns and worked examples ("mirror <code>grantTypes</code>, <code>allowEarlyExercise</code>…", "if the filter needs display names…") rather than a rigid script that removes judgment</td></tr>
+          <tr><td class="cnum">19</td><td>Progress artifacts</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>the "Progress:" checklist is a markdown template to copy, with no instruction for <em>where</em> it should live durably (a task file, the harness to-do list, a PR comment) — if a session is interrupted, there's no specified way to recover how far the previous run got</td></tr>
+          <tr><td class="cnum">20</td><td>Reviewer in the loop</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>Layer 6 / step 5 of both checklists route to <code>../backend-testing/auto-test-flow.md</code> and <code>../frontend-testing/SKILL.md</code> respectively instead of reinventing a reviewer — those skills' own Double Gate / verifier subagents provide the actual supervision, a sound delegation rather than a gap</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 1 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-security">
+    <div class="card">
+      <div class="filehdr">Skill — Security And Trust</div>
+      <p class="muted"><code>SKILL.md</code> · checklist: skill-checklist.md</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">21</td><td>No injection or exfil</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>pure reference documentation; no overrides, exfil sinks, secrets, or remote-exec instructions</td></tr>
+          <tr><td class="cnum">22</td><td>Least privilege, honest manifest</td><td class="sev-error">error</td><td><span class="pill na">N/A</span></td><td>no side-effecting steps and no claim of a narrower scope than reality; missing <code>allowed-tools</code> is already captured under Structure #3</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 0 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-testing">
+    <div class="card">
+      <div class="filehdr">Skill — Testing And Evaluation</div>
+      <p class="muted"><code>SKILL.md</code> · checklist: skill-checklist.md</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">23</td><td>Evals when behavior matters</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no <code>evals/</code> directory; nothing tests should-trigger/should-not-trigger, which matters more than usual here given the activation-scope concern above</td></tr>
+          <tr><td class="cnum">24</td><td>Discriminating cases</td><td class="sev-warning">warning</td><td><span class="pill na">N/A</span></td><td>no evals to assess</td></tr>
+          <tr><td class="cnum">25</td><td>Checked token cost</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no measured token cost recorded in the PR itself (this review measured it independently — see Overview)</td></tr>
+          <tr><td class="cnum">26</td><td>Resource-metric eval</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>no token/latency/cost threshold eval</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 3 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-rulerefs">
+    <div class="card">
+      <div class="filehdr">Skill — Instruction And Rule References</div>
+      <p class="muted"><code>SKILL.md</code> · checklist: skill-checklist.md (per-line scoring lives in the Instruction &amp; Rule tab)</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">27</td><td>Right home, no duplication</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>see Instruction &amp; Rule tab — the specificity-score and loose-path-forwarding rules are each stated in more than one container</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 1 · informative: 0</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-context">
+    <div class="card">
+      <div class="filehdr">Context File — Checks</div>
+      <p class="muted"><code>libraries/frontend/lexical-react/AGENTS.md</code> (added hunk) · checklist: context-file-checklist.md · whole file measured ~445–720 tokens post-PR.</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Lean budget (&lt;2k tokens)</td><td class="sev-error">error</td><td><span class="pill pass">PASS</span></td><td>whole file stays well under 2k with the new hunk</td></tr>
+          <tr><td class="cnum">2</td><td>Bounded topics</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>new "Agent skills" section is one sentence; "Clipboard paste" paragraph stays one paragraph</td></tr>
+          <tr><td class="cnum">3</td><td>No begging / emphasis inflation</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>bold used only to mark the file-path pointer, not for pleading/shouting</td></tr>
+          <tr><td class="cnum">4</td><td>Covers the basics</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>tightens stale paths and adds a genuinely useful routing pointer; no regression to existing coverage</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 0 · warnings: 0 · informative: 0 — clean pass, the strongest file in this PR.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-guidelines">
+    <div class="card">
+      <div class="filehdr">Instruction &amp; Rule lines — guideline pass</div>
+      <p class="muted">Every discrete instruction scored with <code>guideline-rule-checklist.md</code>, merged across <code>SKILL.md</code>, the three reference docs, and the <code>AGENTS.md</code> hunk. (<code>paste-pipeline.md</code>'s two-line addition carries no new instruction to score.)</p>
+      <table>
+        <thead><tr><th class="cnum">#</th><th>Check</th><th>Sev</th><th>Result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="cnum">1</td><td>Not duplicated</td><td class="sev-error">error</td><td><span class="pill fail">FAIL</span></td><td>2 core rules each repeated 3–4× across <code>SKILL.md</code> and the reference docs — see table below</td></tr>
+          <tr><td class="cnum">2</td><td>Not lintable</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>domain/architecture knowledge, not auto-enforceable</td></tr>
+          <tr><td class="cnum">3</td><td>Concise</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>each individual instance is a short, single-idea line with a minimal code example</td></tr>
+          <tr><td class="cnum">4</td><td>Right home</td><td class="sev-warning">warning</td><td><span class="pill fail">FAIL</span></td><td>the specificity-score and loose-path rules belong canonically in <code>matching-engine.md</code> (the deepest, most authoritative reference) but are independently restated in <code>SKILL.md</code> and <code>add-filter-playbook.md</code> rather than pointed to</td></tr>
+          <tr><td class="cnum">5</td><td>Calibrated force</td><td class="sev-warning">warning</td><td><span class="pill pass">PASS</span></td><td>no bold/exclamation coercion; "must"/"every" used, not shouted</td></tr>
+          <tr><td class="cnum">6</td><td>Measured phrasing</td><td class="sev-informative">informative</td><td><span class="pill pass">PASS</span></td><td>"must"/"every" phrasing is scoped to the actual footgun, not blanket always/never language</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Findings — errors: 1 · warnings: 1 · informative: 0</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Duplicated instructions (evidence for check #1 / #4)</div>
+      <table class="dup">
+        <thead><tr><th>Instruction</th><th>Appears in</th></tr></thead>
+        <tbody>
+          <tr><td>Every new filter must add a <code>+1</code> block to <code>getTemplateSpecificityScore</code> when it intersects the grant value</td><td><code>SKILL.md</code> ("Critical gotcha" closing paragraph) · <code>matching-engine.md</code> (Specificity scoring section, "Rule:" line) · <code>matching-engine.md</code> again (Adding a new filter checklist, step 4) · <code>add-filter-playbook.md</code> (Layer 4d, with code sample)</td></tr>
+          <tr><td>A new filter must be forwarded into the loose path (<code>matchDocumentTemplates</code> → <code>findMatchingDocumentTemplateForMultipleItems</code>) or it silently mismatches when <code>disableStrictTemplateMatching</code> is on</td><td><code>SKILL.md</code> ("Critical gotcha — two matching modes") · <code>add-filter-playbook.md</code> (Layer 4f, "This is where PR #9703's bug lived") · <code>matching-engine.md</code> ("Gotcha:" callout)</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Both are legitimate footguns worth repeating <em>somewhere</em> for safety, and layering a short summary in <code>SKILL.md</code> against a deep explanation in <code>matching-engine.md</code> is a defensible progressive-disclosure pattern — but three independent full restatements (not "see matching-engine.md for the rule") is more than that pattern needs.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Combined total (all tabs)</div>
+      <p><strong>Errors: 2 · Warnings: 9 · Informative: 0.</strong> No injection/exfil risk, no application-code risk (this PR is documentation-only), and every technical claim and file/function reference checked out against the real source, including the historical bug it documents. Two of the four reference docs are genuine tracked workflows (Workflows category, scored in its own tab) and hold up well there — patterns over rigid scripts, sound delegation to the existing testing skills for review — with one real gap: no durable place to park checklist progress if a session is interrupted. The two bigger blockers are still structural, not factual: the skill's identity conflates two unrelated domains under the "lexical" name, and its two most important operational rules are stated three times each instead of once-canonical-plus-pointer. All are quick fixes — split the skill (or rename + retitle sections), collapse the duplicate rule statements down to a single source with cross-references, and point the "Progress:" checklist at a durable artifact (a to-do list or a scratch file) — and this is otherwise a well-researched, accurate, and genuinely useful set of playbooks.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sdlc-history">
+    <div class="card">
+      <div class="seclabel">Method</div>
+      <h2>The last 50 real changes to the actual "lexical" folders</h2>
+      <p>Pulled <code>git log -50</code> for <code>libraries/frontend/lexical-react</code>, <code>libraries/frontend/lexical-utils</code>, and <code>libraries/shared/lexical</code> — the source folders this skill is meant to help with — spanning <strong>Apr 13 – Jun 25, 2026</strong> (69 days). Each commit was read (message + full file list) and bucketed into one primary category by what it actually changed, then checked against what <code>.cursor/skills/lexical/</code> would route an agent to for that category. A second, wider pass below drops the 3-folder restriction entirely.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Bucketed by category</div>
+      <div class="stackbar">
+        <div class="seg" style="width:20%;background:#ea580c" title="Replaceable Placeholders & Merge Fields — 10">20%</div>
+        <div class="seg" style="width:14%;background:#0d9488" title="Word/DOCX Paste — 7">14%</div>
+        <div class="seg" style="width:14%;background:#94a3b8" title="Repo Hygiene / Automated / Unrelated — 7">14%</div>
+        <div class="seg" style="width:12%;background:#7c3aed" title="Table Editing — 6">12%</div>
+        <div class="seg" style="width:12%;background:#db2777" title="Toolbar, Formatting & Editor Core — 6">12%</div>
+        <div class="seg" style="width:10%;background:#ca8a04" title="DocuSign / Signature Placeholders — 5">10%</div>
+        <div class="seg" style="width:8%;background:#059669" title="Template Data / Field Validation — 4">8%</div>
+        <div class="seg" style="width:6%;background:#0891b2" title="PDF / Print Output Styling — 3">6%</div>
+        <div class="seg" style="width:4%;background:#2563eb" title="Google Docs Paste — 2">4%</div>
+      </div>
+      <div class="legend">
+        <div class="row"><span class="sw" style="background:#ea580c"></span><span class="lbl">Replaceable Placeholders &amp; Merge Fields</span><span class="val">10 · 20%</span></div>
+        <div class="row"><span class="sw" style="background:#0d9488"></span><span class="lbl">Word/DOCX Paste</span><span class="val">7 · 14%</span></div>
+        <div class="row"><span class="sw" style="background:#94a3b8"></span><span class="lbl">Repo Hygiene / Automated / Unrelated</span><span class="val">7 · 14%</span></div>
+        <div class="row"><span class="sw" style="background:#7c3aed"></span><span class="lbl">Table Editing</span><span class="val">6 · 12%</span></div>
+        <div class="row"><span class="sw" style="background:#db2777"></span><span class="lbl">Toolbar, Formatting &amp; Editor Core</span><span class="val">6 · 12%</span></div>
+        <div class="row"><span class="sw" style="background:#ca8a04"></span><span class="lbl">DocuSign / Signature Placeholders</span><span class="val">5 · 10%</span></div>
+        <div class="row"><span class="sw" style="background:#059669"></span><span class="lbl">Template Data / Field Validation</span><span class="val">4 · 8%</span></div>
+        <div class="row"><span class="sw" style="background:#0891b2"></span><span class="lbl">PDF / Print Output Styling</span><span class="val">3 · 6%</span></div>
+        <div class="row"><span class="sw" style="background:#2563eb"></span><span class="lbl">Google Docs Paste</span><span class="val">2 · 4%</span></div>
+      </div>
+      <p class="muted">Representative commits: <strong>Replaceable Placeholders</strong> — "Add Support For Custom Decimal Precision in Numeric Fields", "Added Rsa Share Issue Price Placeholder", "Filename placeholder name clearing on save". <strong>Word/DOCX Paste</strong> — "docx upload table &amp; alignment &amp; numbering formatting", "Word online/01–04" series. <strong>Table Editing</strong> — "add interactive column resizing", "add row index column to document template tables". <strong>DocuSign</strong> — "configurable date format for Document Approval Template", "Remove Signature Placeholder When Predefined".</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Which skill doc would actually be consulted</div>
+      <table>
+        <thead><tr><th>Reference doc</th><th>Share of the 50</th><th>Categories it addresses</th></tr></thead>
+        <tbody>
+          <tr><td><code>paste-pipeline.md</code></td><td><span class="pill pass">18%</span> (9/50)</td><td>Word/DOCX Paste, Google Docs Paste</td></tr>
+          <tr><td><code>lexical-react-plugins.md</code></td><td><span class="pill pass">18%</span> full + <span class="pill na">24%</span> partial (21/50)</td><td>Word/DOCX Paste, Google Docs Paste (full) · Table Editing, Toolbar &amp; Editor Core (partial — only generic plugin-anatomy patterns, no table/toolbar-specific detail)</td></tr>
+          <tr><td><code>add-filter-playbook.md</code></td><td><span class="pill fail">0%</span> (0/50)</td><td>none — its whole domain (document-template <em>matching filters</em>) never appears in this folder's history; that logic lives entirely in <code>frost</code> / <code>workflow-logic</code> / <code>tartlet</code>, outside <code>lexical-*</code> altogether</td></tr>
+          <tr><td><code>matching-engine.md</code></td><td><span class="pill fail">0%</span> (0/50)</td><td>none — same reason as above</td></tr>
+          <tr><td><code>SKILL.md</code> (router)</td><td>rides along with whichever reference fires</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <div class="donut-wrap">
+        <div class="donut"><div class="donut-label"><div class="n">44%</div><div class="k">zero coverage</div></div></div>
+        <div class="legend" style="grid-template-columns: 1fr;">
+          <div class="row"><span class="sw" style="background:#15803d"></span><span class="lbl"><strong>Full</strong> — paste-pipeline.md + lexical-react-plugins.md fully cover it</span><span class="val">18%</span></div>
+          <div class="row"><span class="sw" style="background:#b45309"></span><span class="lbl"><strong>Partial</strong> — only generic plugin patterns apply, nothing table/toolbar-specific</span><span class="val">24%</span></div>
+          <div class="row"><span class="sw" style="background:#b91c1c"></span><span class="lbl"><strong>None</strong> — no reference doc in this skill touches it at all</span><span class="val">44%</span></div>
+          <div class="row"><span class="sw" style="background:#94a3b8"></span><span class="lbl"><strong>N/A</strong> — hygiene/automated/unrelated, not a knowledge gap</span><span class="val">14%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Widening the net — beyond the 3 tracked folders</div>
+      <h2>Three zones of real "lexical + template" churn, searched independently</h2>
+      <p>The first pass above only proves the skill's <em>internal</em> plugin docs are mismatched with their own folder. To check whether the matching-filter docs are mismatched too — or just homeless — three independent git searches, each over the last 90 days (Apr 2 – Jun 30, 2026):</p>
+      <ol>
+        <li><strong>Zone 1 — the editor library itself</strong> (<code>lexical-react</code>, <code>lexical-utils</code>, <code>shared/lexical</code>): the 3 folders already analyzed above.</li>
+        <li><strong>Zone 2 — the matching-filter layer</strong> (<code>workflow-logic/utils/templates</code>, tartlet <code>document-templates</code> + <code>workflow-validations.service.ts</code> + <code>dynamic-workflow</code>, workflow-api <code>items-data.utils.ts</code> + <code>document-approval-step.service.ts</code>) — exactly the files <code>add-filter-playbook.md</code>/<code>matching-engine.md</code> document.</li>
+        <li><strong>Zone 3 — consumer-side editor wiring</strong> (frost's <code>components/documentsEditor/</code> + <code>components/inputs/lexicalInput/</code> + <code>pages/platform/templates/</code>, glaze's <code>EngagementTemplates</code>/<code>CommunicationTemplates</code>/<code>ShareCertificateTemplates</code> pages) — found via <code>grep -rl "@slice/lexical-react\|@slice/lexical-utils" apps/frontend</code>, i.e. every app-level file that actually imports the editor.</li>
+      </ol>
+      <div class="stackbar" style="background:none;box-shadow:none;gap:.4rem;height:auto;">
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.2rem;"><span><strong>Zone 1</strong> · editor library</span><span class="muted">64 commits</span></div>
+          <div style="background:var(--bg);border-radius:6px;height:14px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--border);"><div style="width:100%;height:100%;background:#0d9488;"></div></div>
+        </div>
+      </div>
+      <div class="stackbar" style="background:none;box-shadow:none;gap:.4rem;height:auto;margin-top:.5rem;">
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.2rem;"><span><strong>Zone 3</strong> · consumer editor wiring (frost/glaze)</span><span class="muted">51 commits</span></div>
+          <div style="background:var(--bg);border-radius:6px;height:14px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--border);"><div style="width:80%;height:100%;background:#db2777;"></div></div>
+        </div>
+      </div>
+      <div class="stackbar" style="background:none;box-shadow:none;gap:.4rem;height:auto;margin-top:.5rem;margin-bottom:1rem;">
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.2rem;"><span><strong>Zone 2</strong> · matching-filter layer (workflow-logic/tartlet/workflow-api)</span><span class="muted">48 commits</span></div>
+          <div style="background:var(--bg);border-radius:6px;height:14px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--border);"><div style="width:75%;height:100%;background:#ea580c;"></div></div>
+        </div>
+      </div>
+      <p class="muted">130 unique commits across the union of all three zones (64+51+48=163 counted with overlap, so ~33 commits touch more than one zone — e.g. a template feature that changes both the matching engine and the frost filter UI). All three zones are within the same order of magnitude: none is a rounding error next to the others.</p>
+      <div class="alert"><strong>Zone 2 is not a phantom.</strong> Unlike the Change-History finding above (0% inside the 3 tracked folders), the matching-filter domain is genuinely hot outside them: <code>e17bda6886 — "Add plan filter lexical templates" (#9703)</code> — the skill's own worked example — sits right next to its own regression fix 3 weeks later, <code>28b54b45dd — "Bug excersie request missing template because of plan filters" (#9719)</code>, plus an earlier attempt at the same feature (<code>638c63ca51</code>, #9461), 4 separate "strict template matching" feature-flag bugs (<code>23ca458338</code> #10109, <code>031d9741a8</code> #9125, <code>ff1d6208f1</code> #9084, <code>4ca868f7cf</code> #9211), and a filter added since (<code>7de3856c49</code> — territory filter, #8961). <code>add-filter-playbook.md</code>/<code>matching-engine.md</code> are documenting a real, recurring footgun — just one that lives entirely outside anything named "lexical".</div>
+      <p>Zone 3 tells the opposite story: it's just as active as Zone 1 (51 vs. 64 commits) — recent examples include <code>feat(ENG-584): add hyperlink support to engagement template editor</code>, <code>feat(AT-413): wire DOCX upload into template editor</code>, <code>feat(ENG-389): Add glaze engagement templates admin</code> — but <code>lexical-react-plugins.md</code> only teaches how to add a plugin <em>inside</em> the library, never how to wire the editor into a new consumer surface in frost or glaze. Zero of the skill's 4 reference docs mention <code>documentsEditor/</code>, <code>lexicalInput/</code>, or any glaze template-editor page.</p>
+    </div>
+
+    <div class="card">
+      <div class="seclabel">Conclusions — what this says about the progressive-disclosure design</div>
+      <ul>
+        <li><strong>The matching-filter docs are misfiled, not wasted.</strong> Widening the search shows <code>add-filter-playbook.md</code>/<code>matching-engine.md</code> document a real, recurring bug class (4+ "strict matching" regressions, plus the worked example's own regression 3 weeks after shipping) — 48 commits in 90 days outside the 3 tracked folders. The problem isn't that this content is unneeded; it's that nobody would think to open a skill called "lexical" to find it. It belongs in its own skill, scoped to <code>workflow-logic</code>/tartlet/frost-templates.</li>
+        <li><strong>The biggest true gap is consumer-side editor wiring, not anything currently in the skill.</strong> Zone 3 (frost's <code>documentsEditor/</code>/<code>lexicalInput/</code>, glaze's template-editor pages) is 51 commits in 90 days — on par with the editor library itself (64) — yet has zero mentions across all 4 reference docs. This is the actual highest-leverage domain for a skill literally named "lexical" to cover, and today it's the one piece missing entirely.</li>
+        <li><strong>Within the 3 tracked folders specifically</strong> (the narrower first pass), the single biggest real category — replaceable placeholders/merge-field chips, 20% of the last 50 commits — also has no reference doc, alongside DocuSign (10%) and template-data validation (8%). 44% of that narrower slice gets no progressive-disclosure support at all.</li>
+        <li><strong>What the skill does cover, it covers reasonably well.</strong> Paste-specific work (Google Docs + Word/DOCX) maps cleanly onto <code>paste-pipeline.md</code> + <code>lexical-react-plugins.md</code>, both detailed, accurate, and well-linked (per the Structure tab) — this is the part of the skill actually earning its tokens.</li>
+        <li><strong>Net recommendation:</strong> split into (at least) two skills along the fault line the data shows — one for the matching-filter domain (renamed, scoped to where Zone 2's churn happens), one for the actual Lexical editor (renamed or kept, but expanded to cover Zone 3 consumer wiring and placeholders/DocuSign before adding anything else).</li>
+      </ul>
+    </div>
+  </section>
+</div>
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  }));
+</script>
+</body>
+</html>
