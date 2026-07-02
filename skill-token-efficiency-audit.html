@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Token-Efficiency Audit</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --ink:#1a1d21; --muted:#6b7280; --line:#e6e8ec;
+  --good:#12b76a; --warn:#f79009; --bad:#f04438; --accent:#4b6bfb; --accent-soft:#eef1ff;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px;margin:0 auto;padding:40px 24px 80px}
+header.top{margin-bottom:28px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:26px;margin:6px 0 4px;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:14px}
+.sub b{color:var(--ink);font-weight:600}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:20px}
+.card h2{font-size:15px;font-weight:700;margin:0 0 2px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.card .desc{color:var(--muted);font-size:13px;margin:0 0 18px}
+
+/* info tooltip */
+.info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;
+  background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;position:relative;flex:none;user-select:none}
+.info:hover{background:var(--accent);color:#fff}
+.info .tip{visibility:hidden;opacity:0;position:absolute;z-index:20;top:24px;left:50%;transform:translateX(-50%);
+  width:270px;background:#1a1d21;color:#f3f4f6;font-size:12px;font-weight:400;line-height:1.5;
+  padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:left;transition:opacity .12s;pointer-events:none}
+.info:hover .tip,.info.open .tip{visibility:visible;opacity:1}
+.info .tip::after{content:"";position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-bottom-color:#1a1d21}
+.info .tip b{color:#fff}
+
+/* key findings */
+.finding{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.finding:first-child{border-top:none}
+.finding .dot{flex:none;width:8px;height:8px;border-radius:50%;margin-top:7px}
+.finding .body{font-size:14px}
+.finding .body .lead{font-weight:600}
+.finding .body .act{color:var(--muted);font-size:13px;margin-top:2px}
+.dot.good{background:var(--good)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+
+/* file bars */
+.bar-row{margin:16px 0}
+.bar-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;font-size:13px}
+.bar-head .fname{font-weight:600;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.bar-head .fname .hint{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:400;color:var(--muted);font-size:12px}
+.bar-head .fval{color:var(--muted);font-variant-numeric:tabular-nums}
+.bar-head .fval .over{color:var(--bad);font-weight:700}
+.bar-head .fval .ok{color:var(--good);font-weight:600}
+.track{position:relative;height:16px;border-radius:8px;
+  background:linear-gradient(90deg,#d5f5e3 0%,#fff3cd 62%,#fde2df 100%);
+  border:1px solid var(--line)}
+.track.plain{background:#eef1f5}
+.track .fill{position:absolute;top:0;left:0;bottom:0;border-radius:8px 0 0 8px;background:rgba(75,107,251,.14)}
+.marker{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:2px}
+.marker::after{content:attr(data-label);position:absolute;top:-19px;left:50%;transform:translateX(-50%);
+  white-space:nowrap;font-size:10.5px;font-weight:700;color:var(--ink);background:#fff;padding:1px 5px;border-radius:5px;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.marker.b-good{background:var(--good)} .marker.b-good::after{color:var(--good)}
+.marker.b-bad{background:var(--bad)} .marker.b-bad::after{color:var(--bad)}
+.marker.b-accent{background:var(--accent)} .marker.b-accent::after{color:var(--accent)}
+.marker.nolabel::after{display:none}
+.marker.hi::after{top:-36px}
+.marker.edge-r::after{left:auto;right:-1px;transform:none}
+.marker.edge-l::after{left:-1px;transform:none}
+.marker.low::after{top:auto;bottom:-19px}
+/* consolidated file meter */
+.meter-wrap{margin:52px 0 46px}
+.btick{position:absolute;top:-5px;bottom:-5px;width:0;border-left:2px dashed rgba(26,29,33,.4)}
+.btick::after{content:attr(data-label);position:absolute;bottom:-34px;left:50%;transform:translateX(-50%);
+  white-space:nowrap;font-size:10px;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+.marker.low::before{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%)}
+.scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:5px;font-variant-numeric:tabular-nums}
+.budget-tag{font-size:10.5px;color:var(--muted);margin-top:6px}
+.budget-tag b{color:var(--ink)}
+
+/* doc badges */
+.badges{display:inline-flex;gap:5px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:20px;background:#eef1f5;color:#414852;font-family:ui-monospace,Menlo,monospace}
+.badge.skill{background:#efeafe;color:#6941c6}
+.badge.none{background:#fde2df;color:#b42318}
+
+/* progressive disclosure headline */
+.pd-wrap{margin:4px 0 6px}
+.pd-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:16px}
+.pd-legend span{display:inline-flex;align-items:center;gap:6px}
+.pd-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+/* group rows */
+.group{border:1px solid var(--line);border-radius:12px;margin-top:12px;overflow:hidden}
+.group>.g-head{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 16px;cursor:pointer;align-items:center;background:#fff}
+.group>.g-head:hover{background:#fafbfc}
+.g-title{display:flex;align-items:center;gap:9px;font-weight:600;font-size:13.5px}
+.g-title .chev{transition:transform .15s;color:var(--muted);font-size:11px}
+.group.open .chev{transform:rotate(90deg)}
+.g-freq{font-size:11.5px;color:var(--muted);font-weight:500}
+.g-meta{display:flex;align-items:center;gap:14px;justify-content:flex-end}
+.g-bar{width:230px}
+.g-bar .track{height:12px}
+.g-nums{font-size:11.5px;color:var(--muted);text-align:right;min-width:118px;font-variant-numeric:tabular-nums}
+.g-nums b{color:var(--ink)}
+.g-body{display:none;padding:2px 16px 16px;background:#fafbfc;border-top:1px solid var(--line)}
+.group.open .g-body{display:block}
+.diagram-legend{display:flex;gap:16px;justify-content:center;font-size:11.5px;color:var(--muted);margin-top:6px}
+.diagram-legend span{display:inline-flex;align-items:center;gap:6px}
+.diagram-legend i{width:14px;height:10px;border-radius:3px;display:inline-block}
+.diagram-legend .sw-on{background:#dcf7e8;border:1px solid #12b76a}
+.diagram-legend .sw-off{background:#eef1f5;border:1px solid #d5d9df}
+.g-docline{font-size:12px;color:var(--muted);padding:10px 0 4px}
+.srow{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12.5px}
+.srow .sp{color:var(--ink)}
+.srow .sp .pr{color:var(--muted);font-size:11px}
+.srow .sd{justify-self:end}
+.srow .st{font-variant-numeric:tabular-nums;color:var(--muted);min-width:64px;text-align:right}
+.srow.nofire{opacity:.55}
+.mini{position:relative;height:7px;width:120px;border-radius:5px;background:#eef1f5;overflow:hidden;display:inline-block;vertical-align:middle}
+.mini>i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+
+/* extremes */
+.ext{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.ext{grid-template-columns:1fr}.g-meta{flex-direction:column;align-items:flex-end;gap:6px}.g-bar{width:150px}}
+.ext .box{border:1px solid var(--line);border-radius:12px;padding:18px;position:relative}
+.ext .box.bad{background:linear-gradient(180deg,#fff,#fff8f7)}
+.ext .box.good{background:linear-gradient(180deg,#fff,#f7fdfa)}
+.ext .box .lbl{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.ext .box .num{font-size:40px;font-weight:800;letter-spacing:-.02em;margin:6px 0 2px}
+.ext .box.bad .num{color:var(--bad)} .ext .box.good .num{color:var(--good)}
+.ext .box .of{font-size:12.5px;color:var(--muted)}
+.ext .box .why{font-size:12px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.ext .box .freq{font-size:12px;margin-top:8px;font-weight:600}
+.ext .box.bad .freq{color:var(--bad)} .ext .box.good .freq{color:var(--good)}
+.ext .box .verdict{position:absolute;top:16px;right:16px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px}
+.ext .box.bad .verdict{background:#fde2df;color:#b42318}
+.ext .box.good .verdict{background:#d5f5e3;color:#087443}
+
+/* expandable */
+.expander{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.exp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;cursor:pointer;font-weight:600;font-size:13.5px}
+.exp-head:hover{background:#fafbfc}
+.exp-head .chev{transition:transform .15s;color:var(--muted)}
+.expander.open .chev{transform:rotate(90deg)}
+.exp-body{display:none;border-top:1px solid var(--line)}
+.expander.open .exp-body{display:block}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+th{background:#fafbfc;font-weight:600;color:var(--muted);position:sticky;top:0;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.pill.correct_fire{background:#d5f5e3;color:#087443}
+.pill.false_positive{background:#fde2df;color:#b42318}
+.pill.correct_skip{background:#eef1f5;color:#414852}
+.pill.miss{background:#fff3cd;color:#b54708}
+.tbl-scroll{max-height:460px;overflow:auto}
+.filterbar{display:flex;gap:8px;padding:12px 16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+.filterbar button{font:inherit;border:1px solid var(--line);background:#fff;border-radius:20px;padding:4px 11px;cursor:pointer;color:var(--ink)}
+.filterbar button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.foot{color:var(--muted);font-size:11.5px;text-align:center;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Skill load-efficiency audit</div>
+    <h1>Token-Efficiency Analysis</h1>
+    <div class="sub" id="sub"></div>
+  </header>
+
+  <!-- 1. KEY FINDINGS -->
+  <section class="card">
+    <h2>Key findings</h2>
+    <div id="findings"></div>
+  </section>
+
+  <!-- 2. FILE LENGTH -->
+  <section class="card">
+    <h2>File length
+      <span class="info" onclick="tog(this)">i<span class="tip">Two meters, because the two budgets differ. <b>SKILL.md</b> loads on <b>every</b> trigger, so its meter maxes at the tight <b>1,000&nbsp;t</b> budget. Reference docs load only when relevant, so their meter maxes at <b>2,000&nbsp;t</b> and shows the <b>average</b> reference plus the single <b>biggest</b> one. A marker is <b>green</b> within budget, <b>red</b> once it's over (pinned at the right edge).</span></span>
+    </h2>
+    <p class="desc">Is any file too heavy? Two meters — SKILL.md against its 1,000&nbsp;t budget, and reference docs (average + biggest) against their 2,000&nbsp;t budget. Green within budget, red over.</p>
+    <div id="filebars"></div>
+  </section>
+
+  <!-- 4. TYPICAL SCENARIO CONSUMPTION -->
+  <section class="card">
+    <h2>Typical scenario consumption
+      <span class="info" onclick="tog(this)">i<span class="tip">Does triggering drag in <b>everything</b>, or only what's relevant? The bar runs from <b>0</b> to the <b>full corpus</b> (all docs, the most this skill could ever load). The marker is the <b>average</b> real trigger. Sitting well below the ceiling means <b>progressive disclosure works</b>. Click any group to see <b>which documents load</b> for that request type.</span></span>
+    </h2>
+    <p class="desc">Real triggers grouped by request type. Each group shows how often it fires, which docs it pulls, and its average vs. worst-case token load.</p>
+    <div id="pd"></div>
+    <div class="pd-legend">
+      <span><i style="background:var(--accent)"></i> Average real trigger</span>
+      <span><i style="background:var(--warn)"></i> Heaviest real trigger</span>
+      <span><i style="background:#cfd4db"></i> Corpus ceiling (loads everything)</span>
+    </div>
+    <div id="groups" style="margin-top:18px"></div>
+  </section>
+
+  <!-- 5. EXTREMES -->
+  <section class="card">
+    <h2>The two failure patterns
+      <span class="info" onclick="tog(this)">i<span class="tip">Two ways progressive disclosure can fail. <b>Max scenarios</b>: the skill fires and loads <b>every</b> doc — no partitioning, pure overhead. <b>Zero scenarios</b>: the skill fires but loads <b>no reference docs</b> at all (only the mandatory SKILL.md) — it triggered for nothing and still charged you SKILL.md's tokens. Both are bad; you want most fires in the middle.</span></span>
+    </h2>
+    <p class="desc">Counts of the two bad extremes across all real triggers, and how often they happen.</p>
+    <div class="ext" id="extremes"></div>
+  </section>
+
+  <!-- 6. FULL BREAKDOWN -->
+  <section class="card">
+    <h2>Full data breakdown</h2>
+    <p class="desc">Every analyzed commit: the inferred prompt, whether the skill fires, which files load, and the token cost.</p>
+    <div class="expander" id="exp">
+      <div class="exp-head" onclick="this.parentElement.classList.toggle('open')">
+        <span id="exp-label"></span><span class="chev">▶</span>
+      </div>
+      <div class="exp-body">
+        <div class="filterbar" id="filterbar"></div>
+        <div class="tbl-scroll">
+          <table id="fulltable">
+            <thead><tr>
+              <th>Prompt (inferred)</th><th>Group</th><th>Fires?</th><th>Docs loaded</th><th class="num">Tokens</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">Heuristic per-commit routing over <span id="foot-n"></span> commits · budgets: SKILL.md 1,000&nbsp;t, references 2,000&nbsp;t · generated from skill_load_analysis.json</div>
+</div>
+
+<script>
+const DATA = {"meta":{"corpus":9053,"avg_fire":3856,"observed_max":5891,"n_commits":50,"n_firing":33,"avg_docs_per_fire":2.27,"fp_rate":27,"skill_budget":1000,"ref_budget":2000,"n_docs_total":5},"skill":{"code":"SKILL","name":"SKILL.md","tok":1464,"budget":1000},"refs":[{"code":"PB","name":"add-filter-playbook.md","tok":2491,"budget":2000},{"code":"ENG","name":"matching-engine.md","tok":1936,"budget":2000},{"code":"LRP","name":"lexical-react-plugins.md","tok":1893,"budget":2000},{"code":"PASTE","name":"paste-pipeline.md","tok":1269,"budget":2000}],"ref_avg":1897,"ref_max":{"code":"PB","name":"add-filter-playbook.md","tok":2491,"budget":2000},"ref_min":{"code":"PASTE","name":"paste-pipeline.md","tok":1269,"budget":2000},"zero":{"n":6,"pct_fire":18,"pct_all":12,"recs":[{"pr":"9980","prompt":"Skip share-certificate workflow steps when a tenant setting is enabled","tokens":1464},{"pr":"9878","prompt":"Fix the text in the data-validations modal","tokens":1464},{"pr":"9770","prompt":"Validate trustee email for board workflows","tokens":1464},{"pr":"9821","prompt":"Localize UI labels in template, report and SBC components","tokens":1464},{"pr":"9807","prompt":"Exclude phantom stocks from exercise validation, restore rerun button","tokens":1464},{"pr":"9729","prompt":"Fix 5 correctness issues in workflow run output","tokens":1464}]},"maxs":{"n":0,"pct_fire":0,"pct_all":0,"recs":[]},"buckets":[{"code":"A","name":"Clipboard paste & DOCX import","total":11,"firing":10,"avg_tok":4626,"max_tok":4626,"avg_docs":3.0,"typical_docs":["SKILL","LRP","PASTE"],"should_fire":true,"recs":[{"id":"69e8e5d474","pr":"10173","prompt":"Fix: formatting toolbar not working on text pasted from Google Docs","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"cd84640a3c","pr":"10025","prompt":"Fix table, alignment and numbering formatting on DOCX upload","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"083b374abe","pr":"9749","prompt":"Add a Google Docs paste plugin to the Lexical editor","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"ef94f76b5d","pr":"9812","prompt":"Add Word Online table support to the paste plugin","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"6ab2f16ebe","pr":"9870","prompt":"Wire DOCX upload into the template editor","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"e97454713c","pr":"9811","prompt":"Add legal-list support to the Word Online paste plugin","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"ef06cf2a37","pr":"9868","prompt":"Add a DOCX-to-HTML conversion pipeline for templates","triggers":false,"docs":[],"tokens":0,"fire_class":"miss"},{"id":"4af163e37f","pr":"9922","prompt":"Remove an invalid getDomStyle call from the Word paste test helper","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"18e11756b7","pr":"9867","prompt":"Add Word-aware HTML loading into the Lexical editor","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"46aba243f0","pr":"9809","prompt":"Add text-formatting support to the Word Online paste plugin","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"},{"id":"173f82cf2f","pr":"9808","prompt":"Scaffold a Word Online paste plugin","triggers":true,"docs":["SKILL","LRP","PASTE"],"tokens":4626,"fire_class":"correct_fire"}]},{"code":"B","name":"Editor UX, formatting & nodes","total":7,"firing":6,"avg_tok":3772,"max_tok":5848,"avg_docs":2.17,"typical_docs":["SKILL","LRP"],"should_fire":true,"recs":[{"id":"e890bf210c","pr":"10147","prompt":"Fix bold not clearing on inline-formatted text in the Lexical editor","triggers":true,"docs":["SKILL","LRP"],"tokens":3357,"fire_class":"correct_fire"},{"id":"6420cfe71b","pr":"10116","prompt":"Add hyperlink support to the engagement template editor","triggers":true,"docs":["SKILL","LRP"],"tokens":3357,"fire_class":"correct_fire"},{"id":"73d5e33ef1","pr":"9978","prompt":"Fix Lexical text typing behaviour in Safari","triggers":true,"docs":["SKILL","LRP"],"tokens":3357,"fire_class":"false_positive"},{"id":"a1d42dbc88","pr":"9690","prompt":"Add a configurable date format to the Document Approval template","triggers":true,"docs":["SKILL","LRP","PB"],"tokens":5848,"fire_class":"correct_fire"},{"id":"99d3e9f1dc","pr":"9880","prompt":"Fix PDF placeholder line break and DocuSign justify alignment","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"4956aa944c","pr":"9814","prompt":"Add the Lexical engagement-templates admin to Glaze","triggers":true,"docs":["SKILL","LRP"],"tokens":3357,"fire_class":"correct_fire"},{"id":"3b47a06f4e","pr":"9780","prompt":"Fix table row-break and double-border in the components table modal","triggers":true,"docs":["SKILL","LRP"],"tokens":3357,"fire_class":"correct_fire"}]},{"code":"C","name":"Matching engine & template filters","total":7,"firing":7,"avg_tok":4823,"max_tok":5891,"avg_docs":2.57,"typical_docs":["SKILL","ENG","PB"],"should_fire":true,"recs":[{"id":"23ca458338","pr":"10109","prompt":"Template selection broken when strict-matching feature flag is off \u2014 fix it","triggers":true,"docs":["SKILL","PB","ENG"],"tokens":5891,"fire_class":"correct_fire"},{"id":"a60171d437","pr":"10058","prompt":"Move document-conflict extraction into @slice/workflow-logic and apply to exercise workflow","triggers":true,"docs":["SKILL","ENG"],"tokens":3400,"fire_class":"correct_fire"},{"id":"ea13aa6838","pr":"9863","prompt":"Implement backend template conflict resolution across workflows","triggers":true,"docs":["SKILL","PB","ENG"],"tokens":5891,"fire_class":"correct_fire"},{"id":"073eeab968","pr":"9725","prompt":"Add a minimal guard fix in workflow-logic for exercise-notice template data","triggers":true,"docs":["SKILL","ENG"],"tokens":3400,"fire_class":"correct_fire"},{"id":"28b54b45dd","pr":"9719","prompt":"Fix exercise request missing template due to plan filters (loose matching)","triggers":true,"docs":["SKILL","PB","ENG"],"tokens":5891,"fire_class":"correct_fire"},{"id":"e17bda6886","pr":"9703","prompt":"Add a plan filter to Lexical document templates","triggers":true,"docs":["SKILL","PB","ENG"],"tokens":5891,"fire_class":"correct_fire"},{"id":"6a8d946fd0","pr":"9670","prompt":"Fix secondary-data filling (stakeholder name) in workflow-logic","triggers":true,"docs":["SKILL","ENG"],"tokens":3400,"fire_class":"correct_fire"}]},{"code":"D","name":"Template CRUD & plumbing","total":7,"firing":4,"avg_tok":3955,"max_tok":3955,"avg_docs":2.0,"typical_docs":["SKILL","PB"],"should_fire":true,"recs":[{"id":"9ce6096f56","pr":"10160","prompt":"Add the missing Glaze templates endpoint and remove a redundant call","triggers":true,"docs":["SKILL","PB"],"tokens":3955,"fire_class":"false_positive"},{"id":"c1e58ab7d4","pr":"10071","prompt":"Split resolve-template-step into per-workflow endpoints with correct permissions","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"9bea6d3dc2","pr":"10038","prompt":"Remove the daily template-validation Slack alerts","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"c21de41860","pr":"10036","prompt":"Remediate the ConvertApi vulnerability in template PDF/Word generation","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"44fd89ee2b","pr":"9748","prompt":"Fix Vortex edge cases in template-filter / page-settings UI","triggers":true,"docs":["SKILL","PB"],"tokens":3955,"fire_class":"correct_fire"},{"id":"63a11378a0","pr":"9692","prompt":"Merge Document Templates and Digital Forms into a single form","triggers":true,"docs":["SKILL","PB"],"tokens":3955,"fire_class":"correct_fire"},{"id":"6bfa24dc59","pr":"9747","prompt":"Add bulk grant-documents upload","triggers":true,"docs":["SKILL","PB"],"tokens":3955,"fire_class":"false_positive"}]},{"code":"E","name":"Incidental / cross-cutting (should not fire)","total":18,"firing":6,"avg_tok":1464,"max_tok":1464,"avg_docs":1.0,"typical_docs":["SKILL"],"should_fire":false,"recs":[{"id":"b55ba837d9","pr":"9980","prompt":"Skip share-certificate workflow steps when a tenant setting is enabled","triggers":true,"docs":["SKILL"],"tokens":1464,"fire_class":"false_positive"},{"id":"679b183829","pr":"10055","prompt":"Fix permissions on the document-approval-step endpoint","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"62f8f87f5d","pr":"9878","prompt":"Fix the text in the data-validations modal","triggers":true,"docs":["SKILL"],"tokens":1464,"fire_class":"false_positive"},{"id":"608858dacb","pr":"9951","prompt":"Resolve DocuSign sender email from personal/business email","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"5e3f3085d5","pr":"9660","prompt":"Replace hardcoded color shades with semantic tokens (batch 1)","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"3268951dea","pr":"9910","prompt":"Add email preview to scheduled reports and custom views","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"fbf9b2c3ad","pr":"9860","prompt":"Replace hardcoded UI strings with i18n across 108 files","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"f2f5f2abe4","pr":"9803","prompt":"Add a frost stakeholder-engagement watcher","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"14d20906a5","pr":"9770","prompt":"Validate trustee email for board workflows","triggers":true,"docs":["SKILL"],"tokens":1464,"fire_class":"false_positive"},{"id":"d3c7d7e9d2","pr":"9796","prompt":"Add a settings toggle for the Ask-Slice home page","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"58c1fe6335","pr":"9848","prompt":"Extract hardcoded UI labels to i18n keys (DocusignInput)","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"25923eb7de","pr":"9821","prompt":"Localize UI labels in template, report and SBC components","triggers":true,"docs":["SKILL"],"tokens":1464,"fire_class":"false_positive"},{"id":"11a1e2cf56","pr":"9807","prompt":"Exclude phantom stocks from exercise validation, restore rerun button","triggers":true,"docs":["SKILL"],"tokens":1464,"fire_class":"false_positive"},{"id":"9a0f0dfd11","pr":"9781","prompt":"Localize UI labels and ARIA attributes across 13 components","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"d0c7115f2b","pr":"9671","prompt":"Finish Payments backend + UI additions + tests","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"30ad469a86","pr":"9744","prompt":"Fix UI labeling violations across SBC and template components","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"},{"id":"55d9033886","pr":"9729","prompt":"Fix 5 correctness issues in workflow run output","triggers":true,"docs":["SKILL"],"tokens":1464,"fire_class":"false_positive"},{"id":"59f902bfbd","pr":"9707","prompt":"Scope document permissions by workflow","triggers":false,"docs":[],"tokens":0,"fire_class":"correct_skip"}]}],"doc_name":{"SKILL":"SKILL.md","PB":"add-filter-playbook.md","ENG":"matching-engine.md","LRP":"lexical-react-plugins.md","PASTE":"paste-pipeline.md"},"all_records":[{"id":"69e8e5d474","pr":"10173","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Fix: formatting toolbar not working on text pasted from Google Docs","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"core"},{"id":"9ce6096f56","pr":"10160","bucket":"D","bucket_name":"Template CRUD & plumbing","prompt":"Add the missing Glaze templates endpoint and remove a redundant call","triggers":true,"docs":["SKILL","PB"],"docs_count":2,"tokens":3955,"fire_class":"false_positive","relevance":"incidental"},{"id":"b55ba837d9","pr":"9980","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Skip share-certificate workflow steps when a tenant setting is enabled","triggers":true,"docs":["SKILL"],"docs_count":1,"tokens":1464,"fire_class":"false_positive","relevance":"incidental"},{"id":"e890bf210c","pr":"10147","bucket":"B","bucket_name":"Editor UX, formatting & nodes","prompt":"Fix bold not clearing on inline-formatted text in the Lexical editor","triggers":true,"docs":["SKILL","LRP"],"docs_count":2,"tokens":3357,"fire_class":"correct_fire","relevance":"partial"},{"id":"c1e58ab7d4","pr":"10071","bucket":"D","bucket_name":"Template CRUD & plumbing","prompt":"Split resolve-template-step into per-workflow endpoints with correct permissions","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"6420cfe71b","pr":"10116","bucket":"B","bucket_name":"Editor UX, formatting & nodes","prompt":"Add hyperlink support to the engagement template editor","triggers":true,"docs":["SKILL","LRP"],"docs_count":2,"tokens":3357,"fire_class":"correct_fire","relevance":"partial"},{"id":"23ca458338","pr":"10109","bucket":"C","bucket_name":"Matching engine & template filters","prompt":"Template selection broken when strict-matching feature flag is off \u2014 fix it","triggers":true,"docs":["SKILL","PB","ENG"],"docs_count":3,"tokens":5891,"fire_class":"correct_fire","relevance":"core"},{"id":"cd84640a3c","pr":"10025","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Fix table, alignment and numbering formatting on DOCX upload","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"core"},{"id":"9bea6d3dc2","pr":"10038","bucket":"D","bucket_name":"Template CRUD & plumbing","prompt":"Remove the daily template-validation Slack alerts","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"a60171d437","pr":"10058","bucket":"C","bucket_name":"Matching engine & template filters","prompt":"Move document-conflict extraction into @slice/workflow-logic and apply to exercise workflow","triggers":true,"docs":["SKILL","ENG"],"docs_count":2,"tokens":3400,"fire_class":"correct_fire","relevance":"partial"},{"id":"679b183829","pr":"10055","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Fix permissions on the document-approval-step endpoint","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"c21de41860","pr":"10036","bucket":"D","bucket_name":"Template CRUD & plumbing","prompt":"Remediate the ConvertApi vulnerability in template PDF/Word generation","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"ea13aa6838","pr":"9863","bucket":"C","bucket_name":"Matching engine & template filters","prompt":"Implement backend template conflict resolution across workflows","triggers":true,"docs":["SKILL","PB","ENG"],"docs_count":3,"tokens":5891,"fire_class":"correct_fire","relevance":"core"},{"id":"083b374abe","pr":"9749","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Add a Google Docs paste plugin to the Lexical editor","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"core"},{"id":"ef94f76b5d","pr":"9812","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Add Word Online table support to the paste plugin","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"core"},{"id":"73d5e33ef1","pr":"9978","bucket":"B","bucket_name":"Editor UX, formatting & nodes","prompt":"Fix Lexical text typing behaviour in Safari","triggers":true,"docs":["SKILL","LRP"],"docs_count":2,"tokens":3357,"fire_class":"false_positive","relevance":"incidental"},{"id":"6ab2f16ebe","pr":"9870","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Wire DOCX upload into the template editor","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"partial"},{"id":"a1d42dbc88","pr":"9690","bucket":"B","bucket_name":"Editor UX, formatting & nodes","prompt":"Add a configurable date format to the Document Approval template","triggers":true,"docs":["SKILL","LRP","PB"],"docs_count":3,"tokens":5848,"fire_class":"correct_fire","relevance":"partial"},{"id":"62f8f87f5d","pr":"9878","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Fix the text in the data-validations modal","triggers":true,"docs":["SKILL"],"docs_count":1,"tokens":1464,"fire_class":"false_positive","relevance":"incidental"},{"id":"e97454713c","pr":"9811","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Add legal-list support to the Word Online paste plugin","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"core"},{"id":"ef06cf2a37","pr":"9868","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Add a DOCX-to-HTML conversion pipeline for templates","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"miss","relevance":"partial"},{"id":"608858dacb","pr":"9951","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Resolve DocuSign sender email from personal/business email","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"5e3f3085d5","pr":"9660","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Replace hardcoded color shades with semantic tokens (batch 1)","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"3268951dea","pr":"9910","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Add email preview to scheduled reports and custom views","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"4af163e37f","pr":"9922","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Remove an invalid getDomStyle call from the Word paste test helper","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"partial"},{"id":"18e11756b7","pr":"9867","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Add Word-aware HTML loading into the Lexical editor","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"partial"},{"id":"99d3e9f1dc","pr":"9880","bucket":"B","bucket_name":"Editor UX, formatting & nodes","prompt":"Fix PDF placeholder line break and DocuSign justify alignment","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"fbf9b2c3ad","pr":"9860","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Replace hardcoded UI strings with i18n across 108 files","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"46aba243f0","pr":"9809","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Add text-formatting support to the Word Online paste plugin","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"core"},{"id":"f2f5f2abe4","pr":"9803","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Add a frost stakeholder-engagement watcher","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"14d20906a5","pr":"9770","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Validate trustee email for board workflows","triggers":true,"docs":["SKILL"],"docs_count":1,"tokens":1464,"fire_class":"false_positive","relevance":"incidental"},{"id":"4956aa944c","pr":"9814","bucket":"B","bucket_name":"Editor UX, formatting & nodes","prompt":"Add the Lexical engagement-templates admin to Glaze","triggers":true,"docs":["SKILL","LRP"],"docs_count":2,"tokens":3357,"fire_class":"correct_fire","relevance":"partial"},{"id":"d3c7d7e9d2","pr":"9796","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Add a settings toggle for the Ask-Slice home page","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"173f82cf2f","pr":"9808","bucket":"A","bucket_name":"Clipboard paste & DOCX import","prompt":"Scaffold a Word Online paste plugin","triggers":true,"docs":["SKILL","LRP","PASTE"],"docs_count":3,"tokens":4626,"fire_class":"correct_fire","relevance":"core"},{"id":"58c1fe6335","pr":"9848","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Extract hardcoded UI labels to i18n keys (DocusignInput)","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"44fd89ee2b","pr":"9748","bucket":"D","bucket_name":"Template CRUD & plumbing","prompt":"Fix Vortex edge cases in template-filter / page-settings UI","triggers":true,"docs":["SKILL","PB"],"docs_count":2,"tokens":3955,"fire_class":"correct_fire","relevance":"partial"},{"id":"25923eb7de","pr":"9821","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Localize UI labels in template, report and SBC components","triggers":true,"docs":["SKILL"],"docs_count":1,"tokens":1464,"fire_class":"false_positive","relevance":"incidental"},{"id":"63a11378a0","pr":"9692","bucket":"D","bucket_name":"Template CRUD & plumbing","prompt":"Merge Document Templates and Digital Forms into a single form","triggers":true,"docs":["SKILL","PB"],"docs_count":2,"tokens":3955,"fire_class":"correct_fire","relevance":"partial"},{"id":"11a1e2cf56","pr":"9807","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Exclude phantom stocks from exercise validation, restore rerun button","triggers":true,"docs":["SKILL"],"docs_count":1,"tokens":1464,"fire_class":"false_positive","relevance":"incidental"},{"id":"9a0f0dfd11","pr":"9781","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Localize UI labels and ARIA attributes across 13 components","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"d0c7115f2b","pr":"9671","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Finish Payments backend + UI additions + tests","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"3b47a06f4e","pr":"9780","bucket":"B","bucket_name":"Editor UX, formatting & nodes","prompt":"Fix table row-break and double-border in the components table modal","triggers":true,"docs":["SKILL","LRP"],"docs_count":2,"tokens":3357,"fire_class":"correct_fire","relevance":"partial"},{"id":"30ad469a86","pr":"9744","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Fix UI labeling violations across SBC and template components","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"6bfa24dc59","pr":"9747","bucket":"D","bucket_name":"Template CRUD & plumbing","prompt":"Add bulk grant-documents upload","triggers":true,"docs":["SKILL","PB"],"docs_count":2,"tokens":3955,"fire_class":"false_positive","relevance":"incidental"},{"id":"55d9033886","pr":"9729","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Fix 5 correctness issues in workflow run output","triggers":true,"docs":["SKILL"],"docs_count":1,"tokens":1464,"fire_class":"false_positive","relevance":"incidental"},{"id":"073eeab968","pr":"9725","bucket":"C","bucket_name":"Matching engine & template filters","prompt":"Add a minimal guard fix in workflow-logic for exercise-notice template data","triggers":true,"docs":["SKILL","ENG"],"docs_count":2,"tokens":3400,"fire_class":"correct_fire","relevance":"partial"},{"id":"28b54b45dd","pr":"9719","bucket":"C","bucket_name":"Matching engine & template filters","prompt":"Fix exercise request missing template due to plan filters (loose matching)","triggers":true,"docs":["SKILL","PB","ENG"],"docs_count":3,"tokens":5891,"fire_class":"correct_fire","relevance":"core"},{"id":"59f902bfbd","pr":"9707","bucket":"E","bucket_name":"Incidental / cross-cutting (should not fire)","prompt":"Scope document permissions by workflow","triggers":false,"docs":[],"docs_count":0,"tokens":0,"fire_class":"correct_skip","relevance":"incidental"},{"id":"e17bda6886","pr":"9703","bucket":"C","bucket_name":"Matching engine & template filters","prompt":"Add a plan filter to Lexical document templates","triggers":true,"docs":["SKILL","PB","ENG"],"docs_count":3,"tokens":5891,"fire_class":"correct_fire","relevance":"core"},{"id":"6a8d946fd0","pr":"9670","bucket":"C","bucket_name":"Matching engine & template filters","prompt":"Fix secondary-data filling (stakeholder name) in workflow-logic","triggers":true,"docs":["SKILL","ENG"],"docs_count":2,"tokens":3400,"fire_class":"correct_fire","relevance":"partial"}]};
+const fmt = n => n.toLocaleString('en-US');
+const M = DATA.meta;
+
+/* tooltip click toggle (for touch) */
+function tog(el){el.classList.toggle('open');
+  document.addEventListener('click',function h(e){if(!el.contains(e.target)){el.classList.remove('open');document.removeEventListener('click',h);}});
+  event.stopPropagation();}
+
+/* ---------- header ---------- */
+document.getElementById('sub').innerHTML =
+  `<b>${M.n_docs_total}</b> docs · <b>${fmt(M.corpus)}</b>-token corpus · ${DATA.all_records.length} commits analyzed · `+
+  `<b>${M.n_firing}</b> fired, loading <b>${M.avg_docs_per_fire}</b> docs / <b>${fmt(M.avg_fire)}</b> t on average`;
+document.getElementById('foot-n').textContent = DATA.all_records.length;
+
+/* ---------- 1. key findings ---------- */
+const overBudget = [DATA.skill, ...DATA.refs].filter(f=>f.tok>f.budget);
+const findings = [
+  {sev:'good', lead:`Progressive disclosure works: an average trigger loads ${M.avg_docs_per_fire} of ${M.n_docs_total} docs (${fmt(M.avg_fire)} t, ${Math.round(100*M.avg_fire/M.corpus)}% of corpus) and never all ${M.n_docs_total}.`,
+    act:`Keep the partition — the "trigger dumps everything" failure mode does not occur (0 max-scenarios).`},
+  {sev:'bad', lead:`${overBudget.length} file${overBudget.length>1?'s exceed':' exceeds'} budget: ${overBudget.map(f=>`${f.name} (${fmt(f.tok)} t)`).join(', ')}.`,
+    act:`Trim SKILL.md under 1,000 t first — it loads on 100% of fires, so every token there is paid unconditionally.`},
+  {sev:'warn', lead:`${DATA.zero.n} triggers (${DATA.zero.pct_fire}% of fires) load no reference docs, and ${M.fp_rate}% of fires are false positives.`,
+    act:`Tighten triggers to require a domain co-term, not a bare shared filename — removes the wasted SKILL.md-only fires.`},
+];
+document.getElementById('findings').innerHTML = findings.map(f=>
+  `<div class="finding"><span class="dot ${f.sev}"></span><div class="body">`+
+  `<div class="lead">${f.lead}</div><div class="act">→ ${f.act}</div></div></div>`).join('');
+
+/* ---------- shared: budget bar ---------- */
+function badge(code){
+  if(code==='SKILL'||code==='SKILL_E'||code==='SKILL_M') return `<span class="badge skill">SKILL.md</span>`;
+  const nm = DATA.doc_name[code] || code;
+  return `<span class="badge">${nm}</span>`;
+}
+function budgetBar(val,budget,markerClass,label){
+  const posf = Math.min(val/budget,1)*100;
+  const over = val>budget;
+  const mcls = over ? 'b-bad' : markerClass;
+  return `<div class="track"><div class="marker ${mcls}" style="left:${posf}%" data-label="${label||fmt(val)}"></div></div>`;
+}
+
+/* ---------- 2. file length — two meters, each on its own budget ---------- */
+(function(){
+  const S=DATA.skill, rb=M.ref_budget, avg=DATA.ref_avg, mx=DATA.ref_max;
+  const sOver=S.tok>S.budget, sPos=Math.min(S.tok/S.budget,1)*100;
+  const avgOver=avg>rb, avgPos=Math.min(avg/rb,1)*100;
+  const mxOver=mx.tok>rb, mxPos=Math.min(mx.tok/rb,1)*100;
+  const sVal = sOver
+    ? `<span class="over">${fmt(S.tok)}</span> / ${fmt(S.budget)} · over by ${fmt(S.tok-S.budget)}`
+    : `<span class="ok">${fmt(S.tok)}</span> / ${fmt(S.budget)}`;
+  document.getElementById('filebars').innerHTML = `
+   <div class="fmeter">
+     <div class="bar-head"><span class="fname">SKILL.md <span class="hint">· loads on every trigger</span></span><span class="fval">${sVal} t</span></div>
+     <div class="track" style="margin-top:26px">
+       <div class="marker ${sOver?'b-bad':'b-good'}" style="left:${sPos}%" data-label="${fmt(S.tok)}${sOver?' ⚠':''}"></div>
+     </div>
+     <div class="scale"><span>0</span><span>budget ${fmt(S.budget)} t</span></div>
+   </div>
+   <div class="fmeter" style="margin-top:38px">
+     <div class="bar-head"><span class="fname">Reference docs <span class="hint">· load only when relevant</span></span><span class="fval">avg <b>${fmt(avg)}</b> · biggest <b>${fmt(mx.tok)}</b> t</span></div>
+     <div class="track" style="margin:26px 0 24px">
+       <div class="marker ${avgOver?'b-bad':'b-good'}" style="left:${avgPos}%" data-label="avg ${fmt(avg)}"></div>
+       <div class="marker ${mxOver?'b-bad':'b-good'} low" style="left:${mxPos}%" data-label="biggest ${fmt(mx.tok)}${mxOver?' ⚠':''}"></div>
+     </div>
+     <div class="scale"><span>0</span><span>budget ${fmt(rb)} t</span></div>
+     <div class="budget-tag" style="margin-top:10px">Average reference <b>${fmt(avg)} t</b> (within budget). Biggest is <b>${mx.name}</b> at <b>${fmt(mx.tok)} t</b>${mxOver?` — <span style="color:var(--bad);font-weight:700">over by ${fmt(mx.tok-rb)} t</span>`:''}.</div>
+   </div>`;
+})();
+
+/* ---------- 4. progressive disclosure headline ---------- */
+(function(){
+  const cap = M.corpus;
+  const avgPos = M.avg_fire/cap*100, maxPos = M.observed_max/cap*100;
+  document.getElementById('pd').innerHTML = `
+   <div class="pd-wrap">
+     <div class="track plain" style="margin-top:24px;height:18px">
+       <div class="fill" style="width:${avgPos}%"></div>
+       <div class="marker b-accent" style="left:${avgPos}%" data-label="avg ${fmt(M.avg_fire)}"></div>
+       <div class="marker b-bad low" style="left:${maxPos}%;background:var(--warn)" data-label="max ${fmt(M.observed_max)}"></div>
+     </div>
+     <div class="scale"><span>0 t</span><span>corpus ceiling ${fmt(cap)} t</span></div>
+     <div class="budget-tag" style="margin-top:12px">The average real trigger loads <b>${fmt(M.avg_fire)} t</b> — just <b>${Math.round(100*M.avg_fire/cap)}%</b> of the ${fmt(cap)}-token corpus. Even the heaviest trigger (${fmt(M.observed_max)} t) stays under the ceiling: the skill <b>never loads everything</b>.</div>
+   </div>`;
+})();
+
+/* ---------- 4b. groups ---------- */
+function groupDiagram(g){
+  const loaded = new Set(g.typical_docs);       // docs loaded in >=50% of this group's fires
+  const refs = DATA.refs;                        // [{code,name,tok}] sorted big->small
+  const W = 540, H = 40 + refs.length*50, skY = H/2, skX2 = 176;
+  const nodes = refs.map((r,i)=>{
+    const y = 20 + i*50, cy = y+19, on = loaded.has(r.code);
+    return {r,y,cy,on};
+  });
+  const arrows = nodes.map(n=>{
+    const col = n.on ? '#12b76a' : '#d0d5db';
+    const dash = n.on ? '' : 'stroke-dasharray="5 5"';
+    return `<path d="M${skX2},${skY} C 250,${skY} 262,${n.cy} 330,${n.cy}" fill="none" stroke="${col}" stroke-width="2" ${dash} marker-end="url(#ah-${n.on?'on':'off'})"/>`;
+  }).join('');
+  const rects = nodes.map(n=>{
+    const fill = n.on?'#dcf7e8':'#eef1f5', stroke = n.on?'#12b76a':'#d5d9df', tcol = n.on?'#087443':'#8a9099';
+    return `<g>
+      <rect x="330" y="${n.y}" width="196" height="38" rx="9" fill="${fill}" stroke="${stroke}"/>
+      <text x="343" y="${n.y+16}" font-size="11" font-weight="600" fill="${n.on?'#0a1f16':'#5b6069'}" font-family="ui-monospace,Menlo,monospace">${n.r.name}</text>
+      <text x="343" y="${n.y+30}" font-size="9.5" fill="${tcol}">${fmt(n.r.tok)} t · ${n.on?'loaded':'not loaded'}</text>
+    </g>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block;margin:6px auto" role="img" aria-label="${g.name} document-load diagram">
+    <defs>
+      <marker id="ah-on" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#12b76a"/></marker>
+      <marker id="ah-off" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#d0d5db"/></marker>
+    </defs>
+    ${arrows}
+    <g>
+      <rect x="14" y="${skY-25}" width="162" height="50" rx="11" fill="#efeafe" stroke="#c7b6f5"/>
+      <text x="95" y="${skY-3}" text-anchor="middle" font-size="12" font-weight="700" fill="#6941c6" font-family="ui-monospace,Menlo,monospace">SKILL.md</text>
+      <text x="95" y="${skY+14}" text-anchor="middle" font-size="9.5" fill="#8a6fd0">${fmt(DATA.skill.tok)} t · always loads</text>
+    </g>
+    ${rects}
+  </svg>`;
+}
+function groupHTML(g){
+  const cap = M.corpus;
+  const avgPos = g.avg_tok/cap*100, maxPos = g.max_tok/cap*100;
+  const nRef = g.typical_docs.filter(d=>d!=='SKILL').length;
+  return `<div class="group" >
+    <div class="g-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="g-title"><span class="chev">▶</span>
+        <span>${g.name}</span>
+        <span class="g-freq">· ${g.firing}/${g.total} fire${g.should_fire?'':' · should not fire'}</span>
+      </div>
+      <div class="g-meta">
+        <div class="g-bar"><div class="track plain" style="height:12px">
+          <div class="fill" style="width:${avgPos}%"></div>
+          <div class="marker b-accent nolabel" style="left:${avgPos}%"></div>
+          <div class="marker nolabel" style="left:${maxPos}%;background:var(--warn)"></div>
+        </div></div>
+        <div class="g-nums">avg <b>${fmt(g.avg_tok)}</b> · max <b>${fmt(g.max_tok)}</b> t</div>
+      </div>
+    </div>
+    <div class="g-body">
+      <div class="g-docline">SKILL.md always loads; this request type also pulls in <b>${nRef}</b> reference doc${nRef===1?'':'s'} (green). Grey = not loaded.</div>
+      ${groupDiagram(g)}
+      <div class="diagram-legend"><span><i class="sw-on"></i> loaded</span><span><i class="sw-off"></i> not loaded</span></div>
+    </div>
+  </div>`;
+}
+document.getElementById('groups').innerHTML = DATA.buckets.map(groupHTML).join('');
+
+/* ---------- 5. extremes ---------- */
+(function(){
+  const z = DATA.zero, x = DATA.maxs;
+  const zGood = z.n===0, xGood = x.n===0;
+  const box = (o)=>`
+    <div class="box ${o.good?'good':'bad'}">
+      <span class="verdict">${o.good?'✓ clean':'⚠ present'}</span>
+      <div class="lbl">${o.title}
+        <span class="info" onclick="tog(this)">i<span class="tip">${o.tip}</span></span>
+      </div>
+      <div class="num">${o.n}</div>
+      <div class="of">of ${M.n_firing} real triggers</div>
+      <div class="why">${o.why}</div>
+      <div class="freq">${o.freq}</div>
+    </div>`;
+  document.getElementById('extremes').innerHTML =
+    box({title:'Max scenarios', n:x.n, good:xGood,
+      tip:`The skill fired and loaded <b>all ${M.n_docs_total} docs</b> — the full ${fmt(M.corpus)}-token corpus. This means triggering pulls in everything regardless of relevance: no progressive disclosure at all.`,
+      why:`Fires that load every doc in the corpus. The worst case for token efficiency.`,
+      freq: xGood?`0% of fires — this failure mode never happens here.`:`${x.pct_fire}% of fires load everything.`}) +
+    box({title:'Zero scenarios', n:z.n, good:zGood,
+      tip:`The skill fired but loaded <b>no reference docs</b> — only the mandatory SKILL.md. It triggered for a request it had nothing useful for, and still charged ${fmt(DATA.skill.tok)} t for SKILL.md.`,
+      why:`Fires that pull in only SKILL.md and no references — the skill triggered for nothing.`,
+      freq: zGood?`0% of fires — no wasted triggers.`:`${z.pct_fire}% of fires · ${z.pct_all}% of all commits — pure trigger-precision waste.`});
+})();
+
+/* ---------- 6. full table ---------- */
+const CLASS_LABEL = {correct_fire:'Correct fire',false_positive:'False positive',correct_skip:'Correct skip',miss:'Miss'};
+let curFilter = 'all';
+function renderTable(){
+  const rows = DATA.all_records
+    .filter(r=>curFilter==='all'||r.fire_class===curFilter)
+    .slice().sort((a,b)=>b.tokens-a.tokens);
+  document.querySelector('#fulltable tbody').innerHTML = rows.map(r=>{
+    const d = r.docs.length ? r.docs.map(badge).join(' ') : '<span class="pr" style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td>${r.prompt}<div style="color:var(--muted);font-size:10.5px;margin-top:2px">#${r.pr} · ${r.bucket_name}</div></td>
+      <td>${r.bucket}</td>
+      <td>${r.triggers?'<span style="color:var(--good);font-weight:700">yes</span>':'<span style="color:var(--muted)">no</span>'} <span class="pill ${r.fire_class}">${CLASS_LABEL[r.fire_class]}</span></td>
+      <td>${d}</td>
+      <td class="num">${r.tokens?fmt(r.tokens):'0'}</td>
+    </tr>`;}).join('');
+  document.getElementById('exp-label').textContent =
+    `Show all ${DATA.all_records.length} commits — routing, files fired, token cost`;
+}
+(function(){
+  const classes = ['all','correct_fire','false_positive','correct_skip','miss'];
+  const counts = {}; DATA.all_records.forEach(r=>counts[r.fire_class]=(counts[r.fire_class]||0)+1);
+  document.getElementById('filterbar').innerHTML =
+    'Filter: ' + classes.map(c=>{
+      const n = c==='all'?DATA.all_records.length:(counts[c]||0);
+      return `<button data-c="${c}" class="${c==='all'?'active':''}">${c==='all'?'All':CLASS_LABEL[c]} ${n}</button>`;
+    }).join('');
+  document.querySelectorAll('#filterbar button').forEach(b=>b.onclick=()=>{
+    curFilter=b.dataset.c;
+    document.querySelectorAll('#filterbar button').forEach(x=>x.classList.toggle('active',x===b));
+    renderTable();
+  });
+})();
+renderTable();
+
+/* ---------- keep edge labels from clipping ---------- */
+document.querySelectorAll('.marker').forEach(m=>{
+  if(m.classList.contains('nolabel')) return;
+  const l = parseFloat(m.style.left);
+  if(l>=88) m.classList.add('edge-r');
+  else if(l<=10) m.classList.add('edge-l');
+});
+</script>
+</body>
+</html>
