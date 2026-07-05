@@ -40,17 +40,20 @@
   ],
   "codeRabbitComments": 5,
   "otherReviewerFeedback": {
-    "hasFeedback": false,
-    "reviewers": [],
-    "summary": "No human reviewer feedback found"
+    "hasFeedback": true,
+    "reviewers": [
+      "goldbergyoni"
+    ],
+    "summary": "Yes: goldbergyoni (commented: 1)"
   },
-  "didYoniReview": false,
+  "didYoniReview": true,
   "howManyYoniFindings": 0,
   "didYouLeavePrComments": false,
   "findings": [],
   "sourceCounts": {
-    "yoniReviewEvents": 0,
-    "yoniPrComments": 0
+    "yoniReviewEvents": 1,
+    "yoniReviewComments": 0,
+    "yoniIssueComments": 0
   },
   "files": [
     {
@@ -98,5 +101,16 @@
       "additions": 13,
       "deletions": 1
     }
-  ]
+  ],
+  "cursorArtifactFiles": [
+    ".cursor/agents/opa-policy-analyst.json",
+    ".cursor/commands/opa-analyze.md",
+    ".cursor/skills/opa-policy-analyst/SKILL.md",
+    ".cursor/skills/opa-policy-analyst/references/diagnosis-template.md",
+    ".cursor/skills/opa-policy-analyst/references/input-schema.md",
+    ".cursor/skills/opa-policy-analyst/references/output-style.md",
+    ".cursor/skills/opa-policy-analyst/references/policy-tracing.md",
+    ".cursor/skills/opa-policy-analyst/scripts/find-rule.sh"
+  ],
+  "lastRefreshed": "2026-07-05"
 }

@@ -62,7 +62,8 @@
   "findings": [],
   "sourceCounts": {
     "yoniReviewEvents": 0,
-    "yoniPrComments": 0
+    "yoniReviewComments": 0,
+    "yoniIssueComments": 0
   },
   "files": [
     {
@@ -190,5 +191,29 @@
       "additions": 67,
       "deletions": 0
     }
-  ]
+  ],
+  "cursorArtifactFiles": [
+    ".cursor/agents/compliance-policy.analyzer.md",
+    ".cursor/agents/compliance-policy.planner.md",
+    ".cursor/agents/compliance-policy.test-reviewer.md",
+    ".cursor/agents/compliance-policy.verifier.md",
+    ".cursor/agents/policies-agent.json",
+    ".cursor/commands/compliance-policy.md",
+    ".cursor/rules/use-compliance-policy-workflow.mdc",
+    ".cursor/skills/compliance-policy-workflow/SKILL.md",
+    ".cursor/skills/compliance-policy-workflow/config.toml",
+    ".cursor/skills/compliance-policy-workflow/references/policies.md",
+    ".cursor/skills/compliance-policy-workflow/references/policy-patterns.md",
+    ".cursor/skills/compliance-policy-workflow/references/policy-workflow.md",
+    ".cursor/skills/compliance-policy-workflow/references/pr-logic-block-summary-template.md",
+    ".cursor/skills/compliance-policy-workflow/references/pr-policy-summary-template.md",
+    ".cursor/skills/compliance-policy-workflow/references/pr-traceability.md",
+    ".cursor/skills/compliance-policy-workflow/references/test-review-rules.md",
+    ".cursor/skills/opa-coding/SKILL.md",
+    ".cursor/skills/opa-coding/references/logic-blocks.md",
+    ".cursor/skills/opa-coding/references/policies.md",
+    ".cursor/skills/opa-coding/references/pr-workflow.md",
+    ".cursor/skills/opa-coding/references/testing.md"
+  ],
+  "lastRefreshed": "2026-07-05"
 }

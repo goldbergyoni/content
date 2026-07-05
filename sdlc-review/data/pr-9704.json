@@ -31,13 +31,14 @@
     ],
     "summary": "Yes: goldbergyoni"
   },
-  "didYoniReview": false,
+  "didYoniReview": true,
   "howManyYoniFindings": 0,
-  "didYouLeavePrComments": false,
+  "didYouLeavePrComments": true,
   "findings": [],
   "sourceCounts": {
     "yoniReviewEvents": 0,
-    "yoniPrComments": 1
+    "yoniReviewComments": 0,
+    "yoniIssueComments": 1
   },
   "files": [
     {
@@ -50,5 +51,10 @@
       "additions": 52,
       "deletions": 18
     }
-  ]
+  ],
+  "cursorArtifactFiles": [
+    ".cursor/skills/frontend-coding/references/full-page-example.md",
+    ".cursor/skills/frontend-coding/references/react.md"
+  ],
+  "lastRefreshed": "2026-07-05"
 }

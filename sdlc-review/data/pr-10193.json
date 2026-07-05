@@ -5,30 +5,30 @@
   "status": "open",
   "state": "OPEN",
   "creator": "danielmishan85",
-  "changedFiles": 4,
-  "additions": 430,
+  "changedFiles": 8,
+  "additions": 380,
   "deletions": 0,
   "descriptionLength": {
-    "words": 202,
+    "words": 159,
     "paragraphs": 13
   },
   "fileBreakdown": [
     {
       "kind": "Markdown",
-      "count": 3,
-      "percentage": 75
+      "count": 7,
+      "percentage": 88
     },
     {
       "kind": "AGENTS.md",
       "count": 1,
-      "percentage": 25
+      "percentage": 12
     }
   ],
   "summaryParagraphs": [
     "This PR adds Documents Room frontend agent guidance. It introduces a dedicated skill, a testing playbook, and local AGENTS.md guidance under the Documents Room page area, plus an INVARIANTS.md file documenting important behavioral constraints.",
     "The PR is designed to reduce accidental regressions in a complex frontend surface by giving agents explicit domain context, testing expectations, and invariants. It is fully documentation-based and touches only four files."
   ],
-  "codeRabbitComments": 2,
+  "codeRabbitComments": 4,
   "otherReviewerFeedback": {
     "hasFeedback": true,
     "reviewers": [
@@ -37,36 +37,134 @@
       "goldbergyoni",
       "netgnsh"
     ],
-    "summary": "Yes: danielpenso, galziv, goldbergyoni, netgnsh (commented: 3, dismissed: 1, approved: 1)"
+    "summary": "Yes: danielpenso, galziv, goldbergyoni, netgnsh (commented: 2, dismissed: 2, changes requested: 1, approved: 1)"
   },
-  "didYoniReview": false,
-  "howManyYoniFindings": 0,
-  "didYouLeavePrComments": false,
-  "findings": [],
+  "didYoniReview": true,
+  "howManyYoniFindings": 11,
+  "didYouLeavePrComments": true,
+  "findings": [
+    {
+      "title": "Going by the convention, reference to specific links should be in the skill.md/references section...",
+      "text": "Going by the convention, reference to specific links should be in the skill.md/references section, not in the desc",
+      "file": ".cursor/skills/documents-room-frontend/SKILL.md",
+      "lineNumber": 9
+    },
+    {
+      "title": "Duplication, see section 'why duplication might bite us'",
+      "text": "Duplication, see section 'why duplication might bite us'",
+      "file": "apps/frontend/frost/src/pages/platform/documents/AGENTS.md",
+      "lineNumber": 25
+    },
+    {
+      "title": "I suggest not having 'floating' custom .md files spreaded within code, but rather agents.md only ...",
+      "text": "I suggest not having 'floating' custom .md files spreaded within code, but rather agents.md only (we may have one per folder), the rest is within skills\n\nWhy: Skill is a testable unit with clear owner, one can see the entire picture within a single locastion, stadard way of expressing information\n\nThe knowledge here seems highly coupled to the info in the skill, I'd move it there",
+      "file": ".cursor/skills/documents-room-frontend/references/invariants.md",
+      "lineNumber": 1
+    },
+    {
+      "title": "Duplication, see section 'why duplication might bite us'",
+      "text": "Duplication, see section 'why duplication might bite us'",
+      "file": ".cursor/skills/documents-room-frontend/SKILL.md",
+      "lineNumber": 44
+    },
+    {
+      "title": "Duplication, exists in the test skill + in all existing tests. See section 'why duplication might...",
+      "text": "Duplication, exists in the test skill + in all existing tests. See section 'why duplication might bite us'",
+      "file": ".cursor/skills/documents-room-frontend/references/testing-playbook.md",
+      "lineNumber": 94
+    },
+    {
+      "title": "Can we leave some high-level guidelines on how to find related tests (e.g., provide location or p...",
+      "text": "Can we leave some high-level guidelines on how to find related tests (e.g., provide location or pattern) instead of specific files? Will the LLM really fail in finding existing relvant suites to hook into?\n\nWhy: Specific file name needs maintenance and may drift with the file system + much shorter + less brittle",
+      "file": ".cursor/skills/documents-room-frontend/references/testing-playbook.md",
+      "lineNumber": 21
+    },
+    {
+      "title": "For the same reason that is mentioned above, can we include a pattern/grep to how to find existin...",
+      "text": "For the same reason that is mentioned above, can we include a pattern/grep to how to find existing mocks instead of detached documentation?",
+      "file": ".cursor/skills/documents-room-frontend/references/testing-playbook.md",
+      "lineNumber": 52
+    },
+    {
+      "title": "For the sake of clean content organization, consider mentioning each file once with 2 lines of ex...",
+      "text": "For the sake of clean content organization, consider mentioning each file once with 2 lines of explanation about what it holds + potential 'When' to use it",
+      "file": ".cursor/skills/documents-room-frontend/SKILL.md",
+      "lineNumber": 25
+    },
+    {
+      "title": "This file is mentioned many times, I guess it's an important one. Yet I'd like to claim that that...",
+      "text": "This file is mentioned many times, I guess it's an important one. Yet I'd like to claim that that duplication might bite us eventually:\n\n1. Hard to correlate cause and effect - when some instructions won't be respected, it would be hard to realize why and how to improve\n2. Harder to change - Changing in one place may drift in other places\n3. Token consumption\n\nInstead, mention once, if it won't get activated let's consider techniques to improve",
+      "file": ".cursor/skills/documents-room-frontend/SKILL.md",
+      "lineNumber": 21
+    },
+    {
+      "title": "Important: it looks like the content documents have no single responsibility, consequently they a...",
+      "text": "Important: it looks like the content documents have no single responsibility, consequently they are big and overlapping. Agents.md holds both tech context and also workflows and domain info, invariants is a big pile of instructions which overlap with agents.md. The downside is that every small task will load the entire context, and also updating these docs will be chellenging since they are bulky\n\nLooking at the last 50 real Documents Room changes (in Git), over a quarter (28%) were cross-cutting work (translations, spacing, colors) that needs none of this knowledge. Another fact: 42% of the last 50 commits touched ai suggestions only - which is why it earns its own dedicated reference doc rather than being bundled with other domain knowledge\n\nWe may consider breaking the knowledge into a few small, topic-focused docs and load only the one a task needs, For example (just one idea, critique it):\n\n```\napps/frontend/frost/src/pages/platform/documents/\n└── AGENTS.md                          # slim orientation: purpose, mental model, architecture, key files, run cmd\n\n.cursor/skills/documents-room-frontend/\n├── SKILL.md                           # router: baseline + \"if you're doing X, load Y\"\n└── references/\n    ├── invariants.md                  # the hard rules (cheap always-on baseline)\n    ├── associations-and-folders.md    # associations, folders, filters\n    ├── actions-and-permissions.md     # visibility, bulk actions, permissions, auditability\n    ├── ai-suggestions.md              # AI suggestion lifecycle, match states, reconciler\n    ├── testing-playbook.md            # which test file to extend, helpers, mocks\n    └── checklists.md                  # change checklist + PR-description checklist\n```",
+      "file": "apps/frontend/frost/src/pages/platform/documents/AGENTS.md",
+      "lineNumber": 1
+    },
+    {
+      "title": "See my suggestion above to split this doc into multiple task-focused documents",
+      "text": "See my suggestion above to split this doc into multiple task-focused documents",
+      "file": ".cursor/skills/documents-room-frontend/references/invariants.md",
+      "lineNumber": 5
+    }
+  ],
   "sourceCounts": {
-    "yoniReviewEvents": 0,
-    "yoniPrComments": 1
+    "yoniReviewEvents": 1,
+    "yoniReviewComments": 11,
+    "yoniIssueComments": 1
   },
   "files": [
     {
       "path": ".cursor/skills/documents-room-frontend/SKILL.md",
-      "additions": 49,
+      "additions": 38,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/documents-room-frontend/references/actions-and-permissions.md",
+      "additions": 60,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/documents-room-frontend/references/ai-suggestions.md",
+      "additions": 47,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/documents-room-frontend/references/associations-and-folders.md",
+      "additions": 29,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/documents-room-frontend/references/checklists.md",
+      "additions": 29,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/documents-room-frontend/references/invariants.md",
+      "additions": 59,
       "deletions": 0
     },
     {
       "path": ".cursor/skills/documents-room-frontend/references/testing-playbook.md",
-      "additions": 114,
+      "additions": 71,
       "deletions": 0
     },
     {
       "path": "apps/frontend/frost/src/pages/platform/documents/AGENTS.md",
-      "additions": 218,
-      "deletions": 0
-    },
-    {
-      "path": "apps/frontend/frost/src/pages/platform/documents/INVARIANTS.md",
-      "additions": 49,
+      "additions": 47,
       "deletions": 0
     }
-  ]
+  ],
+  "cursorArtifactFiles": [
+    ".cursor/skills/documents-room-frontend/SKILL.md",
+    ".cursor/skills/documents-room-frontend/references/actions-and-permissions.md",
+    ".cursor/skills/documents-room-frontend/references/ai-suggestions.md",
+    ".cursor/skills/documents-room-frontend/references/associations-and-folders.md",
+    ".cursor/skills/documents-room-frontend/references/checklists.md",
+    ".cursor/skills/documents-room-frontend/references/invariants.md",
+    ".cursor/skills/documents-room-frontend/references/testing-playbook.md"
+  ],
+  "lastRefreshed": "2026-07-05"
 }

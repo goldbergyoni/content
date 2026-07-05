@@ -1,0 +1,101 @@
+{
+  "number": 10362,
+  "summaryParagraphs": [
+    "This PR was added during the latest-50 PR scan because it changes Cursor artifacts under .cursor/. Its title is \"feat(AT-SDLC): Sdlc workflows\", and the affected Cursor files include .cursor/skills/workflows/SKILL.md, .cursor/skills/workflows/guides/add-step-type.md, .cursor/skills/workflows/guides/add-workflow-type.md, .cursor/skills/workflows/guides/edge-cases.md, and 5 more.",
+    "The report data was generated from GitHub metadata and file lists. Review status, CodeRabbit counts, Yoni comments, and findings can be updated by editing this PR's JSON file without touching the HTML."
+  ],
+  "findings": [],
+  "howManyYoniFindings": 0,
+  "didYouLeavePrComments": false,
+  "didYoniReview": false,
+  "sourceCounts": {
+    "yoniReviewEvents": 0,
+    "yoniReviewComments": 0,
+    "yoniIssueComments": 0
+  },
+  "scanReason": "Added from latest 50 PR scan because it changes .cursor/ files",
+  "title": "feat(AT-SDLC): Sdlc workflows",
+  "url": "https://github.com/Global-Slice/mono-slice/pull/10362",
+  "status": "open",
+  "state": "OPEN",
+  "creator": "orish816",
+  "changedFiles": 9,
+  "additions": 814,
+  "deletions": 0,
+  "descriptionLength": {
+    "words": 363,
+    "paragraphs": 16
+  },
+  "fileBreakdown": [
+    {
+      "kind": "Markdown",
+      "count": 9,
+      "percentage": 100
+    }
+  ],
+  "codeRabbitComments": 6,
+  "otherReviewerFeedback": {
+    "hasFeedback": false,
+    "reviewers": [],
+    "summary": "No human reviewer feedback found"
+  },
+  "files": [
+    {
+      "path": ".cursor/skills/workflows/SKILL.md",
+      "additions": 107,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/workflows/guides/add-step-type.md",
+      "additions": 56,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/workflows/guides/add-workflow-type.md",
+      "additions": 56,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/workflows/guides/edge-cases.md",
+      "additions": 60,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/workflows/guides/examples.md",
+      "additions": 159,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/workflows/guides/investigating-step-failures.md",
+      "additions": 103,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/workflows/guides/lifecycle-and-state.md",
+      "additions": 118,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/workflows/guides/nested-workflows.md",
+      "additions": 79,
+      "deletions": 0
+    },
+    {
+      "path": ".cursor/skills/workflows/guides/rollback-and-migration.md",
+      "additions": 76,
+      "deletions": 0
+    }
+  ],
+  "cursorArtifactFiles": [
+    ".cursor/skills/workflows/SKILL.md",
+    ".cursor/skills/workflows/guides/add-step-type.md",
+    ".cursor/skills/workflows/guides/add-workflow-type.md",
+    ".cursor/skills/workflows/guides/edge-cases.md",
+    ".cursor/skills/workflows/guides/examples.md",
+    ".cursor/skills/workflows/guides/investigating-step-failures.md",
+    ".cursor/skills/workflows/guides/lifecycle-and-state.md",
+    ".cursor/skills/workflows/guides/nested-workflows.md",
+    ".cursor/skills/workflows/guides/rollback-and-migration.md"
+  ],
+  "lastRefreshed": "2026-07-05"
+}

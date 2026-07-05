@@ -29,15 +29,71 @@
     "reviewers": [
       "goldbergyoni"
     ],
-    "summary": "Yes: goldbergyoni"
+    "summary": "Yes: goldbergyoni (changes requested: 1)"
   },
-  "didYoniReview": false,
-  "howManyYoniFindings": 0,
-  "didYouLeavePrComments": false,
-  "findings": [],
+  "didYoniReview": true,
+  "howManyYoniFindings": 9,
+  "didYouLeavePrComments": true,
+  "findings": [
+    {
+      "title": "Consider some definition of done checks as part of this workflow (e.g., tests pass, other things)...",
+      "text": "Consider some definition of done checks as part of this workflow (e.g., tests pass, other things) + Some feedback to the developer, what should they do now",
+      "file": ".cursor/commands/convert-vortex.md",
+      "lineNumber": 22
+    },
+    {
+      "title": "If you leave the instructions here, instead of in the reference file -> it might not load it",
+      "text": "If you leave the instructions here, instead of in the reference file -> it might not load it",
+      "file": ".cursor/skills/backend-coding/SKILL.md",
+      "lineNumber": 25
+    },
+    {
+      "title": "I believe that you look for 'disable-model-invocation: true'",
+      "text": "I believe that you look for 'disable-model-invocation: true'\n\nThe command should also be here as one single cohesive package",
+      "file": ".cursor/skills/vortex/SKILL.md",
+      "lineNumber": 7
+    },
+    {
+      "title": "All of these instrctions are not needed if you use disable-model-invocation: true",
+      "text": "All of these instrctions are not needed if you use disable-model-invocation: true",
+      "file": ".cursor/skills/vortex/SKILL.md",
+      "lineNumber": 23
+    },
+    {
+      "title": "Since you control your own workflow, unlike spontaneous modal invocation, it's a good opportunity...",
+      "text": "Since you control your own workflow, unlike spontaneous modal invocation, it's a good opportunity to provide here all the quality steps that you could imagine. You may perform more validation on start whether this is a good candidate for a Vortex flow. On end, you can run your own checklist to validate some known mis-message and quality gates, like, for example, the existence of testing, the correctness of the final DAG, etc.",
+      "file": ".cursor/commands/convert-vortex.md",
+      "lineNumber": 22
+    },
+    {
+      "title": "The conversion workflow is currently authored twice. convert-vortex.md defines a 6-step sequence ...",
+      "text": "The conversion workflow is currently authored twice. convert-vortex.md defines a 6-step sequence and conversion-recipe.md defines an overlapping 8-step sequence plus the audit, so the command and the recipe are both steering the same ordered process. The result is that there is no single source of truth\n\nThe cleaner shape is to keep the workflow in exactly one file: the canonical ordered steps, with every validation and audit check inlined as a gate the run must pass. Everything else becomes leaf content the workflow pulls in on demand — one knowledge doc per step (or topic) for the \"how\"",
+      "file": ".cursor/skills/vortex/references/conversion-recipe.md",
+      "lineNumber": 24
+    },
+    {
+      "title": "Since it's a workflow, to have a better guarantee that all the steps are indeed executed, conside...",
+      "text": "Since it's a workflow, to have a better guarantee that all the steps are indeed executed, consider asking it upfront to first put all the tasks into the to-do list using the ToDoWrite tool\n\nFrom that part, the harness is very good at following tasks and the user gets better visibility Into the process.",
+      "file": ".cursor/commands/convert-vortex.md",
+      "lineNumber": 18
+    },
+    {
+      "title": "For better visibility, resumability, and learning, consider asking some of the steps to emit a ma...",
+      "text": "For better visibility, resumability, and learning, consider asking some of the steps to emit a markdown file with progress info in a dedicated folder. This way, whenever the need arises (say, in case of failures), the user can dig inside and see what's happening",
+      "file": ".cursor/commands/convert-vortex.md",
+      "lineNumber": 22
+    },
+    {
+      "title": "A good opportunity to ensure the new tests are passing, or maybe even specify more granular expec...",
+      "text": "A good opportunity to ensure the new tests are passing, or maybe even specify more granular expectations about the testing quality.",
+      "file": ".cursor/skills/vortex/references/conversion-recipe.md",
+      "lineNumber": 105
+    }
+  ],
   "sourceCounts": {
-    "yoniReviewEvents": 0,
-    "yoniPrComments": 1
+    "yoniReviewEvents": 1,
+    "yoniReviewComments": 9,
+    "yoniIssueComments": 1
   },
   "files": [
     {
@@ -75,5 +131,15 @@
       "additions": 119,
       "deletions": 0
     }
-  ]
+  ],
+  "cursorArtifactFiles": [
+    ".cursor/commands/convert-vortex.md",
+    ".cursor/skills/backend-coding/SKILL.md",
+    ".cursor/skills/backend-coding/references/dates-timezones.md",
+    ".cursor/skills/frontend-coding/SKILL.md",
+    ".cursor/skills/frontend-coding/references/dates-timezones.md",
+    ".cursor/skills/vortex/SKILL.md",
+    ".cursor/skills/vortex/references/conversion-recipe.md"
+  ],
+  "lastRefreshed": "2026-07-05"
 }

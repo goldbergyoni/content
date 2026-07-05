@@ -6,10 +6,10 @@
   "state": "OPEN",
   "creator": "ItayRafe",
   "changedFiles": 15,
-  "additions": 511,
+  "additions": 495,
   "deletions": 0,
   "descriptionLength": {
-    "words": 147,
+    "words": 146,
     "paragraphs": 12
   },
   "fileBreakdown": [
@@ -23,22 +23,72 @@
     "This PR adds three domain skills: grouping, payments, and secondary. The grouping skill includes references for API surface, architecture, backend and frontend consumers, Prisma and type domain models, and federation. The secondary skill includes architecture, domain model, lifecycle, permissions, and security-group references.",
     "The payments skill is the largest single file in the PR, while grouping and secondary are broken into smaller reference documents. The entire PR is markdown documentation and appears intended to make domain-specific agent work more reliable across these areas."
   ],
-  "codeRabbitComments": 10,
+  "codeRabbitComments": 11,
   "otherReviewerFeedback": {
     "hasFeedback": true,
     "reviewers": [
       "goldbergyoni",
       "yablonka-dev"
     ],
-    "summary": "Yes: goldbergyoni, yablonka-dev (commented: 1)"
+    "summary": "Yes: goldbergyoni, yablonka-dev (commented: 1, changes requested: 1)"
   },
-  "didYoniReview": false,
-  "howManyYoniFindings": 0,
-  "didYouLeavePrComments": false,
-  "findings": [],
+  "didYoniReview": true,
+  "howManyYoniFindings": 8,
+  "didYouLeavePrComments": true,
+  "findings": [
+    {
+      "title": "Important: The reference map is really short, vague and doesn't tell when to use each link",
+      "text": "Important: The reference map is really short, vague and doesn't tell when to use each link\r\n\r\nThis may make the model overactivate all links, or underactivate\r\n\r\nConsider putting two sentences about each reference with 'What + optionally When'",
+      "file": ".cursor/skills/grouping/SKILL.md",
+      "lineNumber": 18
+    },
+    {
+      "title": "This seems to be local knowledge, something that should be in the grouping service agents.md, pot...",
+      "text": "This seems to be local knowledge, something that should be in the grouping service agents.md, potentially inside some deep later\n\nWhy: Doesn't seem to be a a cross-service issue, risk of conflicts (local vs skill deviation), aligned with our exiting info structure",
+      "file": ".cursor/skills/grouping/references/api-surface.md",
+      "lineNumber": 9
+    },
+    {
+      "title": "Same comment about potential conflict with agents.md",
+      "text": "Same comment about potential conflict with agents.md",
+      "file": ".cursor/skills/grouping/references/architecture.md",
+      "lineNumber": 12
+    },
+    {
+      "title": "Length > 2000 tokens, must fix IMO",
+      "text": "Length > 2000 tokens, must fix IMO",
+      "file": ".cursor/skills/payments/SKILL.md",
+      "lineNumber": 1
+    },
+    {
+      "title": "Consider generalizing the 'use when' so it's less coupled to paths which may change",
+      "text": "Consider generalizing the 'use when' so it's less coupled to paths which may change\n\nMaybe something like \"use when working with anything related with payments and specifically when dealing with {specific examples}\"",
+      "file": ".cursor/skills/payments/SKILL.md",
+      "lineNumber": 6
+    },
+    {
+      "title": "Important: This goes down to very specific tech details (e.g., port) vs focus on domain concepts",
+      "text": "Important: This goes down to very specific tech details (e.g., port) vs focus on domain concepts\n\nI don't think paths/ports/types should leave in a domain knowledge but rather conceptual explanations, vocabulary, navigation map, etc\n\nFocus on what & where, not how",
+      "file": ".cursor/skills/payments/SKILL.md",
+      "lineNumber": 40
+    },
+    {
+      "title": "Would it be better to have this knowledge in the service agents.md and refer from here?",
+      "text": "Would it be better to have this knowledge in the service agents.md and refer from here?",
+      "file": ".cursor/skills/payments/SKILL.md",
+      "lineNumber": 53
+    },
+    {
+      "title": "\"Load the references below\" may be read as 'load all', consider describing as additional potentia...",
+      "text": "\"Load the references below\" may be read as 'load all', consider describing as additional potential resources that are important to consider based on the need",
+      "file": ".cursor/skills/grouping/SKILL.md",
+      "lineNumber": 17
+    }
+  ],
   "sourceCounts": {
-    "yoniReviewEvents": 0,
-    "yoniPrComments": 1
+    "yoniReviewEvents": 1,
+    "yoniReviewComments": 8,
+    "yoniIssueComments": 1
   },
   "files": [
     {
@@ -48,12 +98,12 @@
     },
     {
       "path": ".cursor/skills/grouping/references/api-surface.md",
-      "additions": 19,
+      "additions": 21,
       "deletions": 0
     },
     {
       "path": ".cursor/skills/grouping/references/architecture.md",
-      "additions": 25,
+      "additions": 27,
       "deletions": 0
     },
     {
@@ -83,7 +133,7 @@
     },
     {
       "path": ".cursor/skills/payments/SKILL.md",
-      "additions": 183,
+      "additions": 163,
       "deletions": 0
     },
     {
@@ -116,5 +166,23 @@
       "additions": 23,
       "deletions": 0
     }
-  ]
+  ],
+  "cursorArtifactFiles": [
+    ".cursor/skills/grouping/SKILL.md",
+    ".cursor/skills/grouping/references/api-surface.md",
+    ".cursor/skills/grouping/references/architecture.md",
+    ".cursor/skills/grouping/references/consumers-backend.md",
+    ".cursor/skills/grouping/references/consumers-frontend.md",
+    ".cursor/skills/grouping/references/domain-model-prisma.md",
+    ".cursor/skills/grouping/references/domain-model-types.md",
+    ".cursor/skills/grouping/references/federation.md",
+    ".cursor/skills/payments/SKILL.md",
+    ".cursor/skills/secondary/SKILL.md",
+    ".cursor/skills/secondary/references/architecture.md",
+    ".cursor/skills/secondary/references/domain-model.md",
+    ".cursor/skills/secondary/references/lifecycle.md",
+    ".cursor/skills/secondary/references/permissions.md",
+    ".cursor/skills/secondary/references/security-groups.md"
+  ],
+  "lastRefreshed": "2026-07-05"
 }

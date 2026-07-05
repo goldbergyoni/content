@@ -1,4 +1,15 @@
 {
+  "lastRefreshed": "2026-07-05",
+  "scan": {
+    "scope": "Latest 50 PRs from Global-Slice/mono-slice",
+    "cursorArtifactRule": "Changed files include a path starting with .cursor/",
+    "newCursorArtifactPrs": [
+      10362
+    ],
+    "allRecentCursorArtifactPrs": [
+      10362
+    ]
+  },
   "prs": [
     "data/pr-10200.json",
     "data/pr-9765.json",
@@ -9,6 +20,7 @@
     "data/pr-10187.json",
     "data/pr-10193.json",
     "data/pr-10190.json",
-    "data/pr-10228.json"
+    "data/pr-10228.json",
+    "data/pr-10362.json"
   ]
 }

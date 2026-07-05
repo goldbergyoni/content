@@ -34,15 +34,83 @@
     "reviewers": [
       "goldbergyoni"
     ],
-    "summary": "Yes: goldbergyoni"
+    "summary": "Yes: goldbergyoni (changes requested: 1)"
   },
-  "didYoniReview": false,
-  "howManyYoniFindings": 0,
-  "didYouLeavePrComments": false,
-  "findings": [],
+  "didYoniReview": true,
+  "howManyYoniFindings": 11,
+  "didYouLeavePrComments": true,
+  "findings": [
+    {
+      "title": "I'm having thoughts about whether you should be so specific about when to use it, down to the fin...",
+      "text": "I'm having thoughts about whether you should be so specific about when to use it, down to the fine name granularity, versus providing a more high-level instruction. One of the sub-concerns here is that some new lexical file name will appear which is not mentioned in this description, and it will make the LLM bypass the skill because it doesn't match that file name\n\nIn other words, I believe you should mention which type of functionality and code _areas_ are covered by this skill, and less file names",
+      "file": ".cursor/skills/lexical/SKILL.md",
+      "lineNumber": 3
+    },
+    {
+      "title": "If you have high confidence that these steps should be followed in every workflow, consider instr...",
+      "text": "If you have high confidence that these steps should be followed in every workflow, consider instructing  add it to the Harness To-Do list (use the ToDoWritw tool), which we know is being followed consistently and also a common DX for the developer",
+      "file": ".cursor/skills/lexical/references/add-filter-playbook.md",
+      "lineNumber": 9
+    },
+    {
+      "title": "This is a strict workflow which often limits the harness's flexibility to find the right path bas...",
+      "text": "This is a strict workflow which often limits the harness's flexibility to find the right path based on different scenarios. If time proved that this workflow is always similar, then all good. But, if you can think about corner cases that might call for deviating from this and improvising a better path based on different scenarios, then consider leaving here more flexibility.\n\nThis can be done by putting some guardrails, like:\n- testing at the end\n- testing at the start\n- Definition of done checklist\n- Ssome additional check point in the middle\n\nAnd let it find the best path instead of following a rigid flow.",
+      "file": ".cursor/skills/lexical/references/add-filter-playbook.md",
+      "lineNumber": 15
+    },
+    {
+      "title": "We have very strict instructions here, down to the minute technical detail. Apart from limiting t...",
+      "text": "We have very strict instructions here, down to the minute technical detail. Apart from limiting the harness's flexibility to make decisions, there is also the risk of 'drifting maintenance': We have now two versions of the code, If the real code changes, someone must take care to update the skill\n\nAlternatively, I would consider leaving here pointers, clues, high-level instructions, and let the harness grep its way to the right files.",
+      "file": ".cursor/skills/lexical/references/add-filter-playbook.md",
+      "lineNumber": 24
+    },
+    {
+      "title": "I'm just stating again what was already said above: The instructions here are too detailed",
+      "text": "I'm just stating again what was already said above: The instructions here are too detailed",
+      "file": ".cursor/skills/lexical/references/add-filter-playbook.md",
+      "lineNumber": 184
+    },
+    {
+      "title": "Isn't this test playbook valuable also when editing existing filters or when fixing tests? If so,...",
+      "text": "Isn't this test playbook valuable also when editing existing filters or when fixing tests? If so, do we want to consider putting the testing playbook as an independent instruction? Or maybe call this file a different name?",
+      "file": ".cursor/skills/lexical/references/add-filter-playbook.md",
+      "lineNumber": 226
+    },
+    {
+      "title": "This is exactly the type of instructions that I would expect the skill to focus on: a navigation ...",
+      "text": "This is exactly the type of instructions that I would expect the skill to focus on: a navigation map rather than full code tutorial",
+      "file": ".cursor/skills/lexical/references/add-filter-playbook.md",
+      "lineNumber": 238
+    },
+    {
+      "title": "Consider putting the checklist on top of everything else. Since this is your way to enforce the r...",
+      "text": "Consider putting the checklist on top of everything else. Since this is your way to enforce the right workflow, checklists and agents, if you will. By putting it at the beginning, it would get more attention by the LLM, and from that point you are guarded that any desired step will indeed happen",
+      "file": ".cursor/skills/lexical/references/lexical-react-plugins.md",
+      "lineNumber": 57
+    },
+    {
+      "title": "Again, my concern about too much information in a detached copy of the code. Could we suggest her...",
+      "text": "Again, my concern about too much information in a detached copy of the code. Could we suggest here some grep pattern to identify plugin types?",
+      "file": ".cursor/skills/lexical/references/lexical-react-plugins.md",
+      "lineNumber": 29
+    },
+    {
+      "title": "Is it better to put an example here instead of referring to some good example in the code? From t...",
+      "text": "Is it better to put an example here instead of referring to some good example in the code? From the code, an agent can explore further and realize many more patterns and information",
+      "file": ".cursor/skills/lexical/references/lexical-react-plugins.md",
+      "lineNumber": 7
+    },
+    {
+      "title": "Aren't we duplicating here the information from other reference documents? You may put here a ref...",
+      "text": "Aren't we duplicating here the information from other reference documents? You may put here a reference link to the skill, but at the same time keep the AGENTS.md focused on high-level architecture commands and pointers only",
+      "file": ".cursor/skills/lexical/SKILL.md",
+      "lineNumber": 61
+    }
+  ],
   "sourceCounts": {
-    "yoniReviewEvents": 0,
-    "yoniPrComments": 1
+    "yoniReviewEvents": 1,
+    "yoniReviewComments": 11,
+    "yoniIssueComments": 1
   },
   "files": [
     {
@@ -75,5 +143,13 @@
       "additions": 5,
       "deletions": 1
     }
-  ]
+  ],
+  "cursorArtifactFiles": [
+    ".cursor/skills/lexical/SKILL.md",
+    ".cursor/skills/lexical/references/add-filter-playbook.md",
+    ".cursor/skills/lexical/references/lexical-react-plugins.md",
+    ".cursor/skills/lexical/references/matching-engine.md",
+    ".cursor/skills/lexical/references/paste-pipeline.md"
+  ],
+  "lastRefreshed": "2026-07-05"
 }

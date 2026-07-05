@@ -37,7 +37,8 @@
   "findings": [],
   "sourceCounts": {
     "yoniReviewEvents": 0,
-    "yoniPrComments": 0
+    "yoniReviewComments": 0,
+    "yoniIssueComments": 0
   },
   "files": [
     {
@@ -45,5 +46,7 @@
       "additions": 7,
       "deletions": 0
     }
-  ]
+  ],
+  "cursorArtifactFiles": [],
+  "lastRefreshed": "2026-07-05"
 }
