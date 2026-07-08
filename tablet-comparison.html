@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מסי המלך</title>
+<style>
+  :root{
+    --bg: #f5f1e8;
+    --ink: #1f2420;
+    --xiaomi: #ff6b35;
+    --xiaomi-soft: #fff1ea;
+    --samsung: #1560bd;
+    --samsung-soft: #eaf2fc;
+    --line: #ded6c4;
+    --win: #2e7d4f;
+    --lose: #b3552f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", "Heebo", Arial, sans-serif;
+    padding: 1.25rem 0.9rem 3rem;
+    line-height: 1.5;
+  }
+  .wrap{ max-width: 720px; margin: 0 auto; }
+  header{ text-align:center; margin-bottom: 1.5rem; }
+  .giant-title{
+    font-size: clamp(3.2rem, 16vw, 6rem); font-weight: 900; text-align: center;
+    line-height: 1; margin: 0.4rem 0 1.6rem; letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  header .eyebrow{
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #8a8271; font-weight: 700; margin-bottom: 0.4rem;
+  }
+  header h1{
+    font-size: 1.5rem; font-weight: 800; line-height: 1.25;
+  }
+  header p{ color:#5a5548; font-size: 0.88rem; margin-top: 0.4rem; }
+
+  .vs-row{
+    display:flex; align-items:center; gap: 0.6rem;
+    margin: 1.4rem 0 1rem;
+  }
+  .card{
+    flex:1; border-radius: 14px; padding: 0.9rem 0.8rem;
+    border: 1px solid var(--line);
+  }
+  .card.xiaomi{ background: var(--xiaomi-soft); border-color:#ffd6c2; }
+  .card.samsung{ background: var(--samsung-soft); border-color:#c7dcf5; }
+  .card .brand{ font-size: 0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+  .card.xiaomi .brand{ color: var(--xiaomi); }
+  .card.samsung .brand{ color: var(--samsung); }
+  .card .model{ font-size: 1.02rem; font-weight: 800; margin-top: 0.15rem; }
+  .card .price{ font-size: 1.35rem; font-weight: 800; margin-top: 0.5rem; }
+  .card .pricenote{ font-size: 0.72rem; color:#6b6558; margin-top:0.1rem; }
+  .vs-badge{
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--ink); color: var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 0.7rem; font-weight: 800; flex-shrink:0;
+  }
+
+  table{ width:100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.86rem; }
+  thead th{
+    text-align: center; font-size: 0.68rem; text-transform:uppercase;
+    letter-spacing: 0.04em; padding: 0.5rem 0.3rem; color:#6b6558;
+  }
+  thead th.spec{ text-align: right; }
+  thead th.xiaomi{ color: var(--xiaomi); }
+  thead th.samsung{ color: var(--samsung); }
+
+  tbody tr{ border-top: 1px solid var(--line); }
+  tbody td{ padding: 0.6rem 0.35rem; vertical-align: top; }
+  tbody td.spec{ font-weight: 700; font-size: 0.78rem; color:#4a463c; width: 26%; }
+  tbody td.val{ text-align:center; font-size: 0.82rem; width: 37%; }
+  tbody td.val.win{ font-weight: 700; color: var(--win); }
+
+  .section-title{
+    margin: 1.6rem 0 0.3rem; font-size: 0.95rem; font-weight: 800;
+    border-right: 4px solid var(--ink); padding-right: 0.5rem;
+  }
+
+  .verdict{
+    margin-top: 1.6rem; background: #fff; border: 1px solid var(--line);
+    border-radius: 14px; padding: 1rem;
+  }
+  .verdict h2{ font-size: 1rem; margin-bottom: 0.5rem; }
+  .verdict p{ font-size: 0.85rem; color:#3a362e; margin-bottom: 0.5rem; }
+  .verdict p:last-child{ margin-bottom:0; }
+  .verdict b{ color: var(--ink); }
+
+  .tag{
+    display:inline-block; font-size: 0.66rem; font-weight:700;
+    padding: 0.1rem 0.45rem; border-radius: 20px; margin-inline-start:0.3rem;
+  }
+  .tag.xiaomi{ background: var(--xiaomi-soft); color: var(--xiaomi); border:1px solid #ffd6c2;}
+  .tag.samsung{ background: var(--samsung-soft); color: var(--samsung); border:1px solid #c7dcf5;}
+
+  footer{ text-align:center; margin-top: 2rem; font-size: 0.7rem; color:#8a8271; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="giant-title">מסי המלך</div>
+
+  <header>
+    <div class="eyebrow">השוואת טאבלטים · נתונים מ-KSP · יולי 2026</div>
+    <h1>Redmi Pad 2 Pro <span style="color:#8a8271;font-weight:400;">מול</span> Galaxy Tab S10 Lite</h1>
+    <p>שני טאבלטים ב-KSP, פילוסופיה שונה לגמרי — מחירים ומק"טים מאומתים ישירות מהאתר</p>
+  </header>
+
+  <div class="vs-row">
+    <div class="card xiaomi">
+      <div class="brand">Xiaomi · יבואן רשמי (המילטון)</div>
+      <div class="model">Redmi Pad 2 Pro 12.1"<br>8GB+256GB · Wi-Fi · כסוף</div>
+      <div class="price">₪1,499</div>
+      <div class="pricenote">מק"ט KSP: 377205 · אילת: ₪1,270 · כולל מקלדת מקורית</div>
+    </div>
+    <div class="vs-badge">VS</div>
+    <div class="card samsung">
+      <div class="brand">Samsung · יבואן מקביל</div>
+      <div class="model">Galaxy Tab S10 Lite 10.9"<br>6GB+128GB · Wi-Fi · אפור</div>
+      <div class="price">₪1,099</div>
+      <div class="pricenote">מק"ט KSP: 376986 · אילת: ₪931</div>
+    </div>
+  </div>
+  <p style="text-align:center; font-size:0.75rem; color:#6b6558; margin-top:-0.6rem; margin-bottom:0.8rem;">
+    שני הדפים נבדקו ישירות באתר KSP · שניהם עם 2 שנות אחריות
+  </p>
+
+  <div class="section-title">מסך וגוף</div>
+  <table>
+    <thead>
+      <tr><th class="spec">מפרט</th><th class="xiaomi">Redmi Pad 2 Pro</th><th class="samsung">Tab S10 Lite</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="spec">גודל מסך</td>
+        <td class="val win">12.1" Crystal-clear 2.5K</td>
+        <td class="val">10.9" TFT</td>
+      </tr>
+      <tr>
+        <td class="spec">רזולוציה</td>
+        <td class="val win">2560×1600 (249ppi)</td>
+        <td class="val">2112×1320 (WUXGA+)</td>
+      </tr>
+      <tr>
+        <td class="spec">קצב רענון</td>
+        <td class="val win">120Hz אדפטיבי (60/90/120)</td>
+        <td class="val">90Hz</td>
+      </tr>
+      <tr>
+        <td class="spec">בהירות</td>
+        <td class="val win">500 nits typ / 600 HBM</td>
+        <td class="val">לא צוין באתר</td>
+      </tr>
+      <tr>
+        <td class="spec">HDR / הגנת עין</td>
+        <td class="val win">Dolby Vision + תו תקן TÜV Rheinland</td>
+        <td class="val">לא צוין באתר</td>
+      </tr>
+      <tr>
+        <td class="spec">משקל</td>
+        <td class="val">610 גרם</td>
+        <td class="val win">524 גרם</td>
+      </tr>
+      <tr>
+        <td class="spec">עובי</td>
+        <td class="val">7.5 מ"מ</td>
+        <td class="val win">6.6 מ"מ</td>
+      </tr>
+      <tr>
+        <td class="spec">חומר גוף</td>
+        <td class="val win">מתכת פרימיום</td>
+        <td class="val">לא מפורט באתר</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">ביצועים וזיכרון</div>
+  <table>
+    <thead>
+      <tr><th class="spec">מפרט</th><th class="xiaomi">Redmi Pad 2 Pro</th><th class="samsung">Tab S10 Lite</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="spec">מעבד</td>
+        <td class="val win">Snapdragon 7s Gen 4 (4nm), 2.7GHz + Adreno 810</td>
+        <td class="val">8 ליבות (Exynos 1380)</td>
+      </tr>
+      <tr>
+        <td class="spec">RAM / אחסון (בדגם שנבדק)</td>
+        <td class="val win">8GB / 256GB</td>
+        <td class="val">6GB / 128GB</td>
+      </tr>
+      <tr>
+        <td class="spec">הרחבת אחסון</td>
+        <td class="val">כן, microSD עד 2TB</td>
+        <td class="val">כן, microSD עד 2TB</td>
+      </tr>
+      <tr>
+        <td class="spec">מערכת הפעלה</td>
+        <td class="val win">Android 15, HyperOS 2</td>
+        <td class="val">Android (גרסה לא מצוינת ב-KSP)</td>
+      </tr>
+      <tr>
+        <td class="spec">Wi-Fi / Bluetooth</td>
+        <td class="val win">Wi-Fi 6 · BT 5.4</td>
+        <td class="val">Wi-Fi 6 · BT 5.3</td>
+      </tr>
+      <tr>
+        <td class="spec">NFC</td>
+        <td class="val">לא מצוין</td>
+        <td class="val">לא</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">סוללה, קול ועט</div>
+  <table>
+    <thead>
+      <tr><th class="spec">מפרט</th><th class="xiaomi">Redmi Pad 2 Pro</th><th class="samsung">Tab S10 Lite</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="spec">סוללה</td>
+        <td class="val win">12,000mAh · טעינה הפוכה 27W (משמש כפאוור בנק)</td>
+        <td class="val">8,000mAh · עד 16 שעות וידאו</td>
+      </tr>
+      <tr>
+        <td class="spec">טעינה</td>
+        <td class="val win">33W, מתאם כלול בקופסה</td>
+        <td class="val">לא מצוין ב-KSP</td>
+      </tr>
+      <tr>
+        <td class="spec">רמקולים</td>
+        <td class="val win">4 רמקולים, Dolby Atmos + Hi-Res Audio</td>
+        <td class="val">לא מפורט ב-KSP</td>
+      </tr>
+      <tr>
+        <td class="spec">שקע 3.5 מ"מ</td>
+        <td class="val win">כן</td>
+        <td class="val">לא (רק USB-C)</td>
+      </tr>
+      <tr>
+        <td class="spec">עט דיגיטלי</td>
+        <td class="val">תמיכה בעט חכם — נמכר בנפרד</td>
+        <td class="val win">S Pen כלול בקופסה, לא זקוק לטעינה</td>
+      </tr>
+      <tr>
+        <td class="spec">מקלדת</td>
+        <td class="val win">מקלדת מקורית ארגונומית 64 מקשים <b>כלולה בערכה זו</b></td>
+        <td class="val">לא כלולה</td>
+      </tr>
+      <tr>
+        <td class="spec">מצלמות</td>
+        <td class="val">8MP אחורית + 8MP קדמית, זיהוי פנים</td>
+        <td class="val">8MP אחורית + 5MP קדמית</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">יבואן, אחריות ותכולת קופסה</div>
+  <table>
+    <thead>
+      <tr><th class="spec">מפרט</th><th class="xiaomi">Redmi Pad 2 Pro</th><th class="samsung">Tab S10 Lite</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="spec">סוג יבוא</td>
+        <td class="val win">יבואן רשמי — המילטון חשמל ואלקטרוניקה</td>
+        <td class="val">יבואן מקביל</td>
+      </tr>
+      <tr>
+        <td class="spec">אחריות</td>
+        <td class="val">שנתיים, שירות ע"י המילטון (08-6852100)</td>
+        <td class="val">שנתיים (לא מצוין מי נותן שירות)</td>
+      </tr>
+      <tr>
+        <td class="spec">תכולת קופסה</td>
+        <td class="val win">טאבלט, מקלדת מקורית, מטען 33W, כבל, סיכת הוצאה</td>
+        <td class="val">טאבלט, S Pen, כבל USB-C, סיכת הוצאה (ללא מטען מצוין)</td>
+      </tr>
+      <tr>
+        <td class="spec">אפשרויות תשלום</td>
+        <td class="val">עד 5 תשלומים ללא ריבית (כ-₪299/חודש)</td>
+        <td class="val">עד 4 תשלומים ללא ריבית (כ-₪274/חודש)</td>
+      </tr>
+      <tr>
+        <td class="spec">משלוח חינם הביתה</td>
+        <td class="val win">כן</td>
+        <td class="val win">כן</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="verdict">
+    <h2>מסקנה</h2>
+    <p><b>Redmi Pad 2 Pro</b><span class="tag xiaomi">₪1,499</span> — פער של ₪400 מול הסמסונג, אבל בהצעה הזו מקבלים גם <b>מקלדת מקורית כלולה</b> (שווה כמה מאות שקלים בנפרד), מסך גדול ואיכותי יותר (12.1" מול 10.9"), ביצועים חזקים משמעותית, סוללה כפולה כמעט, וחשוב לא פחות — <b>יבוא רשמי</b> עם אחריות ושירות מסודר מול המילטון.</p>
+    <p><b>Galaxy Tab S10 Lite</b><span class="tag samsung">₪1,099</span> — זול יותר, קל ודק יותר, ומגיע עם <b>S Pen כלול</b> שלא צריך טעינה. אבל זהו <b>יבוא מקביל</b> — כדאי לבדוק מראש מי בפועל נותן שירות ואחריות, בניגוד ל-Xiaomi שמצוין עליו במפורש שירות ע"י המילטון.</p>
+    <p>מבחינת "כסף תמורת ציוד" — ה-Redmi Pad 2 Pro במחיר הזה עם המקלדת כלולה נראה כמו העסקה המשתלמת יותר, בתנאי שהמסך הגדול והמעבד החזק אכן חשובים לך. אם מה שקובע הוא ה-S Pen, המשקל הקל, והביטחון של שם Samsung הגלובלי (למרות היבוא המקביל) — ה-Tab S10 Lite הוא הבחירה הבטוחה והזולה יותר.</p>
+    <p style="margin-top:0.8rem; font-size:0.78rem;">
+      🔗 <a href="https://ksp.co.il/mob/item/417496" target="_blank" style="color:var(--xiaomi);">Redmi Pad 2 Pro ב-KSP</a>
+      &nbsp;·&nbsp;
+      🔗 <a href="https://ksp.co.il/mob/item/416501" target="_blank" style="color:var(--samsung);">Tab S10 Lite ב-KSP</a>
+    </p>
+  </div>
+
+  <footer>מחירים, מק"טים ומפרטים נאספו ישירות מדפי המוצר ב-KSP · יולי 2026 · המחירים עשויים להשתנות</footer>
+</div>
+</body>
+</html>
