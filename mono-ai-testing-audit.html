@@ -1,0 +1,1795 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>mono-ai — Architecture & Testing Audit</title>
+<style>
+  :root{
+    --paper:#F7F8F6;
+    --surface:#FFFFFF;
+    --surface-2:#EEF1EE;
+    --ink:#16211F;
+    --ink-2:#40514D;
+    --ink-3:#6B7C77;
+    --rule:#D6DDD9;
+    --rule-2:#E7ECE9;
+    --ledger:#1F6F6B;
+    --ledger-soft:#E2EFED;
+    --seal:#B23A2E;
+    --seal-soft:#F6E4E1;
+    --amber:#9A6A18;
+    --amber-soft:#F6EDDC;
+    --code-bg:#F2F5F3;
+    --shadow:0 1px 2px rgba(22,33,31,.06), 0 8px 24px -16px rgba(22,33,31,.24);
+    --serif: "Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono: ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#0F1614;
+      --surface:#151E1C;
+      --surface-2:#1B2523;
+      --ink:#E6EDEA;
+      --ink-2:#AFBFBA;
+      --ink-3:#7E908B;
+      --rule:#2A3835;
+      --rule-2:#212D2B;
+      --ledger:#5FBDB2;
+      --ledger-soft:#183430;
+      --seal:#E4796A;
+      --seal-soft:#38211E;
+      --amber:#D6A552;
+      --amber-soft:#332A18;
+      --code-bg:#111A18;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0F1614; --surface:#151E1C; --surface-2:#1B2523;
+    --ink:#E6EDEA; --ink-2:#AFBFBA; --ink-3:#7E908B;
+    --rule:#2A3835; --rule-2:#212D2B;
+    --ledger:#5FBDB2; --ledger-soft:#183430;
+    --seal:#E4796A; --seal-soft:#38211E;
+    --amber:#D6A552; --amber-soft:#332A18;
+    --code-bg:#111A18;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+  }
+  :root[data-theme="light"]{
+    --paper:#F7F8F6; --surface:#FFFFFF; --surface-2:#EEF1EE;
+    --ink:#16211F; --ink-2:#40514D; --ink-3:#6B7C77;
+    --rule:#D6DDD9; --rule-2:#E7ECE9;
+    --ledger:#1F6F6B; --ledger-soft:#E2EFED;
+    --seal:#B23A2E; --seal-soft:#F6E4E1;
+    --amber:#9A6A18; --amber-soft:#F6EDDC;
+    --code-bg:#F2F5F3;
+    --shadow:0 1px 2px rgba(22,33,31,.06), 0 8px 24px -16px rgba(22,33,31,.24);
+  }
+
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px 96px;}
+
+  /* ---------- masthead ---------- */
+  .masthead{padding:56px 0 28px; border-bottom:2px solid var(--ink);}
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ledger); display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+  }
+  .eyebrow span:not(:last-child)::after{content:" ·"; color:var(--ink-3);}
+  h1{
+    font-family:var(--serif); font-weight:600; font-size:clamp(34px,5vw,52px);
+    line-height:1.1; letter-spacing:-.015em; margin:14px 0 10px; text-wrap:balance;
+  }
+  .standfirst{
+    font-family:var(--serif); font-size:clamp(17px,2vw,20px); color:var(--ink-2);
+    max-width:62ch; line-height:1.5;
+  }
+  .stat-row{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr));
+    gap:1px; background:var(--rule); border:1px solid var(--rule);
+    margin-top:32px; border-radius:2px; overflow:hidden;
+  }
+  .stat{background:var(--surface); padding:14px 16px;}
+  .stat dt{
+    font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); margin-bottom:6px;
+  }
+  .stat dd{font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.2;}
+  .stat dd small{font-size:12px; font-weight:400; color:var(--ink-3); display:block; margin-top:3px; font-variant-numeric:normal;}
+  .stat.alarm dd{color:var(--seal);}
+  .stat.good dd{color:var(--ledger);}
+
+  /* ---------- tabs ---------- */
+  .tabs{
+    position:sticky; top:0; z-index:20; background:var(--paper);
+    border-bottom:1px solid var(--rule); display:flex; gap:2px;
+    overflow-x:auto; margin-bottom:40px; scrollbar-width:thin;
+  }
+  .tab{
+    appearance:none; background:none; border:0; cursor:pointer;
+    font-family:var(--mono); font-size:12px; letter-spacing:.04em;
+    color:var(--ink-3); padding:16px 14px; white-space:nowrap;
+    border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s;
+  }
+  .tab:hover{color:var(--ink);}
+  .tab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--ledger); font-weight:600;}
+  .tab:focus-visible{outline:2px solid var(--ledger); outline-offset:-2px;}
+  .tab .num{color:var(--ledger); margin-right:7px;}
+  .panel[hidden]{display:none;}
+
+  /* ---------- typography ---------- */
+  h2{
+    font-family:var(--serif); font-size:29px; font-weight:600; letter-spacing:-.01em;
+    margin:56px 0 6px; padding-top:22px; border-top:1px solid var(--rule); text-wrap:balance;
+  }
+  h2:first-of-type{margin-top:0; border-top:0; padding-top:0;}
+  h3{font-family:var(--sans); font-size:17px; font-weight:650; margin:32px 0 10px; letter-spacing:-.005em;}
+  h4{font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); margin:26px 0 10px;}
+  p{max-width:68ch; margin:0 0 16px; color:var(--ink-2);}
+  p strong{color:var(--ink); font-weight:650;}
+  .lede{font-size:17px; color:var(--ink-2);}
+  ul,ol{max-width:68ch; margin:0 0 18px; padding-left:20px; color:var(--ink-2);}
+  li{margin-bottom:7px;}
+  li strong{color:var(--ink);}
+  a{color:var(--ledger); text-decoration:underline; text-underline-offset:2px;}
+  code{
+    font-family:var(--mono); font-size:.87em; background:var(--code-bg);
+    padding:1px 5px; border-radius:3px; color:var(--ink); border:1px solid var(--rule-2);
+  }
+  .sub{font-size:13px; color:var(--ink-3); font-family:var(--mono); margin-bottom:14px;}
+
+  /* ---------- blocks ---------- */
+  .card{
+    background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+    padding:22px 24px; margin:18px 0; box-shadow:var(--shadow);
+  }
+  .grid-2{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; margin:20px 0;}
+  .callout{
+    border-left:3px solid var(--seal); background:var(--seal-soft);
+    padding:16px 20px; margin:22px 0; border-radius:0 3px 3px 0;
+  }
+  .callout p:last-child{margin-bottom:0;}
+  .callout.note{border-left-color:var(--ledger); background:var(--ledger-soft);}
+  .callout.warn{border-left-color:var(--amber); background:var(--amber-soft);}
+  .callout h4{margin-top:0; color:var(--ink);}
+
+  figure{margin:22px 0;}
+  figure pre.mermaid{
+    background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+    padding:22px; overflow-x:auto; text-align:center;
+  }
+  figcaption{font-family:var(--mono); font-size:11px; color:var(--ink-3); margin-top:8px; letter-spacing:.03em;}
+
+  /* code samples */
+  .snippet{margin:16px 0; border:1px solid var(--rule); border-radius:3px; overflow:hidden; background:var(--surface);}
+  .snippet-head{
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    background:var(--surface-2); border-bottom:1px solid var(--rule); padding:8px 14px;
+    font-family:var(--mono); font-size:11px; color:var(--ink-3);
+  }
+  .snippet-head .path{color:var(--ink-2);}
+  .snippet-head .tag{
+    color:var(--ledger); border:1px solid var(--ledger); border-radius:2px;
+    padding:1px 6px; font-size:10px; letter-spacing:.06em; text-transform:uppercase;
+  }
+  .snippet pre{
+    margin:0; padding:16px; overflow-x:auto; background:var(--code-bg);
+    font-family:var(--mono); font-size:12.5px; line-height:1.6; color:var(--ink);
+  }
+  .snippet pre code{background:none; border:0; padding:0; font-size:inherit;}
+
+  /* tables */
+  .table-scroll{overflow-x:auto; margin:18px 0; border:1px solid var(--rule); border-radius:3px; background:var(--surface);}
+  table{border-collapse:collapse; width:100%; font-size:14px;}
+  th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--rule-2); vertical-align:top;}
+  thead th{
+    background:var(--surface-2); font-family:var(--mono); font-size:10.5px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-3); font-weight:500; white-space:nowrap;
+    border-bottom:1px solid var(--rule);
+  }
+  tbody tr:last-child td{border-bottom:0;}
+  td{color:var(--ink-2);}
+  td strong{color:var(--ink);}
+  td code{font-size:12px; white-space:nowrap;}
+  .num-col{font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap;}
+  .method{
+    font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.06em;
+    padding:2px 6px; border-radius:2px; background:var(--ledger-soft); color:var(--ledger);
+    border:1px solid var(--rule);
+  }
+  .method.post{background:var(--amber-soft); color:var(--amber);}
+
+  /* status pills */
+  .pill{
+    display:inline-block; font-family:var(--mono); font-size:10px; font-weight:600;
+    letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:99px;
+    white-space:nowrap; border:1px solid transparent;
+  }
+  .pill.ok{background:var(--ledger-soft); color:var(--ledger); border-color:var(--ledger);}
+  .pill.partial{background:var(--amber-soft); color:var(--amber); border-color:var(--amber);}
+  .pill.bad{background:var(--seal-soft); color:var(--seal); border-color:var(--seal);}
+  .pill.na{background:var(--surface-2); color:var(--ink-3); border-color:var(--rule);}
+
+  /* findings */
+  .finding{
+    background:var(--surface); border:1px solid var(--rule); border-left:4px solid var(--rule);
+    border-radius:3px; padding:20px 24px; margin:16px 0; box-shadow:var(--shadow);
+  }
+  .finding.critical{border-left-color:var(--seal);}
+  .finding.high{border-left-color:var(--seal);}
+  .finding.medium{border-left-color:var(--amber);}
+  .finding.low{border-left-color:var(--ink-3);}
+  .finding.win{border-left-color:var(--ledger);}
+  .finding-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:8px;}
+  .rank{
+    font-family:var(--mono); font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums;
+  }
+  .finding h3{margin:0; flex:1; min-width:240px; font-size:18px;}
+  .finding .meta{
+    font-family:var(--mono); font-size:11px; color:var(--ink-3);
+    display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; padding-top:12px;
+    border-top:1px dashed var(--rule);
+  }
+  .finding .meta b{color:var(--ink-2); font-weight:600;}
+
+  /* executive-summary findings */
+  .finding.vhigh{border-left-color:var(--seal);}
+  .finding .alt{
+    margin:14px 0 0; padding:10px 14px; border-radius:3px;
+    background:var(--ledger-soft); color:var(--ink); font-size:14px; max-width:none;
+  }
+  .finding .alt b{color:var(--ledger);}
+  .finding .lines{max-width:72ch;}
+  .finding .lines strong{color:var(--ink);}
+  .finding details{margin-top:14px; border-top:1px dashed var(--rule); padding-top:12px;}
+  .finding details summary{
+    cursor:pointer; font-family:var(--mono); font-size:11px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--ledger); list-style:none; user-select:none;
+  }
+  .finding details summary::-webkit-details-marker{display:none;}
+  .finding details summary::before{content:"▸ "; color:var(--ledger);}
+  .finding details[open] summary::before{content:"▾ ";}
+  .finding details summary:hover{color:var(--ink);}
+  .finding details .more{margin-top:12px;}
+  .finding details .more p:last-child{margin-bottom:0;}
+  .pill.vhigh{background:var(--seal); color:#fff; border-color:var(--seal);}
+
+  /* scorecard */
+  .score-row{
+    display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--rule-2);
+  }
+  .score-row:last-child{border-bottom:0;}
+  .score-name{flex:1; min-width:180px; font-weight:600; color:var(--ink); font-size:14px;}
+  .score-name small{display:block; font-weight:400; color:var(--ink-3); font-size:12.5px; margin-top:2px;}
+  .meter{width:110px; height:7px; background:var(--surface-2); border-radius:99px; overflow:hidden; flex-shrink:0; border:1px solid var(--rule-2);}
+  .meter i{display:block; height:100%; background:var(--ledger); border-radius:99px;}
+  .meter i.low{background:var(--seal);}
+  .meter i.mid{background:var(--amber);}
+  .score-val{
+    font-family:var(--mono); font-size:13px; font-variant-numeric:tabular-nums;
+    width:44px; text-align:right; flex-shrink:0; color:var(--ink);
+  }
+  .grade{
+    display:inline-flex; align-items:baseline; gap:10px; font-family:var(--serif);
+    font-size:44px; font-weight:600; color:var(--seal); line-height:1;
+  }
+  .grade small{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);}
+
+  footer{
+    margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
+    font-family:var(--mono); font-size:11px; color:var(--ink-3);
+    display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  @media (prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important;}}
+  @media (max-width:640px){
+    .wrap{padding:0 16px 64px;}
+    h2{font-size:24px;}
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>mono-ai</span><span>Global-Slice</span><span>branch develop</span><span>14 Jul 2026</span>
+    </div>
+    <h1>Architecture &amp; Testing Audit</h1>
+    <p class="standfirst">An AI pipeline that turns equity paperwork into structured, matched, evidence-linked records — and a test suite that covers the arithmetic beautifully while leaving the machinery around it almost entirely unwatched.</p>
+    <dl class="stat-row">
+      <div class="stat"><dt>Test files</dt><dd>33<small>192 functions</small></dd></div>
+      <div class="stat good"><dt>Suite runtime</dt><dd>6.4<small>seconds, 219 passing</small></dd></div>
+      <div class="stat alarm"><dt>HTTP route tests</dt><dd>0<small>of 20 routes</small></dd></div>
+      <div class="stat alarm"><dt>LLM eval tests</dt><dd>0<small>no golden set</small></dd></div>
+      <div class="stat alarm"><dt>Tests run in CI</dt><dd>0<small>no pytest job</small></dd></div>
+      <div class="stat"><dt>Service coverage</dt><dd>0.6<small>tests per 1k LOC</small></dd></div>
+    </dl>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Report sections">
+    <button class="tab" role="tab" id="tab-0" aria-controls="panel-0" aria-selected="true"><span class="num">00</span>Executive summary</button>
+    <button class="tab" role="tab" id="tab-1" aria-controls="panel-1" aria-selected="false"><span class="num">01</span>The project</button>
+    <button class="tab" role="tab" id="tab-2" aria-controls="panel-2" aria-selected="false"><span class="num">02</span>Test types</button>
+    <button class="tab" role="tab" id="tab-3" aria-controls="panel-3" aria-selected="false"><span class="num">03</span>Critique</button>
+    <button class="tab" role="tab" id="tab-4" aria-controls="panel-4" aria-selected="false"><span class="num">04</span>vs. the guide</button>
+    <button class="tab" role="tab" id="tab-5" aria-controls="panel-5" aria-selected="false"><span class="num">05</span>vs. rules/</button>
+    <button class="tab" role="tab" id="tab-6" aria-controls="panel-6" aria-selected="false"><span class="num">06</span>The skill</button>
+    <button class="tab" role="tab" id="tab-7" aria-controls="panel-7" aria-selected="false"><span class="num">07</span>Coverage</button>
+  </nav>
+
+  <!-- ================= PANEL 0 — EXECUTIVE SUMMARY ================= -->
+  <section class="panel" id="panel-0" role="tabpanel" aria-labelledby="tab-0">
+
+    <h2>Executive summary</h2>
+    <p class="lede">The main findings, one card each. Every card states the issue in two lines and a suggested alternative &mdash; open a card for the full detail.</p>
+
+    <div class="finding win">
+      <div class="finding-head"><h3>What's great</h3><span class="pill ok">Strengths</span></div>
+      <ul class="lines" style="margin-top:4px;">
+        <li>Most of the unit tests tackle critical decisions.</li>
+        <li>The chosen testing tooling is modern and great.</li>
+        <li>We already have mocks for the second- and third-party services.</li>
+        <li>Overall, great first steps toward comprehensive tests.</li>
+      </ul>
+      <p class="lines" style="margin-bottom:0;">Note: due to time constraints, the testing skill &mdash; the doctrine the code actually follows &mdash; was not reviewed as part of this audit.</p>
+    </div>
+
+    <div class="finding vhigh">
+      <div class="finding-head"><h3>The testing strategy asks for too much</h3><span class="pill vhigh">Severity: Very high</span></div>
+      <p class="lines">We use six different kinds of tests today &mdash; and that is before adding AI evaluations. Each kind needs its own tools, its own fakes, and its own rules. That is a lot of technique and expertise to ask of every developer, and every AI agent, that writes a test. The mental model is heavy, and heavy models get followed loosely.</p>
+      <p class="alt"><b>Alternative:</b> write only three kinds of tests &mdash; <b>unit</b>, <b>component</b>, and <b>evaluation</b>. That is the minimum this project needs, and it is a model anyone can hold in their head.</p>
+      <details>
+        <summary>More detail</summary>
+        <div class="more">
+          <p>The six kinds in the repo today, each with a different shape and different fakes: pure engine unit tests, LLM-port wiring tests, py_commons infrastructure tests, component tests, one full-job use-case test, and CLI tests. A contributor has to learn which one to reach for, where it lives, and what it is allowed to assert &mdash; six times over.</p>
+          <p>Three types cover the real risk with far less to learn:</p>
+          <ul>
+            <li><b>Unit</b> &mdash; for pure logic with real branching (the scoring and equity maths).</li>
+            <li><b>Component</b> &mdash; the main tier: enter through the API, run against real infrastructure, check every exit door.</li>
+            <li><b>Evaluation</b> &mdash; for the one thing unit and component tests cannot judge: whether the AI's answers are actually good.</li>
+          </ul>
+          <p>Fewer types means faster onboarding, a rule an agent can follow reliably, and less test code to maintain.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="finding vhigh">
+      <div class="finding-head"><h3>Our main tests cut through the middle of the code</h3><span class="pill vhigh">Severity: Very high</span></div>
+      <p class="lines">Our component tests start halfway inside the code, not at the front door. They call inner functions directly, run on fake infrastructure, and check only one or two of the code's outputs. So the real entry point &mdash; the API &mdash; and most of the real exits are never exercised.</p>
+      <p class="alt"><b>Alternative:</b> enter through the API, run against real infrastructure in a docker-compose (a real Mongo and Redis), and assert on <b>all</b> the exit doors: the response, the saved data, outgoing calls, and queued messages.</p>
+      <details>
+        <summary>More detail</summary>
+        <div class="more">
+          <p>A good component test drives the whole component as a customer would &mdash; in through the HTTP request, out through every observable effect &mdash; with only truly external systems (the LLM) faked. Ours do the opposite:</p>
+          <ul>
+            <li>They import a subset of folders (extractors, persistence, localization) and call those functions directly.</li>
+            <li>They hand the code an already-parsed answer, use an in-memory fake Mongo, and never start the web server.</li>
+            <li>They assert on a small slice of the output, so most of the code's real exit doors go unchecked.</li>
+          </ul>
+          <p>The cost is concrete: FastAPI routing, request validation, and error handling are skipped entirely (20 routes, 0 tests), and comparison plus external-fetch &mdash; half the pipeline &mdash; never runs in any test. When the test sits in the middle of the code, the parts most likely to break are the parts it can never see.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="finding vhigh">
+      <div class="finding-head"><h3>No real database is used in tests</h3><span class="pill vhigh">Severity: Very high</span></div>
+      <p class="lines">Our tests run against a fake Mongo that does not support everything real Mongo does. To fill the gaps we wrote our own copy of Mongo's query logic inside the test setup, so the tests check our idea of Mongo instead of Mongo itself.</p>
+      <p class="alt"><b>Alternative:</b> use a real Mongo in a docker-compose (a throwaway container), and install the production schema the production way.</p>
+      <details>
+        <summary>More detail</summary>
+        <div class="more">
+          <p>This can go wrong in two ways: the extra query logic is more test code to maintain, and tests can pass on things real Mongo would reject &mdash; a false sense of safety.</p>
+          <p>The screen customers actually read is built from many stitched-together queries, and all of them are only checked against our copy of Mongo, never the real one. Rules that real Mongo enforces &mdash; required fields and unique values &mdash; are not enforced by the fake at all, so a test can save data that production would refuse.</p>
+          <p>A real database in the test would remove the hand-written logic and add only a few seconds to the run.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-head"><h3>There are no AI evaluations</h3><span class="pill partial">Severity: High</span></div>
+      <p class="lines">Nothing measures whether the AI actually pulls the right data out of a document. Our tests check that we handle a correct answer correctly &mdash; they never check that the model returns a correct answer in the first place. So we know the code is correct; we do not know the product is good.</p>
+      <p class="alt"><b>Alternative:</b> add an evaluation suite &mdash; for example <code>DeepEval</code> or a LangChain-based harness &mdash; with labelled documents and proper evaluation practices, run on a schedule.</p>
+      <details>
+        <summary>More detail</summary>
+        <div class="more">
+          <p>Real confidence in an AI product is about <b>quality</b>, not only correctness. Correctness is "the code did what the code says." Quality is "the extraction was right." Only evaluations measure the second one: golden documents, the expected extraction for each, a score, and a threshold that has to be met &mdash; run nightly rather than on every pull request, because it costs money and it varies run to run.</p>
+          <p>Without it, prompt edits and model swaps are ship-and-pray. The team already pins <code>claude-opus-4-8</code> for one document type on the belief that only it extracts dense tables reliably &mdash; and nothing would tell them if that stopped being true, or if a cheaper model caught up. Start small: one document type, ten labelled documents, field-level match, a score posted to Slack.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-head"><h3>200 tests, but they catch about a third of bugs</h3><span class="pill partial">Severity: High</span></div>
+      <p class="lines">We ran mutation testing &mdash; deliberately break one line of code, then see if any test fails. Out of thousands of planted bugs, only about a third were caught. Some layers are tested well; others are barely tested at all. This is worth a closer look.</p>
+
+      <div style="margin:16px 0 4px;">
+        <div style="display:flex;height:24px;border-radius:4px;overflow:hidden;border:1px solid var(--rule);" role="img" aria-label="Caught 32.5 percent, not tested 47.8 percent, tested but slipped through 19.7 percent">
+          <i style="width:32.5%;background:var(--ledger);"></i>
+          <i style="width:47.8%;background:var(--seal);"></i>
+          <i style="width:19.7%;background:var(--amber);"></i>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--ink-3);">
+          <span style="display:flex;align-items:center;gap:7px;"><i style="width:10px;height:10px;border-radius:2px;background:var(--ledger);display:inline-block;flex:none;"></i>Caught <b style="color:var(--ink);">1,271 &middot; 32.5%</b></span>
+          <span style="display:flex;align-items:center;gap:7px;"><i style="width:10px;height:10px;border-radius:2px;background:var(--seal);display:inline-block;flex:none;"></i>Never tested <b style="color:var(--ink);">1,869 &middot; 47.8%</b></span>
+          <span style="display:flex;align-items:center;gap:7px;"><i style="width:10px;height:10px;border-radius:2px;background:var(--amber);display:inline-block;flex:none;"></i>Tested, slipped through <b style="color:var(--ink);">771 &middot; 19.7%</b></span>
+        </div>
+      </div>
+
+      <p class="alt"><b>Alternative:</b> this number is really a symptom &mdash; the other cards here are the cure. A more realistic strategy (tests through the API, real infrastructure, and evaluations) is what moves it up.</p>
+      <details>
+        <summary>More detail</summary>
+        <div class="more">
+          <p>A planted bug is missed for one of two reasons: the line is <b>never run</b> by any test (48% of cases), or the line runs but the checks are <b>too weak to notice</b> the change (20%). Both are visible in the Coverage tab.</p>
+          <p>The gap is very uneven across the codebase &mdash; the pure logic is tested well, the AI and integration layers barely at all:</p>
+          <ul>
+            <li><code>py_commons</code> &mdash; <b>75%</b> caught</li>
+            <li><code>comparison_engine</code> &mdash; <b>71%</b> caught</li>
+            <li><code>ai_documents</code> (the main service) &mdash; <b>29%</b> caught</li>
+            <li><code>equity_domain</code> &mdash; <b>6%</b> caught</li>
+          </ul>
+          <p>A handful of real bugs the current suite would let through:</p>
+          <ul>
+            <li>A file exactly at the upload size limit would be accepted when it should be rejected &mdash; no test checks the exact boundary.</li>
+            <li>A database lookup could search for the wrong thing (an empty query) and stay green.</li>
+            <li>The classifier could silently drop its temperature setting and no test would fail.</li>
+            <li>A whole branch of the score explanation could return nothing, unnoticed.</li>
+          </ul>
+          <p>See the <b>Coverage</b> tab for the full mutation-testing breakdown.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-head"><h3>Outside services are faked too loosely</h3><span class="pill partial">Severity: High</span></div>
+      <p class="lines">We fake outside services inside our own code instead of at the network level, so the code that actually builds and sends the request never runs in a test. Slice Tartlet, a sister service we depend on, is swapped out as a plain function rather than a real call over the wire.</p>
+      <p class="alt"><b>Alternative:</b> fake these services at the network level (<code>respx</code> is a good candidate), and add a typed check (for example from their OpenAPI spec) that flags any drift between their API and ours.</p>
+      <details>
+        <summary>More detail</summary>
+        <div class="more">
+          <p>When we fake at the network level, more of our own code is part of the test &mdash; the request building, the response parsing, the error handling all run for real. Faking a function skips exactly the layer that tends to break.</p>
+          <p>The bigger risk is drift: if the other team renames a field or changes a response, we only find out in production, and matching quietly gets worse without any error. A typed contract, generated from their API description, would catch that change in a test instead.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-head"><h3>Tests can be simpler</h3><span class="pill partial">Severity: High</span></div>
+      <p class="lines">Some tests are long and check the result one field at a time, which hides what the test is really about. Two things make them shorter and clearer: shared <b>data factories</b> for the inputs, and comparing the <b>whole result</b> at once.</p>
+      <p class="alt"><b>Alternative:</b> add data factories for test inputs, compare the whole result to one expected object, and read data back through the API rather than straight from the database.</p>
+      <details>
+        <summary>More detail</summary>
+        <div class="more">
+          <p>A few tests run to 50&ndash;75 lines, most of it building the input by hand before a long list of field checks. The point of the test is buried under that setup. The field-by-field style looks like this:</p>
+          <div class="snippet">
+            <div class="snippet-head"><span class="path">services/ai_documents/tests/test_extractors/test_equity_pool_event_extractor.py:36</span><span class="tag">field-by-field</span></div>
+            <pre><code>assert initial.initial_pool_sizes[0].pool_size == 1_434_718
+assert increase.pool_size_changes[0].direction == PoolChangeDirection.INCREASE
+assert increase.pool_size_changes[0].resulting_total_pool_size == 9_072_795</code></pre>
+          </div>
+          <h4>Missing: data factories</h4>
+          <p>The team's own <code>rules/the-test-data.md</code> describes a <b>data factory</b> &mdash; one builder per data type (e.g. <code>build_finding</code>) that returns realistic default data using <code>faker</code>, and lets each test override only the fields it cares about. We don't have them: no <code>factories.py</code>, no data folder, and <code>faker</code> is not installed.</p>
+          <p>With factories, a test names only the two or three fields that matter to it &mdash; the "smoking gun" &mdash; and everything else is a sensible default. The 60-line setup collapses to a couple of lines, and the reader sees instantly what the test is actually about.</p>
+          <h4>Better pattern: don't reach into the database</h4>
+          <p>To check what was saved, our tests query the database directly, asserting on raw collection and field names:</p>
+          <div class="snippet">
+            <div class="snippet-head"><span class="path">services/ai_documents/tests/test_use_cases/test_extractors_use_case.py:35</span><span class="tag">white-box coupling</span></div>
+            <pre><code>db = mock_environment.db
+document_file = await db["document_files"].find_one({"original_document_id": "board.pdf"})
+assert document_file["file_hash"] == hashlib.md5(mock_environment.pdf_bytes).hexdigest()</code></pre>
+          </div>
+          <p>This is white-box coupling: the test is tied to how data is stored internally, so renaming a collection or a field breaks the test even though nothing actually changed. The rules say so too (<code>testing-with-database.md</code> G.9). Read the result back through a higher level &mdash; a service or the API &mdash; and the test checks behaviour, not internals.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="finding medium">
+      <div class="finding-head"><h3>Some unit tests are filler &mdash; they test our wiring, not our logic</h3><span class="pill partial">Severity: Medium</span></div>
+      <p class="lines">A few tests copy what the code does, then check the code matches the copy. That always passes &mdash; even when the code is wrong. It is low-value filler: it inflates our coverage numbers and adds maintenance, while catching nothing.</p>
+      <p class="alt"><b>Alternative:</b> write unit tests only for real decision logic &mdash; the heavy algorithms &mdash; not for the plumbing and wiring of the system.</p>
+      <details>
+        <summary>More detail</summary>
+        <div class="more">
+          <p>The clearest case rebuilds a hash the exact same way production does, then asserts the two are equal:</p>
+          <div class="snippet">
+            <div class="snippet-head"><span class="path">services/ai_documents/tests/test_extractors/test_multi_type_extraction.py:139</span><span class="tag">always passes</span></div>
+            <pre><code>board_approval_hashes = [
+    extractor_class(llm_providers_gateway=mock_llm_gateway).get_config_snapshot_hash()
+    for extractor_class in get_extractor_classes(DocumentType.BOARD_APPROVAL)
+]
+assert adapter.get_config_snapshot_hash(DocumentType.BOARD_APPROVAL) == compute_md5(
+    "\n".join(board_approval_hashes).encode())</code></pre>
+          </div>
+          <p>This passes for <b>any</b> version of the code, including a broken one, because both sides run the same logic. The thing that actually matters &mdash; the hash <b>changes</b> when a prompt changes, and <b>stays the same</b> when nothing changes &mdash; is never checked.</p>
+          <p>Two concrete costs, both real:</p>
+          <ul>
+            <li><b>It inflates coverage.</b> The test runs the production lines, so our coverage tool marks them "tested" &mdash; a green number that hides a genuine gap. Mutation testing shows the same lines let faults through.</li>
+            <li><b>It adds maintenance.</b> Because it mirrors production, every change to the hashing has to be copied into the test too &mdash; effort spent on a test that can never fail for the right reason.</li>
+          </ul>
+          <p>A pinned golden hash plus one "change the prompt, expect the hash to change" test would be more valuable and half the size. The rule of thumb: unit-test the heavy decisions, never the wiring.</p>
+        </div>
+      </details>
+    </div>
+
+  </section>
+
+  <!-- ================= PANEL 1 ================= -->
+  <section class="panel" id="panel-1" role="tabpanel" aria-labelledby="tab-1" hidden>
+
+    <h2>What this system does</h2>
+    <p class="lede">mono-ai is the document-intelligence pipeline behind Global-Slice's equity and cap-table platform. Customers hold piles of legal paperwork that describe who owns what: grant letters, exercise notices, share certificates, board approvals, equity plans, share registers, secondary share-purchase agreements. That paperwork is the truth, but it is unstructured — and the equity platform needs rows in a database, not PDFs.</p>
+
+    <p>The service closes that gap in four moves. It <strong>classifies</strong> each document (what kind of paper is this?), <strong>extracts</strong> a typed, schema-validated record from it with an LLM, <strong>localizes</strong> every extracted field back to a bounding box on the PDF page so a human reviewer can see the evidence highlighted where it was found, and finally <strong>compares</strong> the extracted record against the customer's live equity entities — grants, shares, equity plans, vesting schedules, share classes — fetched from the internal system of record, a service called <strong>Slice Tartlet</strong>. The output of a job is a structured record, a ranked top-k list of candidate matches with scores, a set of bounding boxes, and flags such as "this PDF contains hidden text."</p>
+
+    <p>Around that core, an ops surface has grown. <code>POST /v1/link-audit</code> answers a reconciliation question: the human who linked this document to that grant — was that the AI's best match too? It returns a verdict of <em>confirmed</em>, <em>suspect</em>, or <em>no-match</em>. <code>POST /v1/score-explain</code> opens up any score and shows the per-field distance, weight, and contribution that produced it, optionally with an LLM-written narrative. There is also an XLSX export and a standalone table-normalization endpoint. In other words: the product is not just extraction, it is <em>auditable</em> extraction, and a good deal of the codebase exists to make the AI's decisions explainable to a human.</p>
+
+    <p>Architecturally it is one deployable service and five libraries, in a Python 3.12 <code>uv</code> workspace. The service (<code>services/ai_documents</code>) runs as <strong>three processes</strong>: a FastAPI API, a Taskiq worker, and a singleton reaper daemon. The libraries are split with real discipline — <code>comparison_engine</code>, <code>table_normalization</code>, and <code>field_localization_engine</code> are strictly pure, I/O-free, and port-injected; <code>equity_domain</code> layers the equity vocabulary on top of the generic comparison engine; and <code>py_commons</code> holds every piece of infrastructure (the LLM gateway, Mongo, GCS, Descope auth, Slack, OpenTelemetry). The layering is hexagonal and, notably, honest: every out-of-process dependency sits behind a Protocol in a <code>ports.py</code>, every concrete adapter lives under <code>integrations/</code>, and concretes are constructed in exactly one place — <code>core/containers_lifecycle.py</code>.</p>
+
+    <h2>Technologies</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4>Runtime &amp; web</h4>
+        <p>Python 3.12 · FastAPI · Uvicorn · Pydantic v2 (<code>pydantic-settings</code>) · <code>uv</code> workspace with a single root lockfile.</p>
+        <h4>Async work</h4>
+        <p>Taskiq over a Redis stream broker, with a Redis result backend. Redis-Streams auto-claim is deliberately disabled (a ~10-year idle timeout) so the custom reaper is the sole retry path.</p>
+      </div>
+      <div class="card">
+        <h4>AI</h4>
+        <p><code>claude-sonnet-4-6</code> for classification and most extraction; <code>claude-opus-4-8</code> only for secondary SPAs ("dense image tables that only opus extracts reliably"); <code>claude-haiku-4-5</code> for comparison string-distance and score narratives; <code>gemini-2.5-pro</code> exclusively for bounding-box vision work. Provider chain: Anthropic-on-Vertex, falling back to the Anthropic API.</p>
+        <h4>Data &amp; ops</h4>
+        <p>MongoDB (22 collections) · Google Cloud Storage · Langfuse for LLM cost/traces · OpenTelemetry → Coralogix · Slack webhooks · Descope for outbound M2M auth.</p>
+      </div>
+    </div>
+
+    <h2>The layers</h2>
+    <p>A request enters through a route, is validated by a DTO that forbids unknown fields, is handed to a use-case Protocol (the dependency-injection seam that makes routes swappable in tests), which calls an application service, which speaks to the domain and to ports. Adapters implement those ports. Nothing below the ports layer knows what a database or an LLM is.</p>
+
+    <figure>
+      <pre class="mermaid">
+flowchart TB
+    subgraph clients["Clients"]
+      CLI["ai-documents-cli<br/>(HTTP only)"]
+      HTTPC["Upstream Slice services"]
+    end
+    subgraph api["API process — uvicorn"]
+      MW["maintenance middleware"]
+      R["6 routers · 20 routes<br/>api/v1/*_endpoints.py"]
+      DEPS["Use cases (Protocols)<br/>api/deps.py"]
+    end
+    subgraph worker["Worker process — taskiq"]
+      T["7 tasks: hydrate · classify · extract<br/>fetch-externals · compare · localize"]
+      ORCH["TaskOrchestrator<br/>heartbeat · cancel · locks · supersede"]
+    end
+    subgraph daemon["Daemon — singleton"]
+      REAP["reaper loop"]
+    end
+    subgraph svc["Application services"]
+      S["ingest · planning · upload · results<br/>maintenance · exports"]
+    end
+    subgraph domain["Domain models"]
+      DM["Job · JobItem · DocumentFile<br/>Segment · Extraction · Canonical"]
+    end
+    subgraph engines["Pure libs — no I/O"]
+      CE["comparison_engine"]
+      ED["equity_domain"]
+      TN["table_normalization"]
+      FLE["field_localization_engine"]
+    end
+    subgraph ports["Ports (Protocols)"]
+      P["DAO · LLM · ObjectStore · ExternalEntities"]
+    end
+    subgraph adapters["Adapters — integrations/"]
+      A["Mongo DAOs · LLM operations<br/>Tartlet client · taskiq broker"]
+    end
+    subgraph ext["Out-of-process"]
+      MONGODB[("MongoDB")]
+      REDIS[("Redis")]
+      GCS[("GCS")]
+      LLM{{"Vertex · Anthropic · Gemini"}}
+      TARTLET{{"Slice Tartlet"}}
+      OBS{{"Langfuse · OTel · Slack"}}
+    end
+    CLI --> R
+    HTTPC --> MW --> R --> DEPS --> S
+    S --> domain
+    S --> ports
+    S -->|enqueue| REDIS
+    REDIS --> T --> ORCH --> ports
+    T --> engines
+    REAP --> ports
+    ports --> adapters
+    adapters --> MONGODB & GCS & LLM & TARTLET & OBS
+      </pre>
+      <figcaption>Layer and component map. Routes never touch adapters; the containers wire them at startup.</figcaption>
+    </figure>
+
+    <h3>A job, end to end</h3>
+    <figure>
+      <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor U as Caller
+    participant API as FastAPI
+    participant ING as ingest_documents
+    participant M as MongoDB
+    participant R as Redis (taskiq)
+    participant W as Worker
+    participant GCS as GCS
+    participant LLM as LLM gateway
+    participant TAR as Slice Tartlet
+
+    U->>API: POST /v1/jobs {documents, run_compare, run_localize}
+    API->>ING: run_job_use_case (13 DAOs + 2 config ports)
+    ING->>M: upsert document_files, insert job
+    ING->>ING: plan — which stages are actually needed?
+    ING->>M: insert job_items
+    ING->>R: enqueue first items
+    API-->>U: 200 {job_id, status}
+
+    R->>W: hydrate → GCS md5 + size
+    R->>W: classify → sonnet-4-6 → DocumentType + segments
+    par
+      R->>W: extract → sonnet / opus → typed record
+      W->>M: extractions_&lt;type&gt;
+    and
+      R->>W: fetch externals
+      W->>TAR: paginated find (grants, shares, plans…)
+    end
+    R->>W: compare → haiku measures → top-k matches
+    R->>W: localize → gemini-2.5-pro → bounding boxes
+    U->>API: GET /v1/jobs/{id}/results
+    API-->>U: extractions + matches + bboxes + flags
+      </pre>
+      <figcaption>Every worker task runs inside TaskOrchestrator, which owns heartbeats, cancellation, conflict deferral and the maintenance gate — and each task enqueues its own successors.</figcaption>
+    </figure>
+
+    <h2>External dependencies</h2>
+    <p>Eleven out-of-process dependencies. Every one of them is faked in the test suite; none is ever exercised for real, in CI or anywhere else.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Dependency</th><th>Used for</th><th>Wrapper</th><th>Key config</th></tr></thead>
+        <tbody>
+          <tr><td><strong>MongoDB</strong></td><td>The datastore. 22 collections — jobs, job_items, segments, one <code>extractions_*</code> collection per document type, comparison_matches, external_entities, field locations, maintenance state.</td><td><code>py_commons/db/mongo/client.py</code> → <code>Mongo*Dao</code></td><td><code>MONGO_URI</code>, <code>MONGO_DB_NAME</code></td></tr>
+          <tr><td><strong>Redis</strong></td><td>Taskiq broker and result backend; distributed compare/extraction locks; maintenance pub/sub. Not Rabbit.</td><td><code>taskiq_manager/broker.py</code></td><td><code>REDIS_URI</code>, <code>TASKIQ_*</code></td></tr>
+          <tr><td><strong>Google Cloud Storage</strong></td><td>Document bytes. Two modes: caller-owned bucket by URI, and a managed bucket for direct uploads keyed by sha256 (so identical bytes dedupe).</td><td><code>GcsBucketsClient</code> implementing the <code>ObjectStore</code> port</td><td><code>MANAGED_DOCUMENTS_BUCKET</code>, <code>MAX_UPLOAD_SIZE_BYTES</code></td></tr>
+          <tr><td><strong>Anthropic on Vertex</strong></td><td>Primary LLM: classification, extraction, comparison measures, narratives.</td><td><code>AnthropicVertexProvider</code> behind <code>LlmProvidersGateway</code></td><td><code>VERTEX_PROJECT_ID</code>, <code>VERTEX_LOCATION</code></td></tr>
+          <tr><td><strong>Anthropic API</strong></td><td>Fallback provider, second in the chain.</td><td><code>AnthropicProvider</code></td><td><code>ANTHROPIC_API_KEY</code></td></tr>
+          <tr><td><strong>Google GenAI / Gemini</strong></td><td>Only the vision work: anchor identification and field localization (bounding boxes).</td><td><code>GoogleGenAiProvider</code></td><td>Vertex credentials</td></tr>
+          <tr><td><strong>Slice Tartlet</strong> <span class="pill bad">internal</span></td><td>The system of record. Supplies the candidate entities to compare against, and the human-assigned links used by link-audit.</td><td><code>TartletClient</code> → <code>HttpExternalEntitiesClient</code></td><td><code>EXTERNAL_ENTITIES_API_BASE_URL</code></td></tr>
+          <tr><td><strong>Descope</strong></td><td>Machine-to-machine auth <em>outbound</em> to Tartlet (access key → session JWT). Not used to authenticate inbound requests.</td><td><code>DescopeAuthProvider</code></td><td><code>DESCOPE_PROJECT_ID</code>, <code>DESCOPE_ACCESS_KEY</code></td></tr>
+          <tr><td><strong>Langfuse</strong></td><td>LLM traces and cost. <code>GET /v1/jobs/{id}/cost</code> reads straight from it.</td><td><code>LangfuseLlmObservabilityProvider</code></td><td><code>LANGFUSE_*</code></td></tr>
+          <tr><td><strong>OTel / Coralogix</strong></td><td>Traces and logs over OTLP gRPC; FastAPI and pymongo auto-instrumented.</td><td><code>ObservabilityManager</code></td><td><code>OTEL_ENABLED</code>, <code>OTEL_EXPORTERS</code></td></tr>
+          <tr><td><strong>Slack</strong></td><td>Outbound webhook for ops alerts: provider fallbacks, reaper cycles, unsupported files. Batched.</td><td><code>SlackNotifier</code></td><td><code>SLACK_WEBHOOK_URL</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub">Also present but dormant: gRPC "SLM" clients (wiring commented out — "TODO until SLMs will be fast enough") and a Temporal module in py_commons with no consumer in this repo.</p>
+
+    <h2>Incoming doors</h2>
+    <p>Four ways in. Twenty HTTP routes, seven queue consumers, one daemon loop, one CLI — and no inbound webhooks.</p>
+
+    <h3>1. HTTP — 20 routes</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Route</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method">GET</span> <code>/health</code></td><td>Liveness. The only path always allowed during a maintenance block.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/jobs</code></td><td>Submit a job from pre-staged GCS URIs. The main door.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/jobs/uploads</code></td><td>Same, but multipart — raw bytes streamed into the managed bucket. 413 / 415 / 400 failure modes.</td></tr>
+          <tr><td><span class="method">GET</span> <code>/v1/jobs/{id}</code></td><td>Status, progress %, grouped errors, and which documents are already fully done.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/jobs/{id}/cancel</code></td><td>Cancel a job and its non-terminal items.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/jobs/{id}/rerun-incomplete-items</code></td><td>Re-enqueue whatever didn't finish.</td></tr>
+          <tr><td><span class="method">GET</span> <code>/v1/jobs/{id}/cost</code></td><td>LLM cost and token usage, read from Langfuse. 204 when no traces yet.</td></tr>
+          <tr><td><span class="method">GET</span> <code>/v1/jobs/{id}/results</code></td><td>Results, with <code>top_k</code>, <code>weights_profile</code>, <code>match_filter_profile</code> query overrides.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/results</code></td><td>Results by the caller's own document ids.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/score-explain</code></td><td>Per-field score breakdown for one or two matches, optionally narrated by haiku.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/link-audit</code></td><td>Is the human-assigned link the AI's best match? <em>confirmed / suspect / no-match</em>.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/tables/normalize</code></td><td>Standalone table normalization: file + schema → normalized records.</td></tr>
+          <tr><td><span class="method">GET</span> <code>/v1/jobs/{id}/extractions.xlsx</code></td><td>XLSX export, one sheet per document.</td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/admin/reap-timed-out-tasks</code></td><td>Trigger a reaper cycle by hand. <strong>Unauthenticated.</strong></td></tr>
+          <tr><td><span class="method post">POST</span> <code>/v1/admin/maintenance/*</code></td><td>Six routes: enter, exit, status, release-suspended, prepare-for-deploy, finalize-deploy. The only routes with any auth — a shared token, which is <em>open when the env var is unset</em>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <h4>No authentication on any business endpoint</h4>
+      <p>There is no dependency, middleware, or JWT verification on <code>/v1/jobs</code>, <code>/v1/results</code>, <code>/v1/link-audit</code>, <code>/v1/score-explain</code>, the XLSX export, or <code>POST /v1/admin/reap-timed-out-tasks</code>. Descope is used only for outbound calls. The service presumably relies on an in-cluster network boundary — but nothing in the code says so, and no test asserts it.</p>
+    </div>
+
+    <h3>2. Queue — 7 Taskiq consumers</h3>
+    <p>Every enqueue funnels through one function, <code>enqueue_job_item()</code>, which maps a work type to a task and always passes the kwarg <code>job_item_id</code>. The tasks chain themselves: each one enqueues its own successors on completion.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Task</th><th>Work type</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td><code>hydrate_document_file_metadata_task</code></td><td>metadata hydration</td><td><code>services/tasks/hydration.py:445</code></td></tr>
+          <tr><td><code>classify_task</code></td><td>classification</td><td><code>services/tasks/classification.py:705</code></td></tr>
+          <tr><td><code>extract_task</code></td><td>extraction</td><td><code>services/tasks/extraction.py:1445</code></td></tr>
+          <tr><td><code>fetch_external_entities_task</code></td><td>fetch externals</td><td><code>services/tasks/external_entities_fetching.py:179</code></td></tr>
+          <tr><td><code>compare_base_objects_task</code></td><td>base-object comparison</td><td><code>services/tasks/base_objects_comparison.py:443</code></td></tr>
+          <tr><td><code>compare_extraction_task</code></td><td>comparison</td><td><code>services/tasks/comparison.py:664</code></td></tr>
+          <tr><td><code>localize_task</code></td><td>field localization</td><td><code>services/tasks/localization.py:470</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>3. The daemon</h3>
+    <p>A singleton process (<code>replicas=1</code>, <code>strategy: Recreate</code>) running the reaper loop every 60 seconds: a heartbeat reap and a stuck-QUEUED reap. Deliberately <em>not</em> a Taskiq task — as the code puts it, worker congestion and crashes are the exact conditions the reaper exists to clean up, so it must not be able to starve behind them. It is the only retry mechanism in the system.</p>
+
+    <h3>4. The CLI</h3>
+    <p><code>ai-documents-cli</code> — <code>submit</code>, <code>status</code>, <code>results</code>, <code>audit</code>, <code>explain</code>. Strictly HTTP-only; it never touches Mongo or engine internals. Read-only by default; <code>submit</code> requires confirmation or <code>--yes</code>.</p>
+
+    <h2>The API contract</h2>
+    <p>Input DTOs extend a <code>StrictBaseModel</code> with <code>extra="forbid"</code>, and they carry a surprising amount of logic. <code>RunJobRequest</code> alone enforces eight cross-field rules in a <code>model_validator</code>: comparison flags require <code>run_compare</code>; <code>force.localization</code> requires <code>run_localize</code>; inline <code>external_entities</code> are mutually exclusive with <code>target_external_entities</code>; <code>company_id</code> becomes mandatory the moment a force flag could cascade into comparison; the same stage cannot appear in both <code>force</code> and <code>stale_force</code>; document ids must be unique.</p>
+
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">services/ai_documents/ai_documents/api/v1/dto.py:160</span><span class="tag">request</span></div>
+      <pre><code>class RunJobRequest(StrictBaseModel):          # extra="forbid"
+    documents: list[DocumentInput]
+    user_id: str | None = None
+    company_id: str | None = None
+    run_compare: bool = False
+    run_localize: bool = False
+    force: ForceStagesInput | None = None            # classification/extraction/hydration/localization
+    stale_force: StaleForceStagesInput | None = None # re-run only if the LLM config hash changed
+    exclude_assigned_externals: bool = False
+    target_external_entities: list[TargetExternalEntity] | None = Field(default=None, min_length=1)
+    external_entities: list[ExternalEntityInput] | None = Field(default=None, min_length=1)</code></pre>
+    </div>
+
+    <p>The results contract nests four levels deep — document → segment → extraction → per-external-type matches — and carries the evidence with it:</p>
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">services/ai_documents/ai_documents/api/v1/dto.py:773</span><span class="tag">response</span></div>
+      <pre><code>ResultsResponse
+└── results_by_document_file: [DocumentFileResult{document_file_id, issues[], segment_results[]}]
+    └── SegmentResultResponse{segment_id, document_type, skipped_reason, extraction_results[]}
+        └── ExtractionResultResponse{
+              extraction_id, extraction_type, extracted_data: dict,
+              comparisons: [{external_entity_type, top_k: [{external_id, score}]}],
+              fields_localization: [PdfFieldLocation | ExcelFieldLocation],  # discriminated on "kind"
+              flags: [{type, related_field, reason, detail{hidden_text, page}}]}</code></pre>
+    </div>
+    <p><code>score</code> is a <strong>distance — lower is better</strong>. PDF boxes are <code>[y_min, x_min, y_max, x_max]</code> in 0–1000 units, relative to the segment. None of these validators, none of these shapes, and none of the 422/400/413/415/502 error paths has a single test.</p>
+  </section>
+
+  <!-- ================= PANEL 2 ================= -->
+  <section class="panel" id="panel-2" role="tabpanel" aria-labelledby="tab-2" hidden>
+
+    <h2>What kinds of tests exist here</h2>
+    <p class="lede">Six categories, 33 files, 192 test functions, 219 tests after parametrization. The whole suite runs in <strong>6.4 seconds</strong> and never touches a network, a database, a queue, or a model. That speed is real and worth protecting. The question the rest of this report asks is what it is buying.</p>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Package</th><th class="num-col">Files</th><th class="num-col">Tests</th><th class="num-col">Runtime</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>libs/comparison_engine</strong></td><td class="num-col">12</td><td class="num-col">103</td><td class="num-col">0.21 s</td><td><span class="pill ok">passing</span></td></tr>
+          <tr><td><strong>libs/py_commons</strong></td><td class="num-col">10</td><td class="num-col">55</td><td class="num-col">1.46 s</td><td><span class="pill ok">passing</span> <span class="pill bad">never runs in CI</span></td></tr>
+          <tr><td><strong>libs/equity_domain</strong></td><td class="num-col">3</td><td class="num-col">28</td><td class="num-col">2.15 s</td><td><span class="pill ok">passing</span></td></tr>
+          <tr><td><strong>services/ai_documents</strong></td><td class="num-col">6</td><td class="num-col">28</td><td class="num-col">2.40 s</td><td><span class="pill ok">passing</span></td></tr>
+          <tr><td><strong>libs/table_normalization</strong></td><td class="num-col">1</td><td class="num-col">5</td><td class="num-col">0.19 s</td><td><span class="pill ok">passing</span> <span class="pill bad">never runs in CI</span></td></tr>
+          <tr><td><strong>cli/ai_documents</strong></td><td class="num-col">1</td><td class="num-col">0</td><td class="num-col">—</td><td><span class="pill bad">cannot be collected</span></td></tr>
+          <tr><td><strong>libs/field_localization_engine</strong></td><td class="num-col">0</td><td class="num-col">0</td><td class="num-col">—</td><td><span class="pill bad">no tests dir at all</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warn">
+      <h4>Three testing doctrines are written down, and they contradict each other</h4>
+      <p><code>rules/*.md</code> mandates <code>test_when_X_then_Y</code> naming, a <code>factories.py</code> with <code>faker</code>, and <code>respx</code> network interception — none of which exist here. <code>.cursor/skills/ai-testing/</code> mandates short <code>test_&lt;subject&gt;_&lt;behavior&gt;</code> slugs and conftest-hosted mocks — the opposite of what the rules say — and <em>this</em> is what the code actually follows. And <code>services/ai_documents/AGENTS.md:76</code> prescribes <code>TestClient</code> integration tests, of which there are exactly zero. A team following all three is following none.</p>
+    </div>
+
+    <h2>Type 1 — Pure engine unit tests</h2>
+    <p class="sub">libs/comparison_engine (12 files · 103) · libs/equity_domain · libs/table_normalization</p>
+    <p><strong>What they cover:</strong> distance measures, weighted scoring with mu-imputation for missing fields, top-k ordering, match filters, weight and filter builders with their validation errors, the score-explain breakdown and pairwise diff, and the batch distance-vector engine including nested base-object recursion. On the equity side: currency, vesting periods, certificate numbers, share classes.</p>
+    <p><strong>What's real:</strong> everything. There are no mocks at all, because there is nothing to mock — these are pure functions over a toy <code>Person</code>/<code>Address</code> schema defined in the conftest. 103 tests in 0.21 seconds, perfectly deterministic. This is the best-tested code in the repository, and it is genuinely good work.</p>
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">libs/comparison_engine/tests/test_scoring.py:22</span><span class="tag">unit</span></div>
+      <pre><code>def test_mu_imputation_one_side_missing(comparison_schema_resolver, missing_profile):
+    # computed: name=0.0, age=0.2 -> mu=0.1; active ONE_SIDE_MISSING -> impute mu+0.2=0.3
+    result = score_distance_vector(
+        distance_vector={"name": 0.0, "age": 0.2, "active": FieldMissingReason.ONE_SIDE_MISSING},
+        weight_vector=None,
+        schema_key=PERSON_SCHEMA_KEY,
+        comparison_schema_resolver=comparison_schema_resolver,
+        missing_profile=missing_profile,
+    )
+    assert result.score == pytest.approx((0.0 + 0.2 + 0.3) / 3.0)
+    assert result.confidence == pytest.approx(2.0 / 3.0)</code></pre>
+    </div>
+
+    <h2>Type 2 — LLM-port wiring tests</h2>
+    <p class="sub">libs/comparison_engine (string distance, value structurer, score narrative) · libs/equity_domain</p>
+    <p><strong>What they cover:</strong> that the right prompt template renders with the right values, that batch responses resolve by their 1-based ids, that observability tags are attached, that an unparseable response degrades to <code>None</code>, and that vocabularies get coerced (ISO-4217 currency, the tax-treatment enum).</p>
+    <p><strong>What's real:</strong> the real port and the real prompt markdown files. The gateway is a hand-written <code>_MockGateway</code> — not a <code>MagicMock</code> — that records every call so the test can assert on what was sent. Note that these <em>do</em> assert on prompt content, which the component-test skill forbids; as library tests they arguably sit outside that rule.</p>
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">libs/comparison_engine/tests/test_string_distance_port.py:24</span><span class="tag">port wiring</span></div>
+      <pre><code>class _MockGateway:
+    def __init__(self, responder: Callable[[dict[str, Any]], Any]) -> None:
+        self._responder = responder
+        self.calls: list[dict[str, Any]] = []
+
+    async def chat(self, **kwargs: Any) -> _Result:
+        self.calls.append(kwargs)
+        return _Result(self._responder(kwargs))
+
+
+async def test_distance_returns_parsed_value_and_renders_prompt():
+    gateway = _MockGateway(lambda _k: SimpleNamespace(distance=0.25))
+    port = _port(gateway)
+
+    assert await port.distance("alice", "alyce") == 0.25
+    call = gateway.calls[0]
+    assert call["operation"] == _Op.DIST
+    assert call["contents"] == "a=alice b=alyce"
+    assert call["observability_tags"] == ["string_distance_test", "prompt:thing"]
+
+
+async def test_batch_distance_resolves_by_one_based_id():
+    gateway = _MockGateway(lambda _k: SimpleNamespace(distances={1: 0.0, 2: 1.0}))
+    port = _port(gateway, batch_size_cascade=(20,))
+
+    assert await port.batch_distance([("a", "a"), ("c", "d")]) == [0.0, 1.0]
+    assert '1. "a" vs "a"' in gateway.calls[0]["contents"]</code></pre>
+    </div>
+
+    <h2>Type 3 — py_commons infrastructure tests</h2>
+    <p class="sub">libs/py_commons/tests (10 files · 55 tests) — and none of them ever run in CI</p>
+    <p><strong>What they cover:</strong> the strongest LLM-adjacent testing in the repo. The structured-output <em>reflection and repair</em> loop (the repair prompt must include the prior raw output and the validation error; attempts exhaust and re-raise). Typed, reflectable provider errors, so that an empty response, a malformed one, and a truncated one raise three different exceptions. Base64 media redaction before Langfuse ever sees a payload. Big-file PDF and Excel chunk planning. A TTL upload cache including concurrency coalescing.</p>
+    <p><strong>What's real:</strong> providers are instantiated with <code>object.__new__(AnthropicProvider)</code> — bypassing <code>__init__</code> so no SDK client or credentials are needed — and only the private <code>_process_response</code> is exercised against a <code>SimpleNamespace</code> faking the SDK's response shape. It is a pragmatic trick, and it does mean these tests are coupled to a private method.</p>
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">libs/py_commons/tests/llm/test_provider_structured_errors.py:22</span><span class="tag">infra unit</span></div>
+      <pre><code>def _anthropic_response(*, content: list[SimpleNamespace], stop_reason: str) -> SimpleNamespace:
+    return SimpleNamespace(content=content, stop_reason=stop_reason, usage=None, model="claude-x")
+
+
+def test_anthropic_empty_structured_response_is_reflectable() -> None:
+    provider = object.__new__(AnthropicProvider)
+    response = _anthropic_response(content=[], stop_reason="end_turn")
+
+    with pytest.raises(MissingStructuredOutputError):
+        provider._process_response(response, _GENERATION, _Out)
+
+
+def test_anthropic_empty_truncated_response_is_truncation() -> None:
+    provider = object.__new__(AnthropicProvider)
+    response = _anthropic_response(content=[], stop_reason="max_tokens")
+
+    with pytest.raises(TruncatedResponseError):
+        provider._process_response(response, _GENERATION, _Out)</code></pre>
+    </div>
+
+    <h2>Type 4 — Component tests</h2>
+    <p class="sub">services/ai_documents/tests/{test_extractors, test_persistence, test_localization} — the repo's own term</p>
+    <p><strong>What they cover:</strong> one pipeline component at a time. The equity-pool extractor's contract and its <code>to_domain()</code> mapping; multi-extractor fan-out per document type and extractor concurrency; the config-snapshot hash that drives stale re-extraction; the Mongo DAO's save/read-back, per-type collection separation, and upsert identity preservation; localization schema-to-view parity across six extraction types.</p>
+    <p><strong>What's faked:</strong> the LLM at the <em>gateway</em> seam — <code>AsyncMock(spec=LlmProvidersGateway)</code> with a <code>set_parsed()</code> helper that hands the component an already-parsed Pydantic model. Mongo is <code>mongomock-motor</code>. The object store is a hand-written in-memory implementation of the real port. PDF rendering is patched to synthetic images.</p>
+    <p>This is the canonical pattern of the codebase, and it is clean and readable:</p>
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">services/ai_documents/tests/test_extractors/test_equity_pool_event_extractor.py:15</span><span class="tag">component</span></div>
+      <pre><code>pytestmark = pytest.mark.anyio
+
+
+async def test_equity_pool_multiple_pool_events(
+    mock_llm_gateway: AsyncMock,
+    mock_equity_pool_events_extraction: EquityPoolEventExtractionOutput,
+) -> None:
+    mock_llm_gateway.set_parsed(mock_equity_pool_events_extraction)
+    extractor = EquityPoolEventExtractor(llm_providers_gateway=mock_llm_gateway)
+
+    result = await extractor.extract(segment_content="ignored-by-mock")
+
+    initial, increase = result.result
+    assert initial.pool_event_type == PoolEventType.INITIAL
+    assert initial.initial_pool_sizes[0].pool_size == 1_434_718
+    assert increase.pool_size_changes[0].direction == PoolChangeDirection.INCREASE
+    assert increase.pool_size_changes[0].resulting_total_pool_size == 9_072_795</code></pre>
+    </div>
+    <p>The persistence variant reads back through the DAO and compares whole objects with a shared <code>assert_matches</code> helper that strips volatile fields (<code>llm_provenance</code>, <code>created_at</code>, <code>updated_at</code>):</p>
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">services/ai_documents/tests/test_persistence/test_extracted_data_dao.py:9</span><span class="tag">component · db</span></div>
+      <pre><code>async def test_mongo_dao_sanity(mock_db, make_equity_pool_event_extraction) -> None:
+    dao = MongoExtractedDataDao(mock_db)
+    extraction = make_equity_pool_event_extraction()
+
+    await dao.save(extraction, job_item_id="job-item-1")
+    [stored] = await dao.get_by_segment_id("segment-1", ExtractionType.EQUITY_POOL_EVENT)
+
+    assert_matches(stored, extraction)
+
+
+async def test_upsert_keeps_existing_identity(mock_db, make_equity_pool_event_extraction) -> None:
+    dao = MongoExtractedDataDao(mock_db)
+    original = make_equity_pool_event_extraction()
+    await dao.upsert_by_natural_key(original, job_item_id="job-item-1")
+    re_extracted = make_equity_pool_event_extraction().model_copy(update={"equity_pool_name": "Renamed Pool"})
+
+    await dao.upsert_by_natural_key(re_extracted, job_item_id="job-item-2")
+    [stored] = await dao.get_by_segment_id("segment-1", ExtractionType.EQUITY_POOL_EVENT)
+
+    assert stored.id == original.id
+    assert stored.equity_pool_name == "Renamed Pool"</code></pre>
+    </div>
+
+    <h2>Type 5 — The full-job use-case test</h2>
+    <p class="sub">services/ai_documents/tests/test_use_cases/ — exactly one test function, 94 lines</p>
+    <p><strong>What it covers:</strong> the closest thing to an end-to-end test in the repo, and the most valuable test in it. It drives ingest → planning → <em>inline Taskiq</em> (the broker is swapped for an in-memory one) → hydration → classification → extraction fanning out to two extractors producing three records → localization → status → results. Every internal layer is real: use cases, services, the orchestrator, the tasks, the DAOs, the Mongo aggregations. Only the edges are faked.</p>
+    <p><strong>What it does not do:</strong> it never enters through the HTTP door. It calls <code>run_job_use_case(...)</code> directly, so FastAPI routing, DTO validation, and error mapping are all bypassed. It also runs with <code>run_compare=False</code>, so the comparison and external-fetch tasks — half the pipeline — never execute in any test.</p>
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">services/ai_documents/tests/test_use_cases/test_extractors_use_case.py:11</span><span class="tag">use case · in-process e2e</span></div>
+      <pre><code>async def test_board_approval_job_flow(mock_environment: MockEnvironment) -> None:
+    documents = [
+        DocumentInput(document_id="board.pdf", gcs_uri=mock_environment.gcs_uri).to_document_file(user_id="test-user")
+    ]
+
+    job = await run_job_use_case(documents=documents, user_id="test-user", run_localize=True)
+
+    status_view = await job_status_use_case(job.id)
+    assert status_view.job.status == JobStatus.COMPLETED
+    assert status_view.completed_document_ids == ["board.pdf"]
+
+    [document_result] = await get_results_by_job_use_case(job.id)
+    [segment_result] = document_result.segment_results
+    assert segment_result.document_type == DocumentType.BOARD_APPROVAL.value
+    extracted = [result.extracted_data for result in segment_result.extraction_results]
+    assert len(extracted) == 3
+    [board_approval] = [data for data in extracted if "stakeholder_name" in data]
+    assert board_approval["stakeholder_name"]["value"] == "Jane Doe"
+
+    db = mock_environment.db
+    document_file = await db["document_files"].find_one({"original_document_id": "board.pdf"})
+    assert document_file["file_hash"] == hashlib.md5(mock_environment.pdf_bytes).hexdigest()
+    job_items = await db["job_items"].find({"job_id": job.id}).to_list(None)
+    assert {item["work_type"] for item in job_items} == {
+        "document_file_metadata_hydration", "classification", "extraction", "fields_localization",
+    }
+    assert all(item["status"] == "completed" for item in job_items)</code></pre>
+    </div>
+
+    <h2>Type 6 — CLI tests <span class="pill bad">red</span></h2>
+    <p class="sub">cli/ai_documents/tests — 8 tests that have never run</p>
+    <p>Eight perfectly reasonable tests of file discovery and document building. They cannot be collected. Importing the CLI pulls in <code>equity_domain.tax_treatment</code>, which builds a dynamic enum <em>at import time</em> from a JSON cache file that only the Docker entrypoint creates. Every other package works around this with a conftest that writes the cache first; the CLI has no conftest, so collection dies with <code>RuntimeError: Tax treatment cache missing</code>. Nobody has noticed, because the CLI package is not in the pre-commit hook and there is no CI test job.</p>
+
+    <h2>The test infrastructure</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4>The LLM fake</h4>
+        <p><code>AsyncMock(spec=LlmProvidersGateway)</code> in the root conftest, with a <code>set_parsed()</code> helper. The response is never parsed from raw text — the test hands over a Pydantic model a developer wrote by hand. In the full-job test a <code>side_effect</code> dispatches by <code>response_model</code>, so one fake serves several extractors. No API key is ever needed.</p>
+      </div>
+      <div class="card">
+        <h4>The database</h4>
+        <p><code>mongomock-motor</code>, in-memory. No testcontainers, no docker-compose, no real Mongo anywhere. And <code>test_use_cases/conftest.py:64-165</code> <strong>monkeypatches roughly 100 lines of MongoDB semantics into the fake</strong> — <code>$lookup</code> with <code>let</code>, <code>$mergeObjects</code>, <code>$indexOfArray</code>, missing-key-tolerant <code>$group</code> — because the production aggregations need features mongomock does not have.</p>
+      </div>
+      <div class="card">
+        <h4>Redis and Taskiq</h4>
+        <p>Never used. <code>TASKIQ_RUN_INLINE=True</code> swaps the Redis stream broker for Taskiq's <code>InMemoryBroker</code>, so cascaded tasks execute inline, in-process. The broker, the locks, and the pub/sub are never exercised.</p>
+      </div>
+      <div class="card">
+        <h4>Outbound HTTP</h4>
+        <p>No interception library is installed at all — no <code>respx</code>, no <code>responses</code>, no <code>vcrpy</code>. The one HTTP fake monkeypatches a <em>function</em>. Consequence: the Slice Tartlet client, with all its pagination and auth logic, has zero tests.</p>
+      </div>
+      <div class="card">
+        <h4>Test data</h4>
+        <p>No <code>factories.py</code>, no <code>data/</code> folder, no <code>faker</code>. Two factory <em>fixtures</em> in the root conftest do follow the defaults-plus-overrides pattern. Everything else is inline literals — realistic ones ("Jane Doe", "2022 Share Incentive Plan"), but literals. There are no fixture files on disk at all: PDFs are synthesized blank, in memory.</p>
+      </div>
+      <div class="card">
+        <h4>Time and randomness</h4>
+        <p>No <code>freezegun</code>, no seeded RNG, no clock injection. Determinism is achieved by never depending on time: volatile fields are stripped before comparison. Two real <code>asyncio.sleep</code> calls exist in the TTL-cache tests — the only theoretical flake source in the suite.</p>
+      </div>
+    </div>
+
+    <h2>How they run</h2>
+    <p>There is <strong>no pytest job in CI</strong>. The only pull-request check is <code>pre-commit.yml</code>. Tests reach CI indirectly, through a pre-commit hook that loops over three hard-coded directories:</p>
+    <div class="snippet">
+      <div class="snippet-head"><span class="path">.pre-commit-config.yaml:44</span><span class="tag">the only gate</span></div>
+      <pre><code>      - id: pytest
+        name: pytest
+        entry: bash -c 'for d in libs/comparison_engine libs/equity_domain services/ai_documents; do (cd "$d" && uv run pytest) || exit 1; done'
+        language: system
+        files: '(^|/)tests/'
+        types: [python]
+        pass_filenames: false</code></pre>
+    </div>
+    <p>Three of the six packages that have tests are therefore <strong>never executed by anything</strong>: <code>py_commons</code> (55 tests), <code>table_normalization</code> (5), and the CLI (8, currently broken). Locally, the <code>files: '(^|/)tests/'</code> filter means a pure production-code change runs no tests at all on commit. And <code>mypy</code> is wired as advisory — its hook ends in <code>exit 0</code>, so it can never fail a build. There is no coverage tooling, no markers, no flakiness controls.</p>
+  </section>
+
+  <!-- ================= PANEL 3 ================= -->
+  <section class="panel" id="panel-3" role="tabpanel" aria-labelledby="tab-3" hidden>
+
+    <h2>The verdict</h2>
+    <p class="lede">This team has built a genuinely excellent test suite — for the 10% of the codebase that cannot hurt them. 219 tests run in 6.4 seconds and every one is deterministic, readable, and fast. But the tests cluster on pure functions, and the risk clusters on I/O, orchestration, HTTP, Mongo aggregations, and LLM accuracy, where the test count is approximately zero. <strong>The problem is allocation, not craft.</strong></p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>Effort</h4>
+        <p><strong>comparison_engine:</strong> 3.9 kLOC → 81 tests (20.8 per 1k lines).</p>
+        <p style="margin-bottom:0"><strong>ai_documents service:</strong> 36 kLOC → 22 tests (0.6 per 1k lines).</p>
+      </div>
+      <div class="card">
+        <h4>Risk</h4>
+        <p>The engine is pure, deterministic, and cannot touch a customer. The service owns every I/O path, the orchestration, the money, and the match quality that a human will act on.</p>
+        <p style="margin-bottom:0">The 81 tests defend a toy <code>Person</code> schema that ships to no customer.</p>
+      </div>
+    </div>
+
+    <h2>Ranked findings</h2>
+    <p class="sub">Ordered by business risk × cost to fix — cheap fixes to scary problems float to the top.</p>
+
+    <div class="finding critical">
+      <div class="finding-head"><span class="rank">01</span><h3>The comparison pipeline — the product's actual value — has zero service-level tests</h3><span class="pill bad">Critical</span></div>
+      <p><code>grep -rn "run_compare\|comparison_matches\|compare_extraction" services/ai_documents/tests/</code> returns <strong>nothing</strong>. The only end-to-end test runs with <code>run_compare=False</code>, so <code>compare_extraction_task</code>, <code>compare_base_objects_task</code>, and <code>fetch_external_entities_task</code> never execute in any test, ever.</p>
+      <p><strong>Why it matters:</strong> a regression in the <em>engine</em> would be caught. A regression in the <em>adapter</em> — a field dropped from <code>comparison_mappings</code>, a measure unregistered, a canonicalization that maps a share class to the wrong string — silently degrades match quality. It doesn't throw. It doesn't 500. It produces a plausible ranked list with the wrong entity at rank 1, and a human confirms the wrong link in the customer's cap table. This is the most expensive class of bug the system can produce.</p>
+      <p><strong>~3.3 kLOC with zero tests on this path:</strong> <code>comparison_mappings.py</code> (358) · <code>canonicalize.py</code> (562) · <code>tasks/comparison.py</code> (670) · <code>base_objects_comparison.py</code> (449) · <code>explain_service.py</code> (585) · <code>link_audit_service.py</code> (192) · <code>measures_registry.py</code> (165).</p>
+      <div class="meta"><span><b>Fix:</b> a <code>test_comparison/</code> tier on the real equity registry — a known grant must rank 1 against its true entity and below a decoy. Then flip the full-job test to <code>run_compare=True</code>.</span><span><b>Size:</b> M</span></div>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-head"><span class="rank">02</span><h3>There is no CI test gate — the tests are advisory folklore</h3><span class="pill bad">Critical</span></div>
+      <p>No workflow runs pytest. The only PR check is <code>pre-commit</code>, whose hook covers 3 of the 6 packages that have tests and is gated behind a file-path filter. <code>mypy</code> is explicitly neutered — its hook ends in <code>exit 0</code>, so the strict config it already has can never fail a build.</p>
+      <p><strong>The proof is already on the floor:</strong> the entire <code>cli/ai_documents</code> suite has been red — not failing, <em>uncollectable</em> — and nobody noticed, because nothing runs it. That is a live demonstration that the tests which do exist cannot stop a bad merge. Every quality claim in this repo is currently unenforced, and this is the cheapest item on the list.</p>
+      <div class="meta"><span><b>Fix:</b> a <code>tests.yml</code> that runs pytest across all six members, required on PR. Delete the pre-commit pytest hook — a 6-second suite belongs in CI. Make mypy blocking.</span><span><b>Size:</b> S — half a day</span></div>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-head"><span class="rank">03</span><h3>Nothing enters through the HTTP door — 20 routes, an 813-line contract, and no auth</h3><span class="pill bad">Critical</span></div>
+      <p>Not one test goes through FastAPI. Two distinct risks live here.</p>
+      <p><strong>Contract risk:</strong> <code>api/v1/dto.py</code> encodes about ten cross-field business rules that are the only thing stopping a caller from submitting a job that silently does the wrong work. Zero tests. Every error contract the CLI and upstream services depend on — 400 vs 404 vs 413 vs 415 vs 422 vs 502 vs 503 — is unverified.</p>
+      <p><strong>Security risk:</strong> every business endpoint takes a caller-supplied <code>user_id</code>/<code>company_id</code> with no authentication whatsoever. The one guard in the codebase, <code>require_maintenance_token</code>, <strong>fails open</strong>:</p>
+      <div class="snippet"><div class="snippet-head"><span class="path">services/ai_documents/ai_documents/api/deps.py:73</span><span class="tag">fails open</span></div><pre><code>    if SETTINGS.MAINTENANCE_ADMIN_TOKEN is None:
+        return</code></pre></div>
+      <p>That may be an accepted risk behind an in-cluster boundary — but <em>no test says so</em>, which means no artifact would fail if someone accidentally exposed the service. A single <code>test_business_endpoint_requires_auth</code> is how a team encodes "we know, and here is the line we will not cross."</p>
+      <p>The team's own <code>AGENTS.md:76</code> prescribes <code>TestClient</code> and ships a worked example. It was adopted by nobody. The DI seam (<code>Depends(lambda: run_job_use_case)</code>) was <em>designed</em> for this — the affordance was built and never used.</p>
+      <div class="meta"><span><b>Fix:</b> <code>tests/test_api/</code> over <code>httpx.ASGITransport</code> with <code>dependency_overrides</code>. Make <code>MAINTENANCE_ADMIN_TOKEN</code> required in non-local profiles so it cannot fail open in production.</span><span><b>Size:</b> M</span></div>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-head"><span class="rank">04</span><h3>Production Mongo aggregations are validated only against a fake the team taught to behave</h3><span class="pill bad">High</span></div>
+      <p><code>test_use_cases/conftest.py:64-165</code> is ~100 lines of monkeypatching that reimplements MongoDB aggregation semantics <em>inside</em> mongomock — <code>$lookup</code> with <code>let</code>/<code>pipeline</code>, <code>$mergeObjects</code>, <code>$indexOfArray</code>, missing-key-tolerant <code>$group</code> — and it runs at import time. The production pipelines are then asserted against that reimplementation.</p>
+      <p>The results endpoint, the thing customers actually read, is built by twelve <code>$lookup</code> stages. The tests now prove <em>"our pipeline agrees with our idea of Mongo"</em>, not <em>"our pipeline works on Mongo."</em> The <code>$group</code> patch is the most alarming, because the comment admits it is a guess:</p>
+      <div class="snippet"><div class="snippet-head"><span class="path">services/ai_documents/tests/test_use_cases/conftest.py:122</span><span class="tag">a guess about Mongo</span></div><pre><code>    def accumulate_group_ignoring_missing_keys(output_fields: dict, group_list: list[dict]) -> dict:
+        # Upstream parses accumulator expressions strictly, so an object literal referencing one
+        # missing field drops the whole accumulated value; Mongo just omits the missing key.</code></pre></div>
+      <p>"Mongo just omits the missing key" has never been executed against Mongo. And there is a second, invisible gap: <code>scripts/mongo_db_init.py</code> generates <code>$jsonSchema</code> validators from the Pydantic models and creates unique indexes. <strong>mongomock enforces neither.</strong> The suite can happily write a document production Mongo would reject, and insert a duplicate production Mongo would block. The persistence tests cannot fail for the two reasons persistence most often fails.</p>
+      <div class="meta"><span><b>Fix:</b> testcontainers + a real <code>mongo:7</code>, with <code>mongo_db_init.py</code> run in a session fixture. This <em>deletes</em> 100 lines of test code. Cost: the suite goes from 6.4s to maybe 15s.</span><span><b>Size:</b> M</span></div>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-head"><span class="rank">05</span><h3>Zero LLM evaluation — the product's core value is verified by nothing</h3><span class="pill bad">High</span></div>
+      <p>No eval dataset, no golden documents, no recorded provider responses, no accuracy assertions, no LLM-as-judge, no prompt regression pins. Every "LLM response" in the suite is a Pydantic model hand-typed by a developer.</p>
+      <p>The tests prove that when the LLM returns exactly the object a developer wrote in a fixture, the service maps it correctly. They say nothing about whether the LLM returns anything close to that object. The team already carries a production-critical, entirely undefended belief in <code>llm_model_config.py</code>: <code>claude-opus-4-8</code> is pinned for secondary SPAs because <em>"dense image tables that only opus extracts reliably."</em> Nothing would tell them if that stopped being true, if sonnet caught up (a real cost saving), or if a prompt edit quietly broke grant-letter extraction. Prompt changes and model swaps are, today, ship-and-pray.</p>
+      <p>Note the component-test doctrine — <em>"do not assert prompt wording or LLM output quality"</em> — is <strong>correct for component tests</strong>. The failure is that the tier which should do that job was never created.</p>
+      <div class="meta"><span><b>Fix:</b> start small — one document type, ten labelled documents, field-level exact-match, a nightly Slack post. Plus a cheap deterministic PR guard: pin the md5 of each prompt file so an unintended edit is visible in review.</span><span><b>Size:</b> L (but start S)</span></div>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-head"><span class="rank">06</span><h3>The reliability machinery — the code whose only job is handling failure — is the least tested code in the repo</h3><span class="pill bad">High</span></div>
+      <p>The <code>TaskOrchestrator</code> (status transitions, conflict deferral, supersede, cancellation, the maintenance gate), the heartbeat, the distributed locks, and all three reaper daemons have <strong>zero direct tests</strong> — roughly 1,400 lines. The single flow test executes the happy path inline.</p>
+      <p>This subsystem exists <em>solely</em> to make failure survivable: worker crashes, stuck items, heartbeat timeouts, two workers racing on the same comparison, a schema-breaking deploy draining in-flight work. It is the code you cannot debug in production, because by the time you notice, the job is already wedged. The team clearly thought hard about it — the reaper is a singleton daemon precisely so worker congestion cannot starve it; the Redis idle timeout is set to ten years so the reaper is the sole retry path. That is sophisticated design resting on untested code.</p>
+      <div class="meta"><span><b>Fix:</b> these are state machines over a DAO — far more testable than they look, and they don't need Redis. Assert a cancelled job's item never reaches RUNNING; a stale heartbeat is reaped exactly once; a superseded item does not enqueue its successor.</span><span><b>Size:</b> M</span></div>
+    </div>
+
+    <div class="finding medium">
+      <div class="finding-head"><span class="rank">07</span><h3>Some existing tests are tautological — they re-implement production and assert it matches</h3><span class="pill partial">Medium-High</span></div>
+      <p>The sharpest case re-implements the production algorithm and asserts production equals the re-implementation:</p>
+      <div class="snippet"><div class="snippet-head"><span class="path">services/ai_documents/tests/test_extractors/test_multi_type_extraction.py:139</span><span class="tag">cannot fail</span></div><pre><code>def test_config_hash_covers_all_extractors(mock_llm_gateway: AsyncMock) -> None:
+    adapter = LlmExtractionAdapter(gateway_for_operation=lambda operation: mock_llm_gateway)
+    board_approval_hashes = [
+        extractor_class(llm_providers_gateway=mock_llm_gateway).get_config_snapshot_hash()
+        for extractor_class in get_extractor_classes(DocumentType.BOARD_APPROVAL)
+    ]
+    assert adapter.get_config_snapshot_hash(DocumentType.BOARD_APPROVAL) == compute_md5(
+        "\n".join(board_approval_hashes).encode()
+    )</code></pre></div>
+      <p>This passes for <em>any</em> consistent implementation, including a broken one. The behavior that actually matters — this hash decides whether the company pays to re-run an LLM across ten thousand documents — is "when a prompt or temperature changes, the hash changes; when nothing changes, it is stable." Neither is asserted. A pinned golden hash plus one mutate-the-prompt test would be strictly more valuable and half the code.</p>
+      <p>These tests carry real maintenance cost and near-zero defect-detection value — the worst possible ratio — and they inflate the perceived safety net.</p>
+      <div class="meta"><span><b>Fix:</b> rewrite as a golden-hash pin plus a change-detection test. Cheap, and it stops the pattern from being copied.</span><span><b>Size:</b> S</span></div>
+    </div>
+
+    <div class="finding medium">
+      <div class="finding-head"><span class="rank">08</span><h3>The internal Slice Tartlet dependency is faked at the wrong seam, and has no tests or contract</h3><span class="pill partial">Medium</span></div>
+      <p>The Tartlet HTTP client (250 lines of pagination and Descope auth) and its wrapper (271 lines of entity dispatch and join rules) have <strong>zero tests</strong>. No HTTP interception library is installed anywhere. The one place outbound HTTP is faked, it is faked by replacing a <em>function</em>.</p>
+      <p>Tartlet is where the truth lives. If that team renames a field, changes a pagination cursor, or tightens auth, mono-ai finds out in production: comparison silently gets zero candidates and match quality craters without an error. Function-level monkeypatching guarantees the test can never catch this, because the HTTP layer — the exact layer that breaks — is the layer being skipped.</p>
+      <div class="meta"><span><b>Fix:</b> move the fake down to the wire with <code>respx</code>, then add a consumer-driven contract test — pin the response shapes mono-ai relies on, and run them in Tartlet's CI or nightly against their staging.</span><span><b>Size:</b> M</span></div>
+    </div>
+
+    <div class="finding medium">
+      <div class="finding-head"><span class="rank">09</span><h3>An import-time side effect in production code is what broke the CLI package</h3><span class="pill partial">Medium</span></div>
+      <p><code>equity_domain.tax_treatment</code> builds a dynamic enum <strong>at import time</strong> from a JSON cache file that only the Docker entrypoint creates. Two conftests work around this with module-level file writes and <code>os.environ</code> mutation — carrying a <code># ruff: noqa: E402</code> to suppress the complaint they cause.</p>
+      <p>This is not a style nit. It violates the repo's own rules, violates the ai-testing skill's own "never mutate <code>os.environ</code>", and <strong>it is why the CLI package cannot be collected</strong> — the CLI has no conftest, so it inherits none of the workaround and explodes at import. Any new package in this workspace will hit the same wall.</p>
+      <div class="meta"><span><b>Fix:</b> fix the <em>production</em> cause — make the enum lazy. Three problems vanish at once: the CLI suite becomes collectable, both conftest bootstraps delete themselves, and the noqa goes away. Highest leverage-per-line on the list.</span><span><b>Size:</b> S–M</span></div>
+    </div>
+
+    <div class="finding low">
+      <div class="finding-head"><span class="rank">10</span><h3>No coverage visibility, no flakiness controls, and one lib declares tests it doesn't have</h3><span class="pill na">Low-Medium</span></div>
+      <p>No <code>pytest-cov</code>, no gate, no reporting. <code>field_localization_engine</code> declares <code>testpaths = ["tests"]</code> for a directory that does not exist (3.4 kLOC, zero tests). The service relies on the <code>anyio</code> pytest plugin without declaring <code>anyio</code> — it arrives transitively, one dependency bump away from taking out the entire service suite.</p>
+      <p>Without coverage you cannot <em>see</em> findings 1 and 6. The gaps in this report were found by reading 36 kLOC by hand, which is not a repeatable process. Coverage would have made "the comparison pipeline is at 0%" a number on a pull request instead of a discovery.</p>
+      <div class="meta"><span><b>Fix:</b> per-package coverage (a repo-wide number would let the libs mask the service). Ratchet on the service only — don't set a global gate on day one.</span><span><b>Size:</b> S</span></div>
+    </div>
+
+    <h2>What this team is doing well</h2>
+    <p>Be clear: the craft is good. These are real strengths and they should not be sacrificed to close the gaps above.</p>
+
+    <div class="finding win">
+      <div class="finding-head"><h3>The comparison_engine tests are genuinely excellent</h3><span class="pill ok">Keep</span></div>
+      <p>103 tests in 0.21 seconds, zero mocks — pure functions tested as pure functions — and they test the <em>hard</em> things: mu-imputation with a missing field, top-k ordering, nested base-object recursion, pairwise score diffs. This is the one part of the system anyone could refactor without fear. The team knows how to write tests. Copy this pattern outward; don't dilute it.</p>
+    </div>
+    <div class="finding win">
+      <div class="finding-head"><h3>The 6.4-second feedback loop is a real asset</h3><span class="pill ok">Protect</span></div>
+      <p>Nothing hits a network, a database, a queue, or a model. There are no flakes to control because there is no non-determinism to control. Teams pay millions to get back to this state. The testcontainers recommendation knowingly spends about ten seconds of it — that is the <em>only</em> place worth spending it, and it buys fidelity on the one component where the fake is actively lying.</p>
+    </div>
+    <div class="finding win">
+      <div class="finding-head"><h3>Ports and adapters make almost every gap in this report cheap to close</h3><span class="pill ok">Leverage</span></div>
+      <p>The use cases are Protocols injected via <code>Depends</code>. The DAOs are protocols. The LLM is a gateway. The object store is an ABC. <strong>The seams the missing tests need already exist</strong> — the team built the affordances and then didn't use them. That is a far better position than the reverse.</p>
+    </div>
+    <div class="finding win">
+      <div class="finding-head"><h3>The LLM failure-handling tests are the strongest LLM-adjacent work in the repo</h3><span class="pill ok">Run them</span></div>
+      <p>The reflection/repair loop, typed reflectable errors for empty and truncated responses, and a test asserting base64 media is redacted before Langfuse sees it — that last one is a <em>privacy control with a test</em>, which is more than most teams manage. Tragically, none of these 55 tests are run by anything.</p>
+    </div>
+
+    <h2>If you only do three things</h2>
+    <ol>
+      <li><strong>Add a CI job that runs pytest on all six packages, and make it required.</strong> Half a day. Without it, nothing else here is enforceable. It will immediately turn the CLI package red — that is the point. Fix the lazy enum to make it green.</li>
+      <li><strong>Test the comparison path end-to-end with <code>run_compare=True</code>, through the real equity registry.</strong> A week. This is where the money is: 81 tests defend a toy schema and zero defend the adapter that decides what gets matched to a customer's cap table.</li>
+      <li><strong>Build the API tier, then the LLM eval harness — in that order.</strong> The API tier is a week and closes the contract and auth gap using seams that already exist. The eval harness is what makes this an AI company that can ship prompt changes on purpose. Start it small, because a small eval that runs beats a perfect one that doesn't.</li>
+    </ol>
+
+    <h2>The target shape — a diamond, not a pyramid</h2>
+    <p>The pure libs are already over-served; the risk is concentrated in the integration seam. Three properties of <em>this</em> system dictate the shape:</p>
+    <ul>
+      <li><strong>LLM non-determinism forces a split.</strong> Accuracy cannot go in the PR gate — it costs money and it flickers. So you run two things: a <em>deterministic</em> PR check (prompt-file hashes pinned, DTO parsing, the repair loop) and a <em>statistical</em> nightly eval (real providers, labelled documents, precision and recall with a threshold and a trend line). The current suite has the first half and calls it done.</li>
+      <li><strong>Mongo aggregations cannot be faked.</strong> <code>$lookup</code> with <code>let</code>, <code>$mergeObjects</code>, <code>$group</code> over missing keys, plus schema validators and unique indexes — the fake models none of it faithfully, and every one is on the customer-facing results path. This single fact pushes the center of gravity from "unit" to "component with a real container."</li>
+      <li><strong>Taskiq orchestration is a state machine over Mongo, not a queue problem.</strong> Deferral, supersede, cancellation, heartbeat reaping and maintenance gating are all decided by reading and writing <code>job_items</code> — they don't need Redis. Use the in-memory broker plus real Mongo for the bulk, and spend a real Redis container on only the handful of tests that assert genuine distributed behavior: lock mutual exclusion, stuck-item reaping, and graceful drain on SIGTERM.</li>
+    </ul>
+    <p><strong>And don't add the 104th comparison_engine test.</strong> Every marginal hour is worth more in the fat middle.</p>
+  </section>
+
+  <!-- ================= PANEL 4 ================= -->
+  <section class="panel" id="panel-4" role="tabpanel" aria-labelledby="tab-4" hidden>
+
+    <h2>Measured against <a href="https://github.com/goldbergyoni/nodejs-testing-best-practices">nodejs-testing-best-practices</a></h2>
+    <p class="sub">8 sections · 51 practices · plus the sister guide's naming, coverage and CI bullets, which §4.1 explicitly delegates to</p>
+
+    <p class="lede">The guide's central thesis is one sentence: <em>"the first tests to write should be component tests… They focus on testing an entire component as-is, <strong>through its API</strong>, with all layers included — <strong>database and all</strong> — while faking anything extraneous."</em> mono-ai misses on both load-bearing nouns.</p>
+
+    <p><strong>Through its API:</strong> there is not one HTTP test in the repo. All 20 routes, every DTO validator, every error-to-status mapping is untested — and the repo's own <code>AGENTS.md:76</code> prescribes <code>TestClient</code>, which nobody complied with. <strong>Database and all:</strong> the database is an in-memory fake into which the suite hand-patches ~100 lines of MongoDB aggregation semantics — the exact "some mock/stub the DB layer" and "memory-only DB engines present noise due to unsupported features" that §2.4 rejects by name.</p>
+
+    <div class="callout note">
+      <h4>Two honest notes before the scoring</h4>
+      <p>First, mono-ai <strong>exceeds</strong> the guide in places — its pure, port-injected engine libraries are exactly the "separate pure code from code that collaborates with external units" that §8.1 calls a welcome approach, done more rigorously than the guide's own example app. Second, the guide <strong>predates the LLM era</strong>. It has no concept of a non-deterministic collaborator whose <em>output quality</em> is the feature, so it cannot express what is arguably this repo's largest untested risk. Those gaps are named below rather than scored.</p>
+    </div>
+
+    <h2>Scorecard</h2>
+    <div class="card">
+      <div class="score-row"><div class="score-name">1 · Strategy and Workflow<small>Great feedback loop, unit tests on the right code — but the component-test backbone the guide calls "the Swiss Army knife that catches 99% of the bugs" does not exist. Only 1.5 of the 5 exit doors are covered.</small></div><div class="meter"><i class="mid" style="width:40%"></i></div><div class="score-val">2/5</div></div>
+      <div class="score-row"><div class="score-name">2 · Infrastructure and Database<small>No docker, no real Mongo, no migrations — plus the hand-patched aggregation semantics, which is §2.4's anti-pattern taken to its logical extreme.</small></div><div class="meter"><i class="low" style="width:20%"></i></div><div class="score-val">1/5</div></div>
+      <div class="score-row"><div class="score-name">3 · Web Server Setup<small>The web server is never started in a test. Every mechanism the guide asks for — in-process app, DI seam — is already built and simply unused.</small></div><div class="meter"><i class="low" style="width:2%"></i></div><div class="score-val">0/5</div></div>
+      <div class="score-row"><div class="score-name">4 · The Test Anatomy<small>Sub-10-second runtime and loose AAA, yes. But no HTTP client, no route structure, no whole-response assertion, tests up to 40 statements, and 0 of 192 three-part names.</small></div><div class="meter"><i class="mid" style="width:40%"></i></div><div class="score-val">2/5</div></div>
+      <div class="score-row"><div class="score-name">5 · Integrations With Other Services<small>Isolation is real but achieved at the wrong seam: no respx, no deny-all-egress, no chaos or timeout tests, and the Slice Tartlet client has zero tests.</small></div><div class="meter"><i class="low" style="width:20%"></i></div><div class="score-val">1/5</div></div>
+      <div class="score-row"><div class="score-name">6 · Dealing with Data<small>The best-followed section. Every test acts on its own records, only metadata is pre-seeded, the data is realistic, and there is one honorable side-effect test — undone by asserting state via direct DB queries and never installing the production schema.</small></div><div class="meter"><i style="width:60%"></i></div><div class="score-val">3/5</div></div>
+      <div class="score-row"><div class="score-name">7 · Message Queues<small>The in-memory fake broker is exactly right, and then the section stops: no ack/nack, no poisoned messages, no message-level idempotency, no connection failure, no E2E — for a service whose reaper and lock machinery is its most intricate code.</small></div><div class="meter"><i class="low" style="width:20%"></i></div><div class="score-val">1/5</div></div>
+      <div class="score-row"><div class="score-name">8 · Mocking<small>Genuinely strong: edge-only mocks, typed with spec=, full-object fakes that subclass the real Protocol, clean-per-test by construction, and DI instead of import patching — the guide's own preferred alternative.</small></div><div class="meter"><i style="width:80%"></i></div><div class="score-val">4/5</div></div>
+      <div class="score-row"><div class="score-name">A · Sister guide — naming, coverage, mutation, CI<small>Zero three-part names, no coverage tooling at all, no mutation testing, and no pytest job in CI — one of the uncovered suites is currently red and nobody knows.</small></div><div class="meter"><i class="low" style="width:20%"></i></div><div class="score-val">1/5</div></div>
+    </div>
+
+    <p style="margin-top:28px"><span class="grade">D+ <small>overall — 1.9 / 5 · ≈38%</small></span></p>
+    <div class="callout">
+      <p><strong>A well-engineered unit-test suite aimed at the wrong 20% of the risk.</strong> The craftsmanship is real — the mocking discipline and the pure-engine architecture would earn praise in any review, and the 6.4-second loop is exactly what the guide is trying to buy you. But the guide's thesis is a single unhedged sentence — test the whole component, through its API, with a real database — and mono-ai does neither half. The repo's own <code>AGENTS.md</code> prescribes the right thing and was never followed. <em>The gap between what this team knows and what it built is the whole finding.</em></p>
+    </div>
+
+    <h2>Practice by practice</h2>
+    <p class="sub">Node mechanics translated to their Python equivalents: nock → respx · supertest → httpx + ASGITransport · jest → pytest · docker-compose DB → testcontainers · sinon → unittest.mock · stryker → mutmut</p>
+
+    <h3>Section 1 — Strategy and workflow</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Practice</th><th>Status</th><th>Evidence &amp; gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1.1</strong> Always START with component tests — "through its API, with all layers included, database and all"</td><td><span class="pill bad">Violates</span></td><td><strong>The headline miss.</strong> Grep for <code>TestClient</code>/<code>ASGITransport</code> returns only the 3 lines inside <code>AGENTS.md</code> — zero test files. The closest artifact calls <code>run_job_use_case(...)</code> directly, bypassing routing, validation, and error mapping. One flow test for a 36 kLOC service.</td></tr>
+          <tr><td><strong>1.2</strong> Run very few E2E, selectively consider unit tests</td><td><span class="pill partial">Inverted</span></td><td>E2E: <strong>0</strong>. Unit: ~170 of 192 — and they are legitimately where the guide says unit tests shine, on non-trivial algorithms. The unit half is earned; the E2E and component halves are missing.</td></tr>
+          <tr><td><strong>1.3</strong> Cover features, not functions</td><td><span class="pill bad">Violates</span></td><td>Test directories are named after code units (<code>test_extractors/</code>, <code>test_persistence/</code>), not features. One test reaches into a <em>private</em> method via <code>object.__new__(AnthropicProvider)</code> — the opposite extreme from feature-level.</td></tr>
+          <tr><td><strong>1.4</strong> Write tests during coding; design for frequent execution</td><td><span class="pill ok">Follows</span></td><td>6.4 s for 219 tests, comfortably inside the guide's "below 10 seconds". The loop this practice exists to protect is genuinely excellent.</td></tr>
+          <tr><td><strong>1.5</strong> Test the five backend exit doors</td><td><span class="pill partial">1.5 of 5</span></td><td><strong>Response:</strong> none. <strong>New state:</strong> the strongest area — six collections asserted. <strong>External calls:</strong> only via spy fakes; the Tartlet client has zero tests. <strong>Message queues:</strong> tasks run inline; no enqueue/ack/retry test. <strong>Observability:</strong> zero — nothing asserts an error is logged, Slack fires, or a trace is emitted, despite all four being wired.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Section 2 — Infrastructure and database</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Practice</th><th>Status</th><th>Evidence &amp; gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>2.1</strong> Use docker-compose to host the DB and infra</td><td><span class="pill bad">Violates</span></td><td>No compose file anywhere. Mongo is mongomock; Redis is never started; GCS is a hand-written in-memory store.</td></tr>
+          <tr><td><strong>2.4</strong> Optimize your real DB for testing — <em>don't fake it.</em> "Some mock/stub the DB layer — cutting off a few seconds does not justify the greatly decreased risk coverage ❌"</td><td><span class="pill bad">Violates</span></td><td><strong>The second-worst finding.</strong> The repo uses mongomock <em>and then patches MongoDB's own semantics into it</em> — <code>$lookup</code> with <code>let</code>, <code>$mergeObjects</code>, <code>$indexOfArray</code>, missing-key-tolerant <code>$group</code>. The production pipelines that build every API response are validated only against a hand-written imitation of Mongo, never against Mongo.</td></tr>
+          <tr><td><strong>2.6</strong> Build the DB schema using migrations — "always prefer the technique used in production"</td><td><span class="pill bad">Violates</span></td><td>Production installs JSON-Schema validators and unique indexes via <code>mongo_db_init.py</code>. <strong>No test ever runs it.</strong> mongomock has neither — so schema drift, a bad validator, or a missing unique index is undetectable by construction.</td></tr>
+          <tr><td><strong>2.3 / 2.5</strong> Keep infra warm locally; RAM-folder storage</td><td><span class="pill na">N/A today</span></td><td>No infra exists to keep warm. The <em>goal</em> — a sub-10-second loop — is already met by faking. Once a container lands, gate <code>compose down</code> behind <code>if CI</code> to preserve it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Section 3 — Web server setup</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Practice</th><th>Status</th><th>Evidence &amp; gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>3.1</strong> The test and the backend should live within the same process</td><td><span class="pill bad">Violates</span></td><td>Vacuously — the server is never started at all. Everything the guide asks for is <em>available and unused</em>: <code>FASTAPI_APP</code> is in-process-testable and <code>api/deps.py</code> already exposes every use case as a swappable Protocol. One line — <code>httpx.AsyncClient(transport=ASGITransport(app=FASTAPI_APP))</code> — unlocks sections 1, 3, 4 and half of 6.</td></tr>
+          <tr><td><strong>3.2</strong> Let the tests control server start/stop</td><td><span class="pill partial">Mechanism unused</span></td><td>The analogue of <code>start()</code>/<code>stop()</code> exists (<code>start_containers</code>/<code>shutdown_containers</code>) but tests don't use it — they instead <em>reflect over private class attributes</em> of the containers and restore them in a <code>finally</code>. That's a workaround for not owning startup.</td></tr>
+          <tr><td><strong>3.3</strong> Randomize the port in testing</td><td><span class="pill na">N/A</span></td><td>With ASGI transport there is no socket and no port — which achieves the practice's goal (no collisions under parallelism) more completely than randomizing one.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Section 4 — The test anatomy</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Practice</th><th>Status</th><th>Evidence &amp; gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>4.1</strong> Keep tests small (~7 statements), sub-10s runtime, consistent "when… then" naming, AAA, single interaction</td><td><span class="pill partial">2 of 4</span></td><td>Runtime ✅ 6.4 s. AAA ✅ informally. <strong>≤7 statements ❌</strong> — the flow test is 63 lines, ~40 statements, ~25 assertions, spanning six stages and six direct DB queries: precisely the "big flow, not a single interaction" the bullet warns against.</td></tr>
+          <tr><td><strong>4.1 → sister</strong> Include 3 parts in each test name</td><td><span class="pill bad">0 of 192</span></td><td><code>grep -c "def test_when_.*_then_"</code> → <strong>0</strong>. Names are 2-part code-unit slugs (<code>test_mongo_dao_sanity</code>). This is deliberate and documented — the ai-testing skill mandates slugs, directly contradicting the repo's <em>other</em> rulebook, which mandates the guide's form. Three doctrines; the guide's is followed by none.</td></tr>
+          <tr><td><strong>4.2</strong> Approach the API with a pure HTTP client (axios, not supertest)</td><td><span class="pill bad">Violates</span></td><td>No HTTP client in any test. <code>httpx</code> is already a <em>production</em> dependency and appears in zero test files — it is the exact Python analogue the guide asks for.</td></tr>
+          <tr><td><strong>4.3</strong> Provide real credentials; avoid security back doors</td><td><span class="pill partial">Security gap</span></td><td>There is <strong>no authentication to test</strong> — no dependency, no middleware, no JWT on any business endpoint, and the one admin guard fails open when its env var is unset. Not a testing gap so much as a security gap surfaced by a testing review.</td></tr>
+          <tr><td><strong>4.4</strong> Assert on the entire response object, not every field</td><td><span class="pill bad">Violates</span></td><td>No HTTP responses to assert. Ironically the repo <em>has</em> the right tool — <code>assert_matches</code> with volatile-field stripping, used well in the DAO tier. It just isn't applied at a response layer that doesn't exist.</td></tr>
+          <tr><td><strong>4.5</strong> Structure tests by routes and stories</td><td><span class="pill bad">Violates</span></td><td>Structure is by component. No route ever appears in a test or class name.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Section 5 — Integrations with other services</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Practice</th><th>Status</th><th>Evidence &amp; gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>5.1</strong> Isolate the component using an HTTP interceptor — "act on the network level to keep tests pure black-box"</td><td><span class="pill bad">Wrong seam</span></td><td>No interception library installed at all. Isolation is achieved by stubbing <em>functions</em> and injecting ports. Consequence: the Tartlet client — pagination, Descope bearer auth, retries — has <strong>zero tests</strong>. The repo's own <code>rules/mocking.md</code> E.9 mandates respx and is ignored.</td></tr>
+          <tr><td><strong>5.4</strong> Deny all outgoing requests by default (<code>nock.disableNetConnect()</code>)</td><td><span class="pill bad">Violates</span></td><td>Nothing blocks egress. The suite happens not to make network calls — but that is an assumption maintained by discipline, which is exactly the fragile posture the bullet names. A new <code>httpx.get(...)</code> in production code would silently hit the real network in CI. One line of <code>pytest-socket</code> fixes it.</td></tr>
+          <tr><td><strong>5.5</strong> Simulate network chaos — slow and timed-out responses, not just errors</td><td><span class="pill bad">Violates</span></td><td>Zero tests for timeouts, 5xx, retries, or circuit-breaking. This matters more here than in a typical app: there is a configured timeout, a retry util, an <strong>LLM provider fallback chain</strong>, and a 502 path on link-audit — <em>all untested</em>. Does Vertex 429 actually fall back to Anthropic and notify Slack? Nobody knows.</td></tr>
+          <tr><td><strong>5.6</strong> Verify outgoing request bodies, not just URLs</td><td><span class="pill partial">Right instinct, wrong layer</span></td><td>The repo <em>does</em> assert on outgoing payloads — <code>store.upload_calls</code>, the rendered prompt, the <code>response_model</code> kwarg. That's the practice's spirit. What is never verified is the one call that actually crosses a wire: the Tartlet request.</td></tr>
+          <tr><td><strong>5.7</strong> Record real outgoing requests for awareness</td><td><span class="pill bad">Violates</span></td><td>No cassettes, no VCR. Every LLM response in the suite is a Pydantic model <em>hand-written by a developer</em>. Nobody has ever checked those hand-written shapes against what Anthropic, Gemini, or Tartlet actually return — so the fakes can drift from reality and the suite stays green.</td></tr>
+          <tr><td><strong>5.8</strong> Code against a strict provider contract</td><td><span class="pill bad">Violates</span></td><td>No pact, no schemathesis, no OpenAPI diffing. Tartlet is an <em>internal</em> service — the easiest possible case for a shared schema. Symmetrically, mono-ai publishes an OpenAPI doc and its own CLI consumes it by hand rather than from a generated client.</td></tr>
+          <tr><td><strong>5.9</strong> Fake the time</td><td><span class="pill bad">Violates</span></td><td>No freezegun, no time-machine. The suite <em>avoids</em> time rather than controlling it. Two real sleeps exist. Meanwhile the untested time-dependent production logic is significant: heartbeat timeouts, lock leases, cache TTLs, a 600-second compare-wait poll — none testable without fake timers.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Section 6 — Dealing with data <span class="pill ok">best section</span></h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Practice</th><th>Status</th><th>Evidence &amp; gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>6.1</strong> Each test acts on its own records only</td><td><span class="pill ok">Follows</span></td><td>Verified across every DB test: <code>mock_db</code> returns a <em>fresh</em> in-memory client per test. No global seed, no shared fixture, no cross-test state, no Mystery Guest. A genuine, unambiguous pass — and it is the guide's most emphatic data bullet.</td></tr>
+          <tr><td><strong>6.2</strong> Only metadata and context data get pre-seeded</td><td><span class="pill ok">Follows</span></td><td>The only globally pre-seeded thing is the tax-treatment lookup table — a currency/country-style list, the guide's canonical metadata example. Right classification; wrong mechanism (module-level side effects).</td></tr>
+          <tr><td><strong>6.3</strong> Assert new state using the public API, not direct DB queries</td><td><span class="pill partial">Partial</span></td><td>The flow test does <em>both</em>: it reads through the use case (good) and then queries six Mongo collections directly, asserting on raw field names and internal enum values. Any collection rename breaks the test without any behavior changing.</td></tr>
+          <tr><td><strong>6.4</strong> Choose a clear cleanup strategy</td><td><span class="pill partial">Partial</span></td><td>Implicitly after-each, in its strictest form. Defensible — but it means the aggregations are <em>always</em> tested against an artificially empty database: no index contention, no unique-constraint collisions, no "does this query still work with 10,000 other rows".</td></tr>
+          <tr><td><strong>6.8</strong> Test for undesired side effects — "add 2 records, delete one, check the second survives"</td><td><span class="pill partial">One honorable instance</span></td><td>The DAO test saves two extraction types and asserts both collections. Elsewhere the pattern is absent — and the highest-risk surfaces are entirely untested: <code>force_stage_deletion.py</code>, <code>cancel.py</code> (does it cancel <em>only</em> that job's items?), <code>rerun.py</code>, the reaper. <strong>These code paths delete and re-drive production work.</strong> Cheapest high-value test class in the repo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Section 7 — Message queues</h3>
+    <p>Fully applicable: seven Taskiq tasks over a Redis stream broker, with heartbeats, distributed locks, a reaper daemon, cancellation, deferral and supersede logic.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Practice</th><th>Status</th><th>Evidence &amp; gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>7.1</strong> Use a fake MQ for the majority of testing</td><td><span class="pill ok">Follows</span></td><td>Exactly right — and elegantly so. <code>TASKIQ_RUN_INLINE=True</code> is a <em>production-supported flag</em>, not a test-only hack, so the fake cannot drift from the real broker's API.</td></tr>
+          <tr><td><strong>7.2</strong> Promisify the test — no polling, no sleeps</td><td><span class="pill ok">Follows</span></td><td>The inline broker means the task chain completes inside the await. No polling loops, no sleeps, no callbacks.</td></tr>
+          <tr><td><strong>7.3</strong> Test message acknowledgment and nack</td><td><span class="pill bad">Violates</span></td><td>Zero tests. The orchestrator is the ack/nack brain of the system and only its happy path runs — incidentally, inside the one flow test. Nothing asserts an item goes to FAILED on exception, or is retried.</td></tr>
+          <tr><td><strong>7.5</strong> Test for poisoned messages</td><td><span class="pill bad">Violates</span></td><td>A task is dispatched with only a <code>job_item_id</code>. What happens when that id is missing, unknown, or points at a cancelled or superseded item is untested — as is the maintenance gate.</td></tr>
+          <tr><td><strong>7.6</strong> Test for idempotency</td><td><span class="pill partial">Partial</span></td><td>The DAO-level primitive <em>is</em> tested (<code>test_upsert_keeps_existing_identity</code> — excellent). But the message-level idempotency it exists to serve — the same task delivered twice, the reaper re-enqueueing an item that is actually still running — is untested. That is precisely the failure mode the whole heartbeat/lock/reaper apparatus was built to prevent.</td></tr>
+          <tr><td><strong>7.7</strong> Avoid zombies — test connection failures</td><td><span class="pill bad">Violates</span></td><td>Redis is never connected to, so the locks, heartbeat, cancellation watch, and maintenance pub/sub have <strong>no tests at all</strong> — and these decide whether work is duplicated or lost when infrastructure hiccups. The ten-year Redis idle timeout ("the reaper is the sole retry path") is a load-bearing design decision that nothing verifies.</td></tr>
+          <tr><td><strong>7.8</strong> Write a few E2E against a production-like environment</td><td><span class="pill bad">Violates</span></td><td><strong>Zero.</strong> The deploy workflow builds three images and patches the gitops repo without running a single test.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Section 8 — Mocking <span class="pill ok">strongest section</span></h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Practice</th><th>Status</th><th>Evidence &amp; gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>8.1</strong> Spot the good mocks from the evil ones — "bad if it applies to internal code AND appears in the assert phase"</td><td><span class="pill ok">Follows</span></td><td>Applying the guide's own formula, mono-ai comes out clean. Every double sits at a genuine external boundary, and the mocks that <em>do</em> appear in assertions are isolation mocks verifying external effects — which the guide explicitly endorses. No implementation mock of internal code is asserted upon.</td></tr>
+          <tr><td><strong>8.2</strong> Avoid hidden, surprising mocks — "defining mocks in an external hook file? Also a bad idea ❌"</td><td><span class="pill bad">Violates</span></td><td>Essentially all mocks live in conftest — exactly the external hook file the bullet rejects. Reading the 95-line flow test tells you nothing about what is faked, what the LLM will return, or why <code>snap_back_fields</code> is an identity function. The repo's own <code>rules/mocking.md</code> agrees with the guide; the ai-testing skill mandates the opposite. Doctrine collision — guide loses.</td></tr>
+          <tr><td><strong>8.3</strong> Be mindful about partial mocks — mock the entire object</td><td><span class="pill ok">Follows</span></td><td>Best-in-class. The hand-written fakes implement the <em>whole</em> ABC and deliberately raise <code>NotImplementedError</code> on methods a test shouldn't reach — literally the guide's "give all functions a safe default."</td></tr>
+          <tr><td><strong>8.4</strong> Clean up all mocks before every test</td><td><span class="pill ok">Follows</span></td><td>Achieved structurally: every double is a function-scoped fixture, so no mock outlives a test and no reset is needed.</td></tr>
+          <tr><td><strong>8.5</strong> Be mindful about the mocking mechanism — "a dependency injection system sidesteps all these complexities"</td><td><span class="pill ok">Exceeds</span></td><td>The guide's own listed <em>alternative</em> is precisely mono-ai's architecture: rigid ports and adapters, concretes built in exactly one place, fakes injected through the seam rather than patching imports.</td></tr>
+          <tr><td><strong>8.6</strong> Type your mocks</td><td><span class="pill ok">Follows</span></td><td><code>AsyncMock(spec=...)</code> plus fakes that <em>subclass the real Protocol</em> — checked both statically and at runtime, a stronger guarantee than the guide's own example. <strong>Caveat:</strong> mypy is advisory in this repo, so the static half can never fail a build.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Where the guide has no answer</h2>
+    <p>The guide was written for deterministic backends. Three of mono-ai's largest risks fall entirely outside it, and it would be dishonest to score them:</p>
+    <ul>
+      <li><strong>Extraction accuracy.</strong> The product's whole value is: does the LLM pull the right <code>grant_units</code> out of a real board approval? The guide has no concept of a collaborator whose <em>output quality</em> is the feature. The mapping worth making: <strong>an eval suite — golden documents, expected extractions, a scored threshold, run nightly rather than per-PR — is the LLM-era analogue of the guide's E2E tier.</strong> Its absence is the single largest untested risk in the product, and this framework cannot express it.</li>
+      <li><strong>Prompt regression.</strong> No test pins prompt content. A one-word edit can silently degrade extraction across every document type.</li>
+      <li><strong>Cost regression.</strong> The cost endpoint reads real spend from Langfuse; nothing guards against a change that doubles token usage. The guide's five exit doors don't include "money".</li>
+    </ul>
+
+    <h2>Top five changes to close the gap</h2>
+    <ol>
+      <li><strong>Add a pytest job to CI.</strong> Half a day. Today the deploy pipeline ships to staging and production without running a single test, and 60 of 219 tests execute nowhere. Every other item here is worthless until a green suite is a merge requirement.</li>
+      <li><strong>Write component tests through the HTTP door</strong> — the guide's entire thesis. <code>httpx</code> + <code>ASGITransport</code> over the existing <code>mock_environment</code> fixture. This one change lights up sections 1, 3, 4 and half of 6, and it is what <code>AGENTS.md</code> already told the team to do.</li>
+      <li><strong>Replace mongomock with a real MongoDB container, and install the schema the production way.</strong> This <em>deletes</em> a hundred lines of fake-Mongo maintenance and an entire class of "passes in test, fails in prod" aggregation bugs.</li>
+      <li><strong>Isolate the network properly:</strong> add respx plus deny-all-egress, test the Tartlet client, and simulate the timeout and 5xx chaos §5.5 asks for.</li>
+      <li><strong>Cover the queue and destructive paths with the extra-mile pattern:</strong> arrange two jobs, act on one, assert the other survives. Deliver a duplicate task and assert idempotency. Fail a task and assert it lands FAILED and surfaces in <code>error_groups</code>.</li>
+    </ol>
+    <p><em>Runner-up, outside the guide's world but arguably first for the business:</em> build the eval suite.</p>
+  </section>
+
+  <!-- ================= PANEL 5 ================= -->
+  <section class="panel" id="panel-5" role="tabpanel" aria-labelledby="tab-5" hidden>
+
+    <h2>Measured against the team's own <code>rules/</code></h2>
+    <p class="sub">61 checkable rules across six files: testing-strategy · the-test-anatomy · the-test-data · mocking · testing-with-database · assertions</p>
+
+    <div class="callout">
+      <h4>Before a single rule can be scored</h4>
+      <p><strong><code>rules/</code> was copied from another repository — a Node/Python <code>pr_agent</code> codebase — and was never adapted to mono-ai.</strong> This is not a stylistic quibble; it makes ten of the sixty-one rules literally impossible to evaluate, including the document's own self-declared number-one rule.</p>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>The rules reference…</th><th>Exists in mono-ai?</th><th>Proof</th></tr></thead>
+        <tbody>
+          <tr><td><code>config.toml</code> <code>[patterns_and_practices]</code></td><td><span class="pill bad">No</span></td><td><code>find . -name 'config.toml'</code> → empty</td></tr>
+          <tr><td><code>{max_test_statements}</code></td><td><span class="pill bad">Undefined</span></td><td>Placeholder never resolved anywhere</td></tr>
+          <tr><td><code>{max_assertions}</code>, <code>{max_act_phase_statements}</code>, <code>{max_json_lines_in_test}</code></td><td><span class="pill bad">Undefined</span></td><td>Same — no source of values</td></tr>
+          <tr><td><code>[canonical_example.&lt;type&gt;]</code></td><td><span class="pill bad">Undefined</span></td><td>The instruction "read the canonical example" resolves to nothing</td></tr>
+          <tr><td><code>pr_agent/git_providers/</code></td><td><span class="pill bad">No</span></td><td>No <code>pr_agent</code> package exists</td></tr>
+          <tr><td>Test types <code>flow</code> / <code>unit</code> / <code>git_providers</code></td><td><span class="pill bad">No</span></td><td>mono-ai has no git providers</td></tr>
+          <tr><td><code>tests/flows/</code>, <code>tests/ux_integration/</code>, <code>tests/obfuscator/</code></td><td><span class="pill bad">No</span></td><td>No such directories</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The consequence is sharp. A developer who asks "how many statements may my test have?" is answered with the literal string <code>{max_test_statements}</code>. <strong>The team's single most emphasized testing rule cannot be complied with, because nobody can know what it says.</strong> And <code>testing-strategy.md</code> is inapplicable end to end — it is not a strategy for this repo, it is a strategy for a git-PR-review bot.</p>
+
+    <h2>Three doctrines, mutually contradictory</h2>
+    <p>Beneath the imported-rules problem sits a worse one. Three documents in this repo tell contributors — human and agent — how to test, and they disagree on four load-bearing points.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Question</th><th><code>rules/</code> says</th><th>The ai-testing skill says</th><th>Reality</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Test naming</strong></td><td><code>test_when_&lt;case&gt;_then_&lt;expectation&gt;</code></td><td>"Short slugs: <code>test_&lt;subject&gt;_&lt;behavior&gt;</code>"</td><td><span class="pill bad">0 of 192</span> follow the rules' form. All 192 follow the skill.</td></tr>
+          <tr><td><strong>Where mocks live</strong></td><td>"<strong>Never</strong> hide mocks in external <code>conftest.py</code> files"</td><td>"Inject <code>mock_llm_gateway</code>… use <code>mock_db</code>" — both in the project-wide conftest</td><td>Every significant mock is conftest-hosted. The extreme case is a <strong>487-line</strong> conftest.</td></tr>
+          <tr><td><strong>Assertions in helpers</strong></td><td>"Assertions should exist only inside test functions, <strong>never</strong> inside helpers"</td><td>"Prefer <code>utils.py::assert_matches</code>" — a helper that asserts</td><td>The DAO tier's primary assertion is that helper.</td></tr>
+          <tr><td><strong>Reading state back</strong></td><td>"Assert new data state using the <strong>public API, not direct DB queries</strong>"</td><td>"Persistence behavior is proven by a <strong>DB read-back</strong>"</td><td>The flow test does both, then leans on six raw Mongo queries.</td></tr>
+          <tr><td><strong>Integration style</strong></td><td>Flow test from the entrance door is "the primary and default"</td><td><code>AGENTS.md</code>: "use <code>TestClient</code> for integration tests"</td><td><span class="pill bad">Zero</span> <code>TestClient</code> usages. One flow test in 192.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>A team following both documents is following neither.</strong> The code demonstrably followed the <code>.cursor</code> skill and ignored <code>rules/</code> — which was the rational choice, since <code>rules/</code> describes a different product. The compliance table below therefore reads as a near-total failure; that failure is best understood as <em>the rules folder being wrong</em>, not the tests being uniquely bad.</p>
+
+    <h2>Compliance scorecard</h2>
+    <p class="sub">Percentages count only evaluable rules — the ten un-evaluable ones are excluded from the denominator rather than charged against the code.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Rule file</th><th class="num-col">Rules</th><th class="num-col">Un-eval.</th><th class="num-col">✅</th><th class="num-col">⚠️</th><th class="num-col">❌</th><th class="num-col">Score</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><strong>testing-strategy.md</strong></td><td class="num-col">8</td><td class="num-col">4</td><td class="num-col">1</td><td class="num-col">1</td><td class="num-col">2</td><td class="num-col"><strong>25%</strong></td><td>Not a rulebook for this repo. The "primary and default" flow test exists <strong>once</strong> in 192 tests, and never enters through the HTTP door.</td></tr>
+          <tr><td><strong>the-test-anatomy.md</strong></td><td class="num-col">30</td><td class="num-col">6</td><td class="num-col">6</td><td class="num-col">8</td><td class="num-col">10</td><td class="num-col"><strong>25%</strong></td><td>The #1 rule has no value. Naming is 0/192. The structural spine is inverted by the competing skill. Logic rules are the bright spot.</td></tr>
+          <tr><td><strong>the-test-data.md</strong></td><td class="num-col">7</td><td class="num-col">0</td><td class="num-col">2</td><td class="num-col">2</td><td class="num-col">3</td><td class="num-col"><strong>29%</strong></td><td>The idea is honoured; the infrastructure was never built. No <code>factories.py</code>, no data folder, <strong>no faker</strong>.</td></tr>
+          <tr><td><strong>mocking.md</strong></td><td class="num-col">5</td><td class="num-col">0</td><td class="num-col">2</td><td class="num-col">1</td><td class="num-col">2</td><td class="num-col"><strong>40%</strong></td><td>The best-executed rule in the repo sits next to the worst. <code>respx</code> isn't installed at all.</td></tr>
+          <tr><td><strong>testing-with-database.md</strong></td><td class="num-col">7</td><td class="num-col">0</td><td class="num-col">3</td><td class="num-col">1</td><td class="num-col">3</td><td class="num-col"><strong>43%</strong></td><td>Highest — on a technicality: the rules never actually demand a real DB, they only presuppose one. Cascading deletion untested.</td></tr>
+          <tr><td><strong>assertions.md</strong></td><td class="num-col">4</td><td class="num-col">0</td><td class="num-col"><strong>0</strong></td><td class="num-col">3</td><td class="num-col">1</td><td class="num-col"><strong>0%</strong></td><td>Zero rules fully satisfied. 29 comprehensions inside <code>assert</code> against an explicit ban.</td></tr>
+          <tr><td><strong>Total</strong></td><td class="num-col"><strong>61</strong></td><td class="num-col"><strong>10</strong></td><td class="num-col"><strong>14</strong></td><td class="num-col"><strong>16</strong></td><td class="num-col"><strong>21</strong></td><td class="num-col"><strong>27%</strong></td><td>43% if partial credit counts half.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:28px"><span class="grade">D <small>27% strict · 43% weighted</small></span></p>
+    <div class="callout warn">
+      <p><strong>The grade needs its asterisk, and it is a big one.</strong> This is not a story of a careless team ignoring its own standards. Judged against the skill they <em>actually</em> used, these tests are decent: correctly-spec'd mocks at real boundaries, function-scoped isolation, realistic domain data, no flakiness, a six-second suite. They score 27% against <code>rules/</code> mostly <em>for obeying the other document</em>.</p>
+      <p><strong>The real finding is not a compliance number. It is that the team is steering by two maps of different cities, and one of them has holes punched in it.</strong></p>
+    </div>
+
+    <h2>The rules the code genuinely honours</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Rule</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><strong>E.3</strong> — "Always use the type hints of the mocked code (<code>spec=</code>), real Pydantic models for return values"</td><td><span class="pill ok">Best rule in the repo.</span> <code>AsyncMock(spec=LlmProvidersGateway)</code>; return values are <em>real</em> <code>ChatResult</code>/output DTOs; the fakes subclass the real ABCs, so mypy checks them statically.</td></tr>
+          <tr><td><strong>B.3</strong> — The extra-mile principle: "testing a filter? Also assert an item that should NOT be shown"</td><td><span class="pill ok">Genuinely well done.</span> <code>test_match_filter_excludes_candidates</code> arranges three and asserts the excluded one is gone. The DAO test saves two extraction types and asserts both collections.</td></tr>
+          <tr><td><strong>Rule 6</strong> — Each test is self-contained, never relies on other tests' state</td><td><span class="pill ok">Structurally guaranteed.</span> Zero session or module-scoped fixtures exist anywhere. Every test gets a virgin in-memory DB; container patches restore in a <code>finally</code>.</td></tr>
+          <tr><td><strong>C.10</strong> — "Use meaningful domain data, not dummy values"</td><td><span class="pill ok">Consistently strong.</span> "2022 Share Incentive Plan", "Ordinary Shares", <code>percent_basis="fully diluted"</code>, <code>resulting_total_pool_size=9_072_795</code>. No <code>foo</code>, no <code>bar</code>.</td></tr>
+          <tr><td><strong>C.4</strong> — Factories return defaults but accept per-field overrides</td><td><span class="pill ok">Nails the contract.</span> Both <code>make_*</code> builders implement <code>defaults | overrides</code> exactly. Only their <em>location</em> is wrong.</td></tr>
+          <tr><td><strong>B.20 / G.12 / G.14</strong> — Create assumed records in Arrange; pre-seed only metadata; each test acts on its own records</td><td><span class="pill ok">Clean.</span> Nothing is pre-seeded into the DB. The only global bootstrap is the tax-treatment lookup table — exactly the "countries, currencies" category the rule permits.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Where the code breaks the rules</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Rule</th><th>Verdict</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><strong>A.1</strong> — Name tests <code>test_when_&lt;case&gt;_then_&lt;expectation&gt;</code></td><td><span class="pill bad">0 / 192</span></td><td>Not one test complies. Every test uses the competing skill's slug form. <em>Do not mass-rename 192 tests to satisfy an imported rule</em> — amend one of the two documents instead.</td></tr>
+          <tr><td><strong>D.7</strong> — "Avoid loops and list comprehensions in the assert phase"</td><td><span class="pill bad">29 violations</span></td><td>Comprehensions inside <code>assert</code> are pervasive, plus two custom comprehension helpers written solely to feed assertions.</td></tr>
+          <tr><td><strong>A.30</strong> — "No floating module-level code that performs setup or has side effects"</td><td><span class="pill bad">Load-bearing</span></td><td>Three places: two tax-treatment cache bootstraps (module-level file write + <code>os.environ.setdefault</code>, carrying a <code>noqa</code> to suppress the error they cause) and a bare <code>_patch_mongomock()</code> call that mutates five mongomock internals globally. This <em>also</em> violates the skill's own "never mutate <code>os.environ</code>" — the repo breaks both doctrines at once. And it is why the CLI suite cannot be collected.</td></tr>
+          <tr><td><strong>C.3 / C.5</strong> — Data comes from a factory file; use <code>faker</code> for realistic data</td><td><span class="pill bad">Never built</span></td><td>No <code>factories.py</code>, no data folder, and <code>faker</code> is not a dependency of any package. The two builders that exist are fixtures in a conftest.</td></tr>
+          <tr><td><strong>E.9</strong> — "Prefer network interception (<code>respx</code>) over function mocks"</td><td><span class="pill bad">Violated by absence</span></td><td>No interception library is installed at all. The one HTTP fake monkeypatches a function. Consequence: the entire Slice Tartlet client — pagination, Descope auth, retries — has <strong>zero tests</strong>. <em>The single highest-value gap in this audit.</em></td></tr>
+          <tr><td><strong>G.18</strong> — "Test for undesired cascading deletes"</td><td><span class="pill bad">Nothing tested</span></td><td>The service has a whole module dedicated to cascading deletion — it wipes segments, extractions, locations, flags and comparison matches when a stage is force-re-run — and it has <strong>zero tests</strong>. <code>force</code>/<code>stale_force</code> are among the most dangerous inputs in the API, and nothing guards them.</td></tr>
+          <tr><td><strong>A.25 / A.5 / B.15</strong> — Assertions only in the Assert phase; three clear phases; don't compare huge datasets</td><td><span class="pill bad">One test breaks nine rules</span></td><td>The flow test is a chain of act-assert-act-assert about eight times over, with ~44 statements, 24 assertions, and reads across six Mongo collections. It is the named counter-example in nine separate rules.</td></tr>
+          <tr><td><strong>B.23</strong> — "Don't test implementation details"</td><td><span class="pill bad">Doubly non-compliant</span></td><td>Assertions on mock internals (<code>chat.await_count</code>, <code>chat.await_args.kwargs[...]</code>) and on prompt wording — which <em>both</em> doctrines forbid.</td></tr>
+          <tr><td><strong>B.25</strong> — "Avoid time-based waiting"</td><td><span class="pill bad">Two real sleeps</span></td><td>Real wall-clock waits drive TTL expiry and concurrency coalescing — the only genuine flake source in the suite.</td></tr>
+          <tr><td><strong>Rule 3 / A.13</strong> — "No if/else, no loops in tests"</td><td><span class="pill partial">Partial</span></td><td>Loops inside test bodies where <code>@pytest.mark.parametrize</code> belongs. Though honestly: the explanatory comments A.13 also bans are <em>good</em>, and that rule is over-strict — it should be relaxed, not enforced.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Prioritized fixes</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th class="num-col">#</th><th>Action</th><th>Closes</th><th class="num-col">Effort</th></tr></thead>
+        <tbody>
+          <tr><td class="num-col">1</td><td><strong>Resolve the doctrine war. Pick one testing document.</strong> Keep the ai-testing skill as canonical — it fits the repo and the code follows it — then either delete <code>rules/</code> or rewrite it <em>for mono-ai</em>: fill in the four numeric caps, replace the imported test types with the repo's real tiers, drop the <code>pr_agent</code> references, and reconcile the four contradictions above.</td><td>The root cause of nearly every violation; makes all other rules enforceable</td><td class="num-col">1 day</td></tr>
+          <tr><td class="num-col">2</td><td><strong>Test the HTTP door.</strong> Already prescribed by <code>AGENTS.md</code> and by the rules' own "primary and default" tier — and used by nobody. 20 routes, 0 tests.</td><td>TS.4, TS.8; the largest zero-coverage surface in the repo</td><td class="num-col">2–3 days</td></tr>
+          <tr><td class="num-col">3</td><td><strong>Build the factories the rules ask for</strong> — <code>build_*</code> functions plus <code>faker</code>, lists defaulting to two items, randomized enum fields. Migrate the two <code>make_*</code> builders out of conftest.</td><td>Eight rules at once (C.3, C.5, C.7, C.15, C.20, A.12, and knock-on A.4, D.15)</td><td class="num-col">1–2 days</td></tr>
+          <tr><td class="num-col">4</td><td><strong>Install <code>respx</code> and test the Tartlet client</strong> — pagination, Descope auth, timeouts, and the 502 path.</td><td>E.9 — the only rule violated by the absence of a dependency</td><td class="num-col">1 day</td></tr>
+          <tr><td class="num-col">5</td><td><strong>Split the flow test</strong> into five focused tests, each with one act and one topic, asserting through the use-case API rather than raw Mongo.</td><td>Nine rules — it is the named counter-example in all of them</td><td class="num-col">1 day</td></tr>
+          <tr><td class="num-col">6</td><td><strong>Make the tax-treatment enum lazy.</strong> A production fix that deletes the module-level bootstrap from both conftests <em>and</em> un-breaks the CLI suite.</td><td>A.30, the skill's os.environ ban, and a red suite nobody can see</td><td class="num-col">½ day</td></tr>
+          <tr><td class="num-col">7</td><td><strong>Add a CI pytest job.</strong> Rules are worthless if the tests don't run — and 68 of 219 collected tests are invisible to CI today.</td><td>Makes every rule above actually enforceable</td><td class="num-col">½ day</td></tr>
+          <tr><td class="num-col">8</td><td><strong>Test cascading deletion</strong> and the orchestrator's failure paths — retries, heartbeat timeout, cancellation, locking, supersede.</td><td>G.18, G.3, B.4</td><td class="num-col">2–3 days</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note">
+      <h4>The thing both documents agree on, and neither enforces</h4>
+      <p>Beneath the doctrine war sits the substantive risk. <strong>36,000 lines of service code — 20 HTTP routes, the orchestrator, the reaper, comparison, external-entity fetching, cascading deletion — is covered by 22 tests and one happy-path flow, while the 3,900-line pure comparison engine has 81.</strong> The testing effort is inverted relative to the risk. No amount of rule-tidying changes that; only tests in the fat middle will.</p>
+    </div>
+  </section>
+
+  <!-- ================= PANEL 6 ================= -->
+  <section class="panel" id="panel-6" role="tabpanel" aria-labelledby="tab-6" hidden>
+
+    <h2>Anatomy of the <code>ai-testing</code> skill</h2>
+    <p class="lede">The testing doctrine the code actually follows lives in one place: <code>.cursor/skills/ai-testing/</code>. It is not an autonomous agent and it holds no code — it is a <strong>progressive-disclosure document bundle</strong>: one always-loaded entry file that routes to four on-demand reference docs. Total surface is five markdown files, ~263 lines. Its whole job is to keep an AI (or a human) writing <em>component tests</em> for the ai_documents pipeline in one consistent house style.</p>
+
+    <div class="callout note">
+      <h4>There is no agent, and that is the point</h4>
+      <p>The bundle ships no <code>agent.md</code>, no autonomous loop, no tools of its own beyond a declared <code>allowed-tools</code> list (<code>Read, Grep, Glob, Write, StrReplace, Shell</code>). It is <em>instructional context</em>, loaded on demand when a request touches ai_documents tests. The "pieces" below are documents that shape behaviour, not actors that take it.</p>
+    </div>
+
+    <h2>The five pieces at a glance</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>File</th><th class="num-col">Lines</th><th>Role</th><th>What it contributes</th></tr></thead>
+        <tbody>
+          <tr><td><code>SKILL.md</code></td><td class="num-col">55</td><td><span class="pill ok">entry</span></td><td>The router. Defines what a component test is, points every workflow at the right reference doc, names the mocking law, and gives the two <code>uv run pytest</code> commands.</td></tr>
+          <tr><td><code>references/test-tiers.md</code></td><td class="num-col">37</td><td><span class="pill na">reference</span></td><td>The <strong>decision doc</strong>: which of four tiers a test belongs to before you write a line. Read first when a request mentions jobs, taskiq, workers, or HTTP.</td></tr>
+          <tr><td><code>references/test-style.md</code></td><td class="num-col">38</td><td><span class="pill na">reference</span></td><td>The <strong>conventions</strong>: shape (arrange/act/assert), naming slugs, what to assert vs. never assert, fixture promotion, determinism.</td></tr>
+          <tr><td><code>references/ai-documents-component-tests.md</code></td><td class="num-col">90</td><td><span class="pill na">reference</span></td><td>The <strong>concrete playbook</strong>: exact directory layout, which edges to mock and how, shared-fixture naming, worked extractor + DAO examples, the async convention.</td></tr>
+          <tr><td><code>references/review-checklist.md</code></td><td class="num-col">43</td><td><span class="pill na">reference</span></td><td>The <strong>gate</strong>: a 30-item checkbox list across Scope / Structure / Edges / Assertions / Conventions for reviewing a component-test change.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>How the pieces fit together</h2>
+    <figure>
+      <pre class="mermaid">
+flowchart TB
+    REQ["Request touching<br/>ai_documents tests"] --> SKILL["SKILL.md<br/>(always loaded — the router)"]
+    SKILL -->|"deciding where<br/>a test belongs"| TIERS["test-tiers.md"]
+    SKILL -->|"writing / restructuring"| STYLE["test-style.md"]
+    STYLE --> COMP["ai-documents-<br/>component-tests.md<br/>(layout · edges · examples)"]
+    SKILL -->|"reviewing a change"| CHECK["review-checklist.md"]
+    TIERS -.->|"not a component test?<br/>route elsewhere"| OUT["use-case · API · unit tier<br/>(out of scope)"]
+    COMP --> WRITE["Component test<br/>in the house style"]
+    CHECK --> WRITE
+      </pre>
+      <figcaption>SKILL.md is the only file loaded up front; the four references are pulled in on demand by workflow. Each contributes a distinct phase: decide → write → concretize → review.</figcaption>
+    </figure>
+
+    <h2>Piece by piece</h2>
+
+    <div class="finding win">
+      <div class="finding-head"><span class="rank">01</span><h3><code>SKILL.md</code> — the entry point &amp; router</h3></div>
+      <p>Defines the core unit: <em>"a component test validates one ai_documents pipeline component through its public entry point, with only external edges mocked."</em> It defers Python style to <code>PYTHON_GUIDELINES.md</code> and domain vocabulary (Canonical / Full / Result / ComparisonMatch) to <code>services/ai_documents/AGENTS.md</code> rather than restating them. Its four <strong>workflows</strong> each name a trigger and route to a reference: <em>choosing a layer</em> → tiers, <em>writing</em> → style then component-tests, <em>reviewing</em> → checklist, <em>mocking config</em> → the "MockSettings, never <code>os.environ</code>" law. It closes with the two run commands (whole suite, or one component).</p>
+      <div class="meta"><span><b>Contributes:</b> orientation + routing</span><span><b>Loaded:</b> always</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="rank">02</span><h3><code>test-tiers.md</code> — where does this test belong?</h3></div>
+      <p>The gatekeeper. It draws four tiers and, crucially, says which one this skill <strong>owns</strong>: only <em>component tests</em> (<code>tests/test_&lt;component&gt;/</code>). The other three — use-case / full-job (<code>tests/test_use_cases/</code>, with taskiq, containers, object-storage mocks), API / service integration (FastAPI layer), and pure unit — are explicitly out of scope, and it warns <em>not</em> to copy taskiq / worker / container-patching setup down into component tests. This is the doc that stops a test from being written at the wrong altitude.</p>
+      <div class="meta"><span><b>Contributes:</b> the scope boundary</span><span><b>Read:</b> first, when jobs/workers/HTTP are mentioned</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="rank">03</span><h3><code>test-style.md</code> — the reusable conventions</h3></div>
+      <p>The house style, in four parts. <strong>Shape:</strong> drive the public entry point, never assert private internals; three beats — arrange, act once, assert; name tests <code>test_&lt;subject&gt;_&lt;behavior&gt;</code>; one component per file. <strong>Assertions:</strong> assert the fields that prove data transfer (identities, transformed values, counts, collection names, persisted rows); prefer <code>assert_matches</code> over whole-object equality; <em>never</em> assert prompt wording or LLM output quality; pin failure paths. <strong>Fixtures:</strong> reuse before adding, keep single-use local, promote to root <code>conftest.py</code> only after reuse. <strong>Determinism:</strong> normalize volatile fields, patch with <code>unittest.mock</code>, configure through the settings object — not import order or the environment.</p>
+      <div class="meta"><span><b>Contributes:</b> naming, arrangement, assertion rules</span><span><b>Read:</b> before writing</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="rank">04</span><h3><code>ai-documents-component-tests.md</code> — the concrete playbook</h3></div>
+      <p>The longest reference, and the one that turns style into code. It fixes the pipeline mental model (Ingest → Fetch → Parse → Segment → Classify → Extract → Match → Persist), enumerates in/out of scope, and pins the <strong>directory layout</strong> under <code>services/ai_documents/tests/</code>. It specifies each <strong>mocked edge</strong> concretely: <code>mock_llm_gateway.set_parsed(...)</code> with a parsed output-schema model, <code>mock_db</code> backed by <code>mongomock_motor</code> for DAOs, and owning-port mocks that return domain objects for external fetch / storage / gRPC SLM. It names the shared-fixture conventions (<code>mock_&lt;x&gt;_extraction</code>, <code>make_&lt;x&gt;_extraction</code>), ships two runnable examples (an empty-extraction extractor test and a DAO save/read-back test with <code>assert_matches</code>), and states the async convention: <code>pytestmark = pytest.mark.anyio</code>, <code>anyio_backend</code> pinned to asyncio, no <code>asyncio.run(...)</code> in bodies.</p>
+      <div class="meta"><span><b>Contributes:</b> layout, edge recipes, worked examples</span><span><b>Read:</b> after test-style</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="rank">05</span><h3><code>review-checklist.md</code> — the acceptance gate</h3></div>
+      <p>A ~30-item checkbox list grouping the whole doctrine into five review buckets: <strong>Scope</strong> (one component, public entry point, no prompt/LLM-quality asserts, no taskiq/Redis), <strong>Structure</strong> (matching <code>test_&lt;component&gt;/</code> dir, slug names, arrange-act-assert, repetition pushed into fixtures), <strong>Edges</strong> (only external edges mocked, <code>set_parsed</code> for LLM, <code>mock_db</code> for persistence, no real provider/DB/network), <strong>Assertions</strong> (contract fields, <code>assert_matches</code>, DB read-back, failure-path coverage), and <strong>Conventions</strong> (anyio marker, <code>MockSettings</code> not <code>os.environ</code>, PYTHON_GUIDELINES + AGENTS vocabulary). It is the same rules as the other three docs, re-expressed as a pass/fail gate.</p>
+      <div class="meta"><span><b>Contributes:</b> the review rubric</span><span><b>Applied:</b> when reviewing a change</span></div>
+    </div>
+
+    <h2>Two things worth flagging</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4>The name mismatch</h4>
+        <p>The directory is <code>ai-testing/</code>, but <code>SKILL.md</code>'s frontmatter declares <code>name: ai-documents-component-tests</code>. Harmless, but the folder and the skill identity disagree — a reader grepping for one won't find the other.</p>
+      </div>
+      <div class="card">
+        <h4>Deliberately narrow</h4>
+        <p>By design this skill governs <em>one tier only</em>. It is honest about that — <code>test-tiers.md</code> routes everything else away. The flip side is that the highest-risk surfaces from the audit (HTTP routes, the orchestrator, cascading deletion) fall <em>outside</em> its remit, so it can be followed perfectly while those stay untested.</p>
+      </div>
+    </div>
+
+    <div class="callout note">
+      <h4>Bottom line</h4>
+      <p>The <code>ai-testing</code> skill is a small, coherent, self-consistent doctrine for component tests — decide the tier, write in the house style, concretize with the playbook, review against the checklist. It is the one testing document in the repo that <strong>matches the code</strong>, which is exactly why the code follows it and not <code>rules/</code> (tab 05). Its limit is scope, not quality: it says nothing about the fat, under-tested middle of the service because that middle was never its job.</p>
+    </div>
+  </section>
+
+  <!-- ================= PANEL 7 — COVERAGE ================= -->
+  <section class="panel" id="panel-7" role="tabpanel" aria-labelledby="tab-7" hidden>
+
+    <h2>Coverage, measured</h2>
+    <p class="lede">The rest of this report argues from test <em>shape</em>. This tab argues from a number. Running each test type under <code>coverage.py</code> with branch tracking turns "the arithmetic is covered, the machinery isn't" from an impression into a measurement: <strong>66.6% of statements execute, but only 28.2% of branches do</strong>. The gap between those two figures &mdash; lines walked vs. decisions taken &mdash; is the whole story of this suite.</p>
+
+    <dl class="stat-row">
+      <div class="stat"><dt>Statements</dt><dd>16,405<small>221 source files</small></dd></div>
+      <div class="stat"><dt>Line coverage</dt><dd>66.6<small>10,924 covered</small></dd></div>
+      <div class="stat alarm"><dt>Branch coverage</dt><dd>28.2<small>986 of 3,502</small></dd></div>
+      <div class="stat good"><dt>Best package</dt><dd>90.8<small>comparison_engine line</small></dd></div>
+      <div class="stat alarm"><dt>Service branches</dt><dd>22.3<small>ai_documents</small></dd></div>
+      <div class="stat good"><dt>Measured in</dt><dd>~30<small>seconds, all local</small></dd></div>
+    </dl>
+
+    <h4>How this was measured</h4>
+    <p class="sub">coverage.py 7.15 &middot; <code>pytest --cov=&lt;pkg&gt; --cov-branch</code> &middot; each package run in its own uv workspace context</p>
+    <p>Only tests that run entirely against local code are counted &mdash; which here is <em>all</em> of them. The LLM gateway, Mongo, GCS, Taskiq and Tartlet are already faked at their ports (in-memory <code>mongomock</code>, a canned <code>ChatResult</code>, inline task execution), so nothing reaches a network or a model. No end-to-end or third-party path was executed. That is a strength for reproducibility and the thing that caps branch coverage: a mock that returns one canned response can only ever walk one branch of the code that consumes it.</p>
+
+    <div class="callout note">
+      <h4>Line vs. branch &mdash; why both columns matter</h4>
+      <p><strong>Line coverage</strong> asks "did this line run at all?" <strong>Branch coverage</strong> asks "did every <code>if</code> go both ways, did every <code>except</code> fire, did every early-return trigger?" A file can be 90% line-covered and 10% branch-covered when the happy path runs top to bottom but every guard, fallback and error arm is skipped. In this codebase that is the dominant pattern &mdash; which is why branch coverage is the honest headline and line coverage flatters.</p>
+    </div>
+
+    <h2>Coverage by test type</h2>
+    <p>The five unit/CLI packages are measured against their own source (their natural denominator). The three <code>ai_documents</code> tiers are measured a second time, below, against the full service so they can be compared.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Test type</th><th class="num-col">Tests</th><th class="num-col">Stmts</th><th class="num-col">Line %</th><th>Branch %</th><th>What it exercises</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Unit &middot; comparison_engine</strong></td><td class="num-col">103</td><td class="num-col">1,150</td><td class="num-col">90.8</td><td><span class="pill ok">72.6%</span></td><td>Pure distance/scoring/top-k arithmetic over a toy schema. No mocks.</td></tr>
+          <tr><td><strong>Unit &middot; equity_domain</strong></td><td class="num-col">28</td><td class="num-col">1,245</td><td class="num-col">60.6</td><td><span class="pill partial">28.1%</span></td><td>Currency, vesting periods, tax-treatment vocab; some LLM-port wiring.</td></tr>
+          <tr><td><strong>Unit &middot; py_commons</strong></td><td class="num-col">55</td><td class="num-col">1,572</td><td class="num-col">57.4</td><td><span class="pill partial">27.7%</span></td><td>LLM structured-output, big-file chunking, upload cache, formatting.</td></tr>
+          <tr><td><strong>Unit &middot; table_normalization</strong></td><td class="num-col">5</td><td class="num-col">832</td><td class="num-col">53.2</td><td><span class="pill bad">13.7%</span></td><td>One test file for a 17-module library; most parsing paths unrun.</td></tr>
+          <tr><td><strong>CLI &middot; ai_documents_cli</strong></td><td class="num-col">8</td><td class="num-col">360</td><td class="num-col">44.4</td><td><span class="pill bad">25.6%</span></td><td>Only <code>submit</code>; rendering and other subcommands untested.</td></tr>
+          <tr><td><strong>Component &middot; ai_documents</strong></td><td class="num-col">23</td><td class="num-col">6,242*</td><td class="num-col">71.0*</td><td><span class="pill bad">9.3%*</span></td><td>Extractors, localizer, DAO called directly with mocked LLM/DB.</td></tr>
+          <tr><td><strong>Use-case &middot; ai_documents</strong></td><td class="num-col">1</td><td class="num-col">11,246</td><td class="num-col">66.5</td><td><span class="pill partial">20.7%</span></td><td>One full in-process job flow, inline taskiq, cascaded tasks.</td></tr>
+          <tr><td><strong>API &middot; ai_documents</strong></td><td class="num-col">4</td><td class="num-col">1,640*</td><td class="num-col">85.1*</td><td><span class="pill partial">40.5%*</span></td><td>Only the <code>document_upload</code> service helper &mdash; not a route.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub">* Component and API percentages are against only the modules those tests import (coverage.py's denominator), so they are <em>not</em> comparable to Use-case. The table below fixes that.</p>
+
+    <h3>What each service tier reaches of the whole service</h3>
+    <p>Measured against the same fixed denominator &mdash; the full <code>ai_documents</code> service (11,246 statements, 2,040 branches, 138 files) &mdash; the tiers stop flattering. The use-case flow is the only one that touches most of the service; component and API tests each light up a narrow slice.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Tier</th><th class="num-col">Lines reached</th><th>Line %</th><th class="num-col">Branches reached</th><th>Branch %</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Use-case / full-job</strong></td><td class="num-col">7,476 / 11,246</td><td><span class="pill partial">66.5%</span></td><td class="num-col">422 / 2,040</td><td><span class="pill bad">20.7%</span></td></tr>
+          <tr><td><strong>Component</strong></td><td class="num-col">4,432 / 11,246</td><td><span class="pill bad">39.4%</span></td><td class="num-col">58 / 2,040</td><td><span class="pill bad">2.8%</span></td></tr>
+          <tr><td><strong>API (upload helper)</strong></td><td class="num-col">1,396 / 11,246</td><td><span class="pill bad">12.4%</span></td><td class="num-col">30 / 2,040</td><td><span class="pill bad">1.5%</span></td></tr>
+          <tr><td><strong>All service tests combined</strong></td><td class="num-col">7,620 / 11,246</td><td><span class="pill partial">67.8%</span></td><td class="num-col">455 / 2,040</td><td><span class="pill bad">22.3%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout note">
+      <h4>Correction to tab 02</h4>
+      <p>Tab 02 lists <code>cli/ai_documents</code> as "cannot be collected." It collects and passes &mdash; 8 tests &mdash; once <code>TAX_TREATMENT_CACHE_PATH</code> points at a cache file, which the service's own <code>conftest</code> sets up but the CLI's does not. That is a missing test fixture, not a broken suite.</p>
+    </div>
+
+    <h2>Which layer is covered &mdash; and why</h2>
+    <p>Grouping the service by architectural layer shows the covered zone precisely. Read the two percent columns together: where line is high but branch collapses, the tests walk the happy path and skip every fork.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Layer</th><th class="num-col">Files</th><th class="num-col">Stmts</th><th>Line %</th><th>Branch %</th><th>Reading</th></tr></thead>
+        <tbody>
+          <tr><td><strong>domain/models</strong></td><td class="num-col">15</td><td class="num-col">1,672</td><td><span class="pill ok">91.6%</span></td><td><span class="pill partial">27.1%</span></td><td>Pydantic models; constructed everywhere, so lines run &mdash; but validators/branches rarely forked.</td></tr>
+          <tr><td><strong>core</strong> <span class="sub">config / observability / DI</span></td><td class="num-col">17</td><td class="num-col">916</td><td><span class="pill ok">74.2%</span></td><td><span class="pill partial">37.2%</span></td><td>Best-branched service layer &mdash; settings and container wiring run at import.</td></tr>
+          <tr><td><strong>integrations/db</strong></td><td class="num-col">8</td><td class="num-col">1,745</td><td><span class="pill ok">74.2%</span></td><td><span class="pill partial">26.1%</span></td><td>DAO round-trips proven through <code>mongomock</code>; error/upsert arms thinner.</td></tr>
+          <tr><td><strong>api (HTTP)</strong></td><td class="num-col">3</td><td class="num-col">520</td><td><span class="pill ok">73.7%</span></td><td><span class="pill bad">3.9%</span></td><td>Route modules import (lines) but <strong>no request ever runs</strong> &mdash; validators, 4xx/5xx arms untouched.</td></tr>
+          <tr><td><strong>integrations/llm</strong></td><td class="num-col">35</td><td class="num-col">2,153</td><td><span class="pill partial">65.1%</span></td><td><span class="pill bad">11.4%</span></td><td>One canned parsed response per call; multi-type / degrade / retry branches unrun.</td></tr>
+          <tr><td><strong>services/tasks + task_runtime</strong></td><td class="num-col">18</td><td class="num-col">1,969</td><td><span class="pill partial">60.5%</span></td><td><span class="pill partial">32.7%</span></td><td>The one full-job test drives the orchestrator, so branches fare better here than elsewhere.</td></tr>
+          <tr><td><strong>services/comparison_results</strong></td><td class="num-col">6</td><td class="num-col">427</td><td><span class="pill bad">44.7%</span></td><td><span class="pill bad">7.4%</span></td><td>score-explain / link-audit reachable only via routes that have no test.</td></tr>
+          <tr><td><strong>integrations/external_entities</strong></td><td class="num-col">4</td><td class="num-col">321</td><td><span class="pill bad">40.8%</span></td><td><span class="pill bad">1.1%</span></td><td>Tartlet canonicalization almost entirely unexecuted.</td></tr>
+          <tr><td><strong>integrations/grpc_slm</strong></td><td class="num-col">5</td><td class="num-col">166</td><td><span class="pill bad">39.2%</span></td><td><span class="pill bad">9.1%</span></td><td>Dormant SLM path (wiring commented out) &mdash; low coverage is expected.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>Well covered &mdash; and why</h4>
+        <ul>
+          <li><strong>Pure computation.</strong> <code>comparison_engine</code> (72.6% branch), currency, scoring, top-k. No edges to mock, so tests drive every fork cheaply and do.</li>
+          <li><strong>Domain models &amp; DB round-trips.</strong> Constructed and persisted in almost every test, so their lines light up (74&ndash;92%).</li>
+          <li><strong>The one full-job flow.</strong> A single use-case test carries the service's branch coverage almost single-handedly (task_runtime 32.7%).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Under-covered &mdash; and why</h4>
+        <ul>
+          <li><strong>The HTTP edge.</strong> 3.9% branch. Zero route tests, so every DTO validator and error arm is dead to coverage &mdash; the finding tab 01 flagged, now quantified.</li>
+          <li><strong>LLM response handling.</strong> 11.4% branch. Mocks return one shape; the code's multi-type, degrade-to-<code>None</code> and retry branches never fire.</li>
+          <li><strong>Integration adapters.</strong> Tartlet canonicalization (1.1%) and comparison-results services (7.4%) sit behind untested routes and clients.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Stat leaderboards</h2>
+
+    <h4>Files with the highest branch coverage</h4>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>File</th><th class="num-col">Branches</th><th>Branch %</th></tr></thead>
+        <tbody>
+          <tr><td><code>py_commons/llm/llm_providers/file_upload_cache.py</code></td><td class="num-col">14 / 14</td><td><span class="pill ok">100%</span></td></tr>
+          <tr><td><code>comparison_engine/weight_vector.py</code></td><td class="num-col">8 / 8</td><td><span class="pill ok">100%</span></td></tr>
+          <tr><td><code>py_commons/llm/structured_output.py</code></td><td class="num-col">11 / 12</td><td><span class="pill ok">91.7%</span></td></tr>
+          <tr><td><code>comparison_engine/engine.py</code></td><td class="num-col">47 / 56</td><td><span class="pill ok">83.9%</span></td></tr>
+          <tr><td><code>equity_domain/currency.py</code></td><td class="num-col">18 / 22</td><td><span class="pill ok">81.8%</span></td></tr>
+          <tr><td><code>comparison_engine/explain.py</code></td><td class="num-col">13 / 16</td><td><span class="pill ok">81.2%</span></td></tr>
+          <tr><td><code>comparison_engine/weight_builder.py</code></td><td class="num-col">38 / 48</td><td><span class="pill ok">79.2%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Largest files sitting at 0% branch coverage</h4>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>File</th><th class="num-col">Branches</th><th class="num-col">Stmts</th><th>Branch %</th></tr></thead>
+        <tbody>
+          <tr><td><code>integrations/llm/&hellip;/vesting_schedule_converter/converter.py</code></td><td class="num-col">0 / 110</td><td class="num-col">234</td><td><span class="pill bad">0%</span></td></tr>
+          <tr><td><code>services/comparison_results/explain_service.py</code></td><td class="num-col">0 / 78</td><td class="num-col">191</td><td><span class="pill bad">0%</span></td></tr>
+          <tr><td><code>integrations/external_entities/slice_tartlet/canonicalize.py</code></td><td class="num-col">0 / 62</td><td class="num-col">165</td><td><span class="pill bad">0%</span></td></tr>
+          <tr><td><code>services/tasks/comparison.py</code></td><td class="num-col">0 / 52</td><td class="num-col">168</td><td><span class="pill bad">0%</span></td></tr>
+          <tr><td><code>&hellip;/vesting_schedule_converter/rounding.py</code></td><td class="num-col">0 / 46</td><td class="num-col">129</td><td><span class="pill bad">0%</span></td></tr>
+          <tr><td><code>table_normalization/column_decomposition.py</code></td><td class="num-col">0 / 36</td><td class="num-col">80</td><td><span class="pill bad">0%</span></td></tr>
+          <tr><td><code>core/containers_lifecycle.py</code></td><td class="num-col">0 / 22</td><td class="num-col">114</td><td><span class="pill bad">0%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Folders with the lowest branch coverage <span class="sub">(&ge; 10 branches)</span></h4>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Folder</th><th class="num-col">Files</th><th class="num-col">Branches</th><th>Branch %</th><th>Line %</th></tr></thead>
+        <tbody>
+          <tr><td><code>&hellip;/extraction/vesting_schedule_converter</code></td><td class="num-col">2</td><td class="num-col">156</td><td><span class="pill bad">0.0%</span></td><td class="num-col">20.9%</td></tr>
+          <tr><td><code>integrations/external_entities/slice_tartlet</code></td><td class="num-col">3</td><td class="num-col">94</td><td><span class="pill bad">1.1%</span></td><td class="num-col">35.7%</td></tr>
+          <tr><td><code>api/v1</code> <span class="sub">endpoints</span></td><td class="num-col">2</td><td class="num-col">52</td><td><span class="pill bad">3.8%</span></td><td class="num-col">77.0%</td></tr>
+          <tr><td><code>cli/ai_documents_cli</code></td><td class="num-col">5</td><td class="num-col">30</td><td><span class="pill bad">3.3%</span></td><td class="num-col">42.1%</td></tr>
+          <tr><td><code>services/comparison_results</code></td><td class="num-col">6</td><td class="num-col">136</td><td><span class="pill bad">7.4%</span></td><td class="num-col">36.5%</td></tr>
+          <tr><td><code>&hellip;/extraction/extractors</code></td><td class="num-col">10</td><td class="num-col">66</td><td><span class="pill bad">7.6%</span></td><td class="num-col">59.3%</td></tr>
+          <tr><td><code>table_normalization</code></td><td class="num-col">17</td><td class="num-col">190</td><td><span class="pill bad">13.7%</span></td><td class="num-col">48.2%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <h4>The one-sentence takeaway</h4>
+      <p>Coverage confirms the report's thesis with numbers: the <strong>pure, computational core is branch-tested well (60&ndash;73%)</strong>, while the <strong>service's edges &mdash; HTTP routes (3.9%), LLM response handling (11.4%), and external-entity integration (1.1%) &mdash; are executed on their happy path but almost never forked.</strong> The suite proves the arithmetic is right; it does not yet prove the machinery around it behaves when inputs go wrong.</p>
+    </div>
+
+    <h2>Mutation testing &mdash; does the suite actually <em>catch</em> bugs?</h2>
+    <p class="lede">Coverage answers "did this line run?" Mutation testing answers the harder question: "if this line were <em>wrong</em>, would a test fail?" <strong>mutmut</strong> injects one small fault at a time &mdash; flip a <code>&gt;</code> to <code>&gt;=</code>, blank a return value, negate a guard &mdash; and re-runs the suite. A <em>killed</em> mutant means a test caught the fault; a <em>survivor</em> means the line could ship broken and stay green. Across a sample of 22 files it generated <strong>4,694 mutants</strong>, of which the suite killed <strong>1,741 &mdash; a 63.9% mutation score on the code it covers, and 37.1% once you count lines no test runs at all.</strong></p>
+
+    <dl class="stat-row">
+      <div class="stat"><dt>Mutants tested</dt><dd>4,694<small>22 sampled files</small></dd></div>
+      <div class="stat good"><dt>Killed</dt><dd>1,741<small>tests caught the fault</small></dd></div>
+      <div class="stat alarm"><dt>Survived</dt><dd>978<small>bugs the suite misses</small></dd></div>
+      <div class="stat alarm"><dt>No test coverage</dt><dd>1,969<small>lines never executed</small></dd></div>
+      <div class="stat"><dt>Mutation score</dt><dd>63.9<small>of covered code</small></dd></div>
+      <div class="stat alarm"><dt>equity_domain</dt><dd>0.0<small>nothing killed at all</small></dd></div>
+    </dl>
+
+    <h4>How this was measured &mdash; whole files, sampled folders</h4>
+    <p class="sub">mutmut 3.6.0 &middot; run per package against that package's own <code>pytest</code> suite &middot; all edges mocked (mongomock, canned LLM)</p>
+    <p><strong>The sampling is in <em>which files</em>, not which lines.</strong> Running mutmut over the whole monorepo would take hours, so 22 files were picked to span every layer &mdash; LLM adapters and extractors, the Mongo DAO, localization, the pure libraries. But <strong>each of those 22 files was mutated in its entirety</strong>: every statement became a candidate mutant, not a hand-picked line range. The earlier plan to restrict the three largest files to key functions proved unnecessary &mdash; the full <code>ai_documents</code> run finished in ~51 seconds &mdash; so nothing was down-sampled within a file. The 4,694 figure is every mutant those 22 whole files produce.</p>
+
+    <div class="callout note">
+      <h4>Two scores, because "covered" flatters</h4>
+      <p><strong>Mutation score (covered)</strong> = killed / (killed + survived) &mdash; how good the tests are at catching faults <em>in lines they run</em>. <strong>Overall</strong> also counts "no-tests" mutants (statements the suite never executes) as un-killed. The gap between 63.9% and 37.1% is the same gap tab-wide: decent where the tests reach, nothing where they don't. 1,969 of 4,694 mutants &mdash; 42% &mdash; are in code no test executes.</p>
+    </div>
+
+    <h3>The stats list &mdash; by package</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Package</th><th class="num-col">Files</th><th class="num-col">Mutants</th><th class="num-col">Killed</th><th class="num-col">Survived</th><th class="num-col">No&#8209;tests</th><th>Score (covered)</th><th>Overall</th></tr></thead>
+        <tbody>
+          <tr><td><strong>libs/py_commons</strong></td><td class="num-col">2</td><td class="num-col">186</td><td class="num-col">146</td><td class="num-col">29</td><td class="num-col">11</td><td><span class="pill ok">83.4%</span></td><td><span class="pill partial">78.5%</span></td></tr>
+          <tr><td><strong>libs/comparison_engine</strong></td><td class="num-col">4</td><td class="num-col">917</td><td class="num-col">601</td><td class="num-col">266</td><td class="num-col">50</td><td><span class="pill partial">69.3%</span></td><td><span class="pill partial">65.5%</span></td></tr>
+          <tr><td><strong>services/ai_documents</strong></td><td class="num-col">14</td><td class="num-col">3,410</td><td class="num-col">994</td><td class="num-col">588</td><td class="num-col">1,822</td><td><span class="pill partial">62.6%</span></td><td><span class="pill bad">29.1%</span></td></tr>
+          <tr><td><strong>libs/equity_domain</strong></td><td class="num-col">2</td><td class="num-col">181</td><td class="num-col">0</td><td class="num-col">95</td><td class="num-col">86</td><td><span class="pill bad">0.0%</span></td><td><span class="pill bad">0.0%</span></td></tr>
+          <tr><td><strong>Total</strong></td><td class="num-col">22</td><td class="num-col">4,694</td><td class="num-col">1,741</td><td class="num-col">978</td><td class="num-col">1,969</td><td><span class="pill partial">63.9%</span></td><td><span class="pill bad">37.1%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub"><code>equity_domain/keys.py</code> is excluded from the file count: a pure <code>StrEnum</code> of literals, it generates 0 mutants.</p>
+
+    <h3>The coverage layer list &mdash; and why each score lands where it does</h3>
+    <p>The same 22 files regrouped by architectural layer. Read it against the branch-coverage layer table above: the layers that were happy-path-only there are the ones whose mutants survive here.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Layer</th><th class="num-col">Mutants</th><th class="num-col">Killed</th><th class="num-col">Survived</th><th class="num-col">No&#8209;tests</th><th>Score</th><th>Why it lands here</th></tr></thead>
+        <tbody>
+          <tr><td><strong>LLM integration</strong> <span class="sub">adapters, extractors, classify, localize</span></td><td class="num-col">730</td><td class="num-col">270</td><td class="num-col">251</td><td class="num-col">209</td><td><span class="pill bad">51.8%</span></td><td>Lowest. One canned LLM response per call can only walk one path, so multi-type dispatch, enum/direction mapping and degrade-to-<code>None</code> mutants survive. <code>file_classification</code> 29%, <code>grant_letter</code> 30%, <code>base_extractor</code> 39%.</td></tr>
+          <tr><td><strong>Shared libs</strong> <span class="sub">scoring, measures, explain, tax, chunking</span></td><td class="num-col">1,284</td><td class="num-col">747</td><td class="num-col">390</td><td class="num-col">147</td><td><span class="pill partial">65.7%</span></td><td>Pure logic tested well (measure.py 86%, structured_output 85%) &mdash; but dragged down by <code>equity_domain</code>, whose <code>tax_treatment.py</code>/<code>vesting_date.py</code> are only reached indirectly and kill nothing.</td></tr>
+          <tr><td><strong>Mongo data-access</strong> <span class="sub">dao.py, documents.py</span></td><td class="num-col">2,583</td><td class="num-col">661</td><td class="num-col">309</td><td class="num-col">1,607</td><td><span class="pill partial">67.7%</span></td><td>Decent <em>where tested</em>, but 1,607 of its 2,583 mutants (62%) sit in lines mongomock tests never run &mdash; query-shape and state-machine transitions largely unasserted.</td></tr>
+          <tr><td><strong>App services</strong> <span class="sub">document_upload, localization_schemas</span></td><td class="num-col">97</td><td class="num-col">63</td><td class="num-col">28</td><td class="num-col">6</td><td><span class="pill ok">69.2%</span></td><td>Highest. Small, focused files whose tests assert real values &mdash; so most faults are caught. The size-cap boundary (<code>&gt;</code> vs <code>&gt;=</code>) is a rare survivor.</td></tr>
+          <tr><td><strong>Domain models</strong> <span class="sub">equity_pool_event</span></td><td class="num-col">0</td><td class="num-col">&mdash;</td><td class="num-col">&mdash;</td><td class="num-col">&mdash;</td><td><span class="pill na">n/a</span></td><td>Pure Pydantic/<code>StrEnum</code> declarations &mdash; no executable logic for mutmut to mutate. Not a gap.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>The headline gaps</h4>
+        <ul>
+          <li><strong><code>equity_domain</code> scores 0%.</strong> Its suite compares serialized measure outputs but never asserts the pure-logic modules (<code>tax_treatment</code>, <code>vesting_date</code>) directly &mdash; 95 survivors, 0 kills. The strongest possible "add unit tests here" signal.</li>
+          <li><strong>The LLM layer is the weakest-tested layer (51.8%).</strong> Extraction and classification logic would most often ship broken without a test noticing.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Representative survivors</h4>
+        <ul>
+          <li><code>document_upload</code>: <code>total &gt; cap</code> &rarr; <code>&gt;=</code> &mdash; no test for a file exactly at the size limit.</li>
+          <li><code>dao.get_by_id</code>: <code>find_one({"id": id})</code> &rarr; <code>find_one(None)</code> &mdash; query shape never asserted.</li>
+          <li><code>file_classification</code>: <code>temperature=temperature</code> &rarr; <code>None</code> &mdash; param plumbing unverified.</li>
+          <li><code>explain</code>: an entire nested-trace branch collapses to <code>None</code> undetected.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h4>Coverage vs. mutation, in one line</h4>
+      <p>Branch coverage said the edges are walked but rarely forked; mutation testing confirms the consequence &mdash; <strong>where the suite does run, it still lets 36% of injected faults through, and the two worst spots (the LLM integration layer and the entire <code>equity_domain</code> library) are exactly the places a silent extraction or vesting bug would reach production.</strong></p>
+    </div>
+  </section>
+
+  <footer>
+    <span>mono-ai · architecture &amp; testing audit</span>
+    <span>Verified against branch develop · 14 July 2026</span>
+  </footer>
+</div>
+
+<script>
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const panels = Array.from(document.querySelectorAll('.panel'));
+  function select(i){
+    tabs.forEach((t,j)=>{
+      t.setAttribute('aria-selected', String(i===j));
+      panels[j].hidden = i!==j;
+    });
+    window.scrollTo({top:0, behavior:'instant'});
+  }
+  tabs.forEach((t,i)=>{
+    t.addEventListener('click', ()=>select(i));
+    t.addEventListener('keydown', e=>{
+      if(e.key==='ArrowRight'){ const n=(i+1)%tabs.length; tabs[n].focus(); select(n); }
+      if(e.key==='ArrowLeft'){ const n=(i-1+tabs.length)%tabs.length; tabs[n].focus(); select(n); }
+    });
+  });
+</script>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+</script>
+</body>
+</html>
