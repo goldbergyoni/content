@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qodo Library — Wireframe A · Card grid + detail page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .qgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+  .qcard{background:var(--surf);border:1px solid var(--line-2);border-radius:16px;padding:20px 22px;
+    display:flex;flex-direction:column;gap:12px;position:relative;transition:border-color .14s;}
+  .qcard:hover{border-color:var(--line-3);}
+  .qcard.adopted{border-color:var(--mint-line);}
+  .qcard.mining{opacity:.55;}
+  .qcard .rec{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;
+    letter-spacing:0.06em;text-transform:uppercase;color:var(--purple);
+    background:var(--purple-wash);border:1px solid rgba(153,140,250,0.28);
+    border-radius:8px;padding:6px 9px;}
+  .qcard .foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);
+    display:flex;align-items:center;gap:12px;}
+  .adoptedline{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;
+    letter-spacing:0.06em;text-transform:uppercase;color:var(--mint);}
+  .rulerow{display:grid;grid-template-columns:44px 1fr 150px 96px 108px 30px;gap:12px;align-items:center;
+    padding:14px 10px;border-bottom:1px solid var(--line);}
+  .rulerow:hover{background:var(--surf-hi);}
+  .rulerow.off{opacity:.42;}
+  .ev{background:rgba(0,0,0,0.28);border-left:2px solid var(--mint-line);margin:0 10px 10px;
+    border-radius:0 8px 8px 0;padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+  .evrow{display:flex;gap:12px;font-size:12.5px;color:var(--tx-4);line-height:1.5;}
+  .tblhead{display:grid;gap:12px;padding:0 8px 14px;border-bottom:1px solid var(--line);
+    align-items:center;font-size:14px;color:var(--tx-5);}
+</style>
+</head>
+<body>
+<div id="root" style="display:contents"></div>
+<script src="shared.js"></script>
+<script>
+/* ============================================================
+   VARIATION A — "as drawn today"
+   The existing Standards vision prototype, extended with the
+   two things W1 asks for (a recommendation marker and a way
+   into the package before adopting) and the new screens behind
+   a full-page detail route. Navigation model: grid → page.
+   ============================================================ */
+const S = {
+  tab:'company', screen:'grid', pkg:'node',
+  adopted:{ node:true }, off:{ node:{} }, observe:{},
+  open:null,              // expanded rule id on the detail page
+  sec:{ sources:true },   // which collapsible sections are open
+  rulesMode:'list', libOnly:false,
+};
+const SECTIONS = ['sources','bt','scan','conf','pipe','impact','log'];
+
+/* ---------- interactions ---------- */
+function go(t){ S.tab=t; S.screen='grid'; render(); }
+function openPkg(id){
+  S.pkg=id; S.screen='detail'; S.tab='company'; S.open=null;
+  /* opens on what you came for: the proof when you are deciding, the payoff once you own it */
+  S.sec = S.adopted[id] ? {impact:true} : {sources:true};
+  render(); document.querySelector('.scrollarea')?.scrollTo(0,0);
+}
+function toggleSec(k){ S.sec[k]=!S.sec[k]; render(); }
+function allSec(v){ SECTIONS.forEach(k=>S.sec[k]=v); render(); }
+function backToGrid(){ S.screen='grid'; render(); }
+
+/* ---------- adoption scope — all matched repositories, or pick them ---------- */
+function openScope(id, ev){
+  ev?.stopPropagation();
+  S.scope = { mode:'all', future:true, picked:{} };
+  MATCHED[id].forEach(x => S.scope.picked[x.r] = true);
+  renderScope(id);
+}
+function scopeMode(id, m){ S.scope.mode = m; renderScope(id); }
+function scopeFuture(id){ S.scope.future = !S.scope.future; renderScope(id); }
+function scopeRepo(id, r){ S.scope.picked[r] = !S.scope.picked[r]; renderScope(id); }
+function scopeCount(id){
+  const sc = S.scope, all = SUGGEST[id].repos;
+  return sc.mode==='all' ? all : Object.values(sc.picked).filter(Boolean).length;
+}
+function renderScope(id){
+  const p = byId(id), sc = S.scope, all = SUGGEST[id].repos, n = scopeCount(id);
+  const list = MATCHED[id];
+  const opt = (m, title, sub) => `<div onclick="scopeMode('${id}','${m}')" style="display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-radius:12px;cursor:pointer;
+      border:1px solid ${sc.mode===m?'var(--mint-line)':'var(--line-2)'};background:${sc.mode===m?'var(--mint-wash)':'transparent'};">
+      <span style="width:16px;height:16px;border-radius:50%;flex:none;margin-top:2px;border:1px solid ${sc.mode===m?'var(--mint)':'var(--tx-7)'};
+        display:flex;align-items:center;justify-content:center;">${sc.mode===m?'<span style="width:8px;height:8px;border-radius:50%;background:var(--mint);"></span>':''}</span>
+      <span style="min-width:0;">
+        <span style="display:block;font-size:14px;font-weight:600;color:var(--tx-2);">${title}</span>
+        <span style="display:block;font-size:12.5px;color:var(--tx-5);margin-top:2px;line-height:1.5;">${sub}</span></span></div>`;
+
+  modal(`<h4>Adopt ${p.name}</h4>
+    <p>${p.count} rules will start running in review. Where should they apply?</p>
+    <div data-tour="scope" style="display:flex;flex-direction:column;gap:9px;margin:16px 0 14px;">
+      ${opt('all', `All ${all} matched repositories`, `Every repository where we detected ${SUGGEST[id].why.split(' detected')[0].replace(/^\W+/,'')||'this stack'}.`)}
+      ${opt('pick', 'Choose repositories', 'Start with a few, add the rest later from the package page.')}
+    </div>
+    ${sc.mode==='pick'?`<div style="max-height:210px;overflow-y:auto;border:1px solid var(--line-2);border-radius:12px;">
+      ${list.map(x=>`<div onclick="scopeRepo('${id}','${x.r}')" style="display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--line);cursor:pointer;">
+        <span style="width:16px;height:16px;border-radius:5px;flex:none;border:1px solid ${sc.picked[x.r]?'var(--mint)':'var(--tx-7)'};background:${sc.picked[x.r]?'var(--mint-wash)':'transparent'};
+          display:flex;align-items:center;justify-content:center;">${sc.picked[x.r]?I.check('#87F5D8',12):''}</span>
+        <span style="font-size:13.5px;color:var(--tx-2);">${x.r}</span>
+        <span class="mono" style="font-size:11px;color:var(--tx-6);">${x.l}</span>
+        <span class="mono" style="margin-left:auto;font-size:10.5px;color:var(--tx-7);">LAST PR ${x.pr.toUpperCase()}</span></div>`).join('')}
+      <div style="padding:10px 14px;font-size:12.5px;color:var(--tx-6);">and ${all - list.length} more matched repositories</div>
+    </div>`:''}
+    <div onclick="scopeFuture('${id}')" style="display:flex;align-items:center;gap:10px;margin-top:14px;cursor:pointer;">
+      <span style="width:16px;height:16px;border-radius:5px;flex:none;border:1px solid ${sc.future?'var(--mint)':'var(--tx-7)'};background:${sc.future?'var(--mint-wash)':'transparent'};
+        display:flex;align-items:center;justify-content:center;">${sc.future?I.check('#87F5D8',12):''}</span>
+      <span style="font-size:13.5px;color:var(--tx-3);">Apply to every new matching repository from here on</span></div>
+    <div class="acts">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="confirmAdopt('${id}')">Adopt on ${n} ${n===1?'repository':'repositories'}</button>
+    </div>`);
+}
+function confirmAdopt(id){
+  const p = byId(id), n = scopeCount(id);
+  S.adopted[id] = true; S.off[id] = S.off[id]||{}; S.scopeN = S.scopeN||{}; S.scopeN[id] = n;
+  closeModal();
+  toast(`Adopted “${p.name}” — ${p.count} rules now run on ${n} ${n===1?'repository':'repositories'}${S.scope.future?', and on new matches automatically':''}`);
+  render();
+}
+
+function toggleAdopt(id, ev){
+  ev?.stopPropagation();
+  const p = byId(id);
+  if (!S.adopted[id]) return openScope(id, ev);
+  if (S.adopted[id]) {
+    const offCount = Object.values(S.off[id]||{}).filter(v=>v===false).length;
+    modal(`<h4>Un-adopt ${p.name}?</h4>
+      <p><b style="color:var(--tx-2)">${p.count - offCount} active rules stop running</b> on every repository they applied to. They disappear from review on the next pull request — nothing is deleted, and findings already posted stay where they are.</p>
+      <p>Your ${offCount||'per-rule'} opt-out${offCount===1?'':'s'} ${offCount?'are':'is'} remembered, so re-adopting restores exactly this configuration.</p>
+      <div class="acts">
+        <button class="btn ghost" onclick="closeModal()">Keep it adopted</button>
+        <button class="btn danger" onclick="confirmUnadopt('${id}')">Un-adopt, stop reviewing</button>
+      </div>`);
+    return;
+  }
+}
+function confirmUnadopt(id){
+  const p = byId(id); delete S.adopted[id]; delete S.observe[id]; closeModal();
+  toast(`Removed “${p.name}” — its rules no longer run in review`); render();
+}
+function toggleRule(pid, rid){
+  S.off[pid] = S.off[pid]||{};
+  const wasOff = S.off[pid][rid];
+  if (wasOff) delete S.off[pid][rid]; else S.off[pid][rid] = true;
+  const r = byId(pid).rules.find(x=>x.id===rid);
+  toast(wasOff ? `“${r.t}” is back on` : `“${r.t}” turned off — the rest of ${byId(pid).name} keeps running`);
+  render();
+}
+function toggleOpen(rid){ S.open = S.open===rid ? null : rid; render(); }
+function toggleObserve(id){
+  const p = byId(id);
+  S.observe[id] = !S.observe[id];
+  toast(S.observe[id]
+    ? `“${p.name}” is now observing — it counts violations, developers see nothing`
+    : `“${p.name}” is now commenting on pull requests`);
+  render();
+}
+function showOverlap(pid, rid){
+  const r = byId(pid).rules.find(x=>x.id===rid);
+  modal(`<h4>Related rules found</h4>
+    <p>The Library rule <b style="color:var(--tx-2)">“${r.t}”</b> overlaps a rule you already have.</p>
+    <div class="card" style="padding:14px 16px;margin:16px 0;background:var(--surf-3);">
+      <div style="display:flex;align-items:center;gap:10px;font-size:14px;">
+        ${I.star('#87F5D8','#87F5D8',16)}<span>Avoid leaking secrets in log output</span></div>
+      <div class="mono" style="font-size:11px;color:var(--tx-6);margin-top:8px;">Org Policy · Security baseline · 8 repos · added 9 Jun 2026</div>
+    </div>
+    <p>Both will run. The Library version narrows to structured loggers, so it fires on fewer lines than yours. Turn one off if the duplicate comments become noise.</p>
+    <div class="acts">
+      <button class="btn ghost" onclick="closeModal()">Keep both</button>
+      <button class="btn mint" onclick="closeModal();toggleRule('${pid}','${rid}')">Turn the Library one off</button>
+    </div>`);
+}
+
+/* ---------- W1 · library section ---------- */
+function cardHTML(p){
+  const on = !!S.adopted[p.id];
+  if (p.status==='mining') return `<div class="qcard mining">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <div class="sectico" style="width:38px;height:38px;border-radius:9px;background:var(--surf-3);">${I.shield('#5E5969')}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:16px;font-weight:600;">${p.name}</span><span class="pill">In mining</span></div>
+        <div style="font-size:12.5px;color:var(--tx-6);margin-top:3px;">${p.count} candidate rules · ${p.cat}</div>
+      </div></div>
+    <p style="font-size:13.5px;color:var(--tx-4);line-height:1.5;margin:0;">${p.desc}</p>
+    <div class="foot"><span class="mono" style="font-size:10.5px;color:var(--tx-7);">${p.eta}</span></div></div>`;
+
+  return `<div class="qcard${on?' adopted':''}">
+    ${p.rec?`<div class="rec">${I.spark('#998CFA',13)} Recommended · ${p.rec}</div>`:''}
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <div class="sectico" style="width:38px;height:38px;border-radius:9px;background:${on?'var(--mint-wash)':'var(--surf-3)'};">${I.shield(on?'#87F5D8':'#918B9C')}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:16px;font-weight:600;">${p.name}</span>
+          <span class="pill mint">Rule package</span>
+          ${p.updatedOn?`<span class="pill purple solid-purple">Updated ${p.updatedOn}</span>`:''}
+        </div>
+        <div style="font-size:12.5px;color:var(--tx-6);margin-top:3px;">${p.count} rules · ${p.cat} · tested on ${p.bt.prs} pull requests</div>
+      </div>
+      <div class="star" title="${on?'Un-adopt':'Adopt as company standard'}" onclick="toggleAdopt('${p.id}',event)">
+        ${I.star(on?'#87F5D8':'none', on?'#87F5D8':'#5E5969')}</div>
+    </div>
+    <p style="font-size:13.5px;color:var(--tx-4);line-height:1.5;margin:0;">${p.desc}</p>
+    <div class="foot">
+      ${on?`<span class="adoptedline">● Adopted as company standard</span>`:''}
+      <span class="link" style="margin-left:auto;font-size:13px;" onclick="openPkg('${p.id}')">
+        ${on?'Open package':'See the evidence first'} →</span>
+    </div></div>`;
+}
+
+function gridHTML(){
+  const n = Object.keys(S.adopted).length;
+  return `<div style="margin-bottom:30px;max-width:680px;">
+      <h2 class="page">Company standards</h2>
+      <p class="sub">Define your organization's source of truth. Everything published here becomes available for teams to apply in the Repositories tab.</p>
+    </div>
+
+    <div class="secthead">
+      <div class="sectico" style="background:var(--purple-wash);">${I.wrench('#998CFA',16)}</div>
+      <h3 class="sect">Internal skills</h3>
+      <span class="mono" style="font-size:11px;color:var(--tx-7);">2 of 4 published</span>
+    </div>
+    <p class="hint">Your team's own skill bundles. Unchanged by this feature — shown here only so the Library reads in context.</p>
+    <div class="card" style="padding:16px 20px;margin-bottom:42px;display:flex;align-items:center;gap:14px;">
+      ${I.star('#87F5D8','#87F5D8',18)}<span style="font-size:14px;color:var(--tx-3);">Payments review bundle</span>
+      <span class="mono" style="font-size:11px;color:var(--tx-7);">10 items</span>
+      <span style="width:1px;height:18px;background:var(--line-2);"></span>
+      ${I.star('none','#5E5969',18)}<span style="font-size:14px;color:var(--tx-3);">Frontend conventions</span>
+      <span class="mono" style="font-size:11px;color:var(--tx-7);">7 items</span>
+      <span class="mono" style="margin-left:auto;font-size:11px;color:var(--tx-7);">+2 more</span>
+    </div>
+
+    <div class="secthead">
+      <div class="sectico" style="background:var(--mint-wash);">${I.qodo(22)}</div>
+      <h3 class="sect">Qodo library</h3>
+      <span class="mono" style="font-size:11px;color:var(--tx-7);">${n} of ${live().length} adopted</span>
+    </div>
+    <p class="hint">Rule packages built and battle-tested by Qodo, per language, technology and concept. Star one to adopt it as a company standard — every rule inside it has already detected a violation on real pull requests.</p>
+    ${n===0?`<div class="card" style="padding:20px 22px;margin-bottom:18px;display:flex;align-items:center;gap:14px;background:var(--purple-wash);border-color:rgba(153,140,250,0.3);">
+        ${I.spark('#998CFA',18)}
+        <div><div style="font-size:14px;font-weight:600;">Nothing adopted yet — you are reviewing only what your team already knew to check.</div>
+        <div style="font-size:13px;color:var(--tx-4);margin-top:3px;">Two packages match the stack we detected in your repositories. Open one to see what it caught before you commit to it.</div></div>
+      </div>`:''}
+    <div class="qgrid">${PKGS.map(cardHTML).join('')}</div>`;
+}
+
+/* ---------- W2 · package detail ---------- */
+function evidenceHTML(p, rid){
+  const list = p.evidence[rid];
+  const facts = ruleFactsHTML(rid);
+  if(!list) return `<div class="ev">${facts}<div style="font-size:12.5px;color:var(--tx-6);">
+    This rule detected ${p.rules.find(r=>r.id===rid).f} violations during battle testing. The examples are being re-linked after the 6 Aug update.</div></div>`;
+  return `<div class="ev">
+    ${facts}
+    <div class="eyebrow">Detected violations — real pull requests, checked before this rule shipped</div>
+    ${list.map(e=>`<div class="evrow">
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--mint);margin-top:7px;flex:none;"></span>
+      <div style="min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+          <a href="${e.url}" target="_blank" class="mono" style="font-size:11.5px;color:var(--blue);text-decoration:none;">${e.repo}#${e.pr}</a>
+          ${I.ext('#89CDF3',11)}
+          <span class="mono" style="font-size:11px;color:var(--tx-6);">${e.file}:${e.line}</span>
+        </div>
+        <div>${e.what}</div>
+      </div></div>`).join('')}
+  </div>`;
+}
+
+/* battle-test body, inside its own collapsible section */
+function btBodyHTML(p){
+  return `<div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;">
+      <div><div class="mono" style="font-size:10px;color:var(--tx-6);letter-spacing:.08em;">REPOSITORIES</div><div style="font-size:20px;font-weight:600;">${p.bt.repos}</div></div>
+      <div><div class="mono" style="font-size:10px;color:var(--tx-6);letter-spacing:.08em;">PRS REVIEWED</div><div style="font-size:20px;font-weight:600;">${p.bt.prs}</div></div>
+      <div><div class="mono" style="font-size:10px;color:var(--tx-6);letter-spacing:.08em;">DETECTED VIOLATIONS</div><div style="font-size:20px;font-weight:600;">${p.bt.findings}</div></div>
+      <div style="flex:1;min-width:220px;font-size:12.5px;color:var(--tx-5);line-height:1.5;">
+        Run against <span class="mono" style="color:var(--tx-3);">${p.btRepos.join(' · ')}</span></div>
+    </div>
+    <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--line);font-size:13px;color:var(--tx-4);">
+      Open any rule below to read the violations it detected, each linking to the pull request, file and line.</div>`;
+}
+
+/* ---------- the payoff: the product's own counters, as the Rules tab shows them ---------- */
+function metricsHTML(p){
+  const im = p.impact, notMerged = im.detected - im.merged;
+  const tile = (ico, lab, val) => `<div class="stat">
+    <div class="lab"><div class="ico">${ico}</div><span>${lab}</span>${I.info('#5E5969',12)}</div>
+    <div class="num">${val}</div></div>`;
+  return `<div data-tour="metrics" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <h3 class="sect">How it is doing</h3>
+      <span class="mono" style="margin-left:auto;font-size:12px;color:var(--tx-6);">Last 30 days analytics</span>
+      <span class="link" style="text-decoration:none;display:flex;" title="Download">${I.doc}</span></div>
+    <div class="stats">
+      ${tile(I.check('#87F5D8'), 'Passed (no violations)', num(im.passed))}
+      ${tile(I.ban('#F92672'), 'Detected violations', im.detected)}
+      ${tile(I.merge('#998CFA'), 'Merged violations', im.merged)}
+    </div>
+    <div style="margin-top:12px;font-size:13px;color:var(--tx-4);line-height:1.55;">
+      ${I.ban('#F92672',13)} <b style="color:var(--tx-2);font-weight:600;">${im.blocked} pull requests were held</b>
+      until an error-severity violation was fixed. Of ${im.detected} detected violations only ${im.merged} were merged —
+      the team is changing the code rather than merging past it.</div>
+  </div>`;
+}
+
+function detailHTML(){
+  const p = byId(S.pkg), on = !!S.adopted[p.id];
+  const offMap = S.off[p.id]||{}, offN = Object.keys(offMap).length;
+  const obs = !!S.observe[p.id];
+  const t = TRUST[p.id];
+  const im = p.impact;
+  const cites = t.sources.reduce((a,s)=>a+s.n,0);
+  const COLS = on ? '44px 1fr 96px 128px 132px 132px 30px' : '44px 1fr 150px 96px 132px 30px';
+
+  return `<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx-6);margin:22px 0 18px;">
+      <span class="link" onclick="backToGrid()">Company standards</span> ${I.chev('#5E5969',13)}
+      <span class="link" onclick="backToGrid()">Qodo library</span> ${I.chev('#5E5969',13)}
+      <span style="color:var(--tx-3);">${p.name}</span></div>
+
+    <!-- header -->
+    <div class="card" data-tour="pkg-head" style="padding:24px 26px;margin-bottom:20px;${on?'border-color:var(--mint-line);':''}">
+      <div style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="sectico" style="width:46px;height:46px;border-radius:11px;background:${on?'var(--mint-wash)':'var(--surf-3)'};">${I.shield(on?'#87F5D8':'#918B9C',24)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <h2 class="page" style="margin:0;">${p.name}</h2>
+            <span class="pill mint">Rule package</span>
+            <span class="pill">${p.cat}</span>
+            ${p.updatedOn?`<span class="pill purple solid-purple">Updated ${p.updatedOn} · ${p.updatedNote}</span>`:''}
+          </div>
+          <div style="font-size:14px;color:var(--tx-4);margin-top:8px;max-width:72ch;line-height:1.55;">${p.desc}</div>
+          <div style="display:flex;gap:18px;margin-top:12px;flex-wrap:wrap;" class="mono">
+            <span style="font-size:11.5px;color:var(--tx-5);">${p.count} RULES</span>
+            <span style="font-size:11.5px;color:var(--tx-5);">${offN?offN+' TURNED OFF':'NONE TURNED OFF'}</span>
+            <span style="font-size:11.5px;color:var(--tx-5);">MAINTAINED BY QODO</span>
+          </div>
+          ${p.rec?`<div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--purple);">
+            ${I.spark('#998CFA',15)} Recommended for you — ${p.rec}</div>`:''}
+        </div>
+        <button class="btn ${on?'mint':''}" data-tour="adopt" onclick="toggleAdopt('${p.id}',event)">
+          ${I.star(on?'#87F5D8':'#fff', on?'#87F5D8':'#fff',16)} ${on?'Adopted — un-adopt':'Adopt for the company'}</button>
+      </div>
+      <div style="margin-top:18px;">${propsHTML(p)}</div>
+      ${on?`<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;">
+        <div class="sectico" style="background:${obs?'rgba(210,229,52,0.14)':'var(--mint-wash)'};">${obs?I.eye('#D2E534',16):I.check('#87F5D8',16)}</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:${obs?'var(--yellow)':'var(--mint)'};">
+            ${obs?'Observing — no developer has seen these comments':'Commenting on pull requests'}</div>
+          <div style="font-size:12.5px;color:var(--tx-5);margin-top:2px;">
+            ${obs?`Counting violations silently. It would have posted <b style="color:var(--tx-3)">${im.detected} comments</b> on detected violations in the last 30 days.`
+                 :`Rules post review comments on every repository this standard applies to.`}</div>
+        </div>
+        <button class="btn ghost sm" onclick="toggleObserve('${p.id}')">${obs?'Start commenting':'Switch to observe only'}</button>
+      </div>`:''}
+    </div>
+
+    ${on?metricsHTML(p):''}
+
+    <!-- collapsible proof stack -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+      <h3 class="sect">Why you can trust it</h3>
+      <span class="mono" style="font-size:11px;color:var(--tx-7);">CHECK OUR WORK BEFORE YOU ADOPT</span>
+      <span class="link mono" style="margin-left:auto;font-size:11px;" onclick="allSec(true)">Expand all</span>
+      <span class="link mono" style="font-size:11px;" onclick="allSec(false)">Collapse all</span>
+    </div>
+    ${accHTML('sources','Sources it is curated from',`${t.sources.length} sources · ${cites} citations`,sourcesHTML(p))}
+    ${accHTML('bt','Battle-tested on real pull requests',`${p.bt.prs} PRs · ${p.bt.findings} detected violations`,btBodyHTML(p))}
+    ${accHTML('scan','Security scan of these rules',`${t.scan.findings} findings · ${t.scan.checks} checks`,scanHTML(p))}
+    ${accHTML('conf','Do coding agents actually follow it',`${t.conf.with}% vs ${t.conf.base}% baseline`,confHTML(p))}
+    ${accHTML('pipe','How every rule here was made',`${PIPELINE.length} stages`,pipelineBodyHTML(false))}
+    ${on?accHTML('impact','Impact since you adopted it','Last 30 days',impactBodyHTML(p)):''}
+    ${p.changelog.length?accHTML('log','What changed',`Updated ${p.updatedOn} · ${p.updatedNote}`,changelogBodyHTML(p)):''}
+
+    <!-- rules -->
+    <div style="display:flex;align-items:center;gap:12px;margin:30px 0 4px;">
+      <h3 class="sect">Rules in this package</h3>
+      <span class="mono" style="font-size:11px;color:var(--tx-7);">SHOWING 12 OF ${p.count}</span>
+      ${offN?`<span class="pill yellow">${offN} turned off</span>`:''}
+    </div>
+    <p class="hint">Turn a rule off before you adopt, or any time after. Turning one off never leaves the package. Open a rule to see its consensus, its context cost and the violations it detected.</p>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="rulerow" style="grid-template-columns:${COLS};background:var(--surf-hi);color:var(--tx-5);font-size:13px;">
+        <div>On</div><div>Rule</div>${on?'':'<div>Category</div>'}<div>Severity</div>
+        ${on?'<div>Passed (no violations)</div><div>Detected violations</div><div>Merged violations</div>':'<div>Detected violations</div>'}<div></div></div>
+      ${p.rules.map(r=>{
+        const isOff = !!offMap[r.id], isOpen = S.open===r.id, rt = RTRUST[r.id];
+        return `<div>
+          <div class="rulerow${isOff?' off':''}" style="grid-template-columns:${COLS};">
+            <div class="sw${isOff?'':' on'}" onclick="toggleRule('${p.id}','${r.id}')"><i></i></div>
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span class="mono" style="font-size:10.5px;color:var(--tx-7);">${r.id}</span>
+                <span style="font-size:14.5px;">${r.t}</span>
+                ${rt?`<span title="Consensus ${rt.c}">${meterHTML(rt.c)}</span>`:''}
+                ${r.overlap?`<span class="pill purple solid-purple" style="cursor:pointer" onclick="showOverlap('${p.id}','${r.id}')">Related rule found</span>`:''}
+              </div></div>
+            ${on?'':`<div style="font-size:13.5px;color:var(--tx-3);">${r.c}</div>`}
+            <div><span class="sev ${r.s}">${r.s[0].toUpperCase()+r.s.slice(1)}</span></div>
+            ${on?`
+            <div class="mono" style="font-size:13px;color:var(--tx-4);">${num(rt?rt.pa:0)}</div>
+            <div class="mono" style="font-size:13px;color:${r.f?'var(--pink)':'var(--tx-7)'};">${r.f}</div>
+            <div class="mono" style="font-size:13px;color:${r.m?'var(--purple)':'var(--tx-7)'};">${r.m}</div>`
+            :`<div class="mono" style="font-size:13px;color:${r.f?'var(--tx-3)':'var(--pink)'};">${r.f}</div>`}
+            <div class="link" style="text-decoration:none;" onclick="toggleOpen('${r.id}')">${I.chev('#918B9C',16,isOpen?'down':'right')}</div>
+          </div>
+          ${isOpen?evidenceHTML(p,r.id):''}</div>`;
+      }).join('')}
+    </div>
+    <div style="height:40px"></div>`;
+}
+
+/* ---------- W4 · impact ---------- */
+function impactBodyHTML(p){
+  const ordered=[...p.rules].sort((a,b)=>b.f-a.f);
+  const max=Math.max(...ordered.map(r=>r.f),1);
+  return `<p class="hint">Which rules earned their place. A dead rule and a noisy rule are both visible at a glance — turn either one off without leaving the package.</p>
+    <div class="eyebrow" style="margin-bottom:14px;">Per rule, ordered by detected violations</div>
+    ${ordered.map(r=>{
+      const w=Math.round(r.f/max*100);
+      return `<div style="display:grid;grid-template-columns:1fr 200px 130px;gap:14px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);">
+        <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+          <span class="mono" style="font-size:10.5px;color:var(--tx-7);flex:none;">${r.id}</span>
+          <span style="font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.t}</span>
+          ${r.dead?`<span class="pill pink" style="flex:none;">Dead · no violations detected</span>`:''}
+          ${r.noisy?`<span class="pill yellow" style="flex:none;">Noisy · ${Math.round(r.m/r.f*100)}% merged anyway</span>`:''}
+        </div>
+        <div style="height:6px;background:var(--surf-3);border-radius:999px;overflow:hidden;">
+          <div style="height:100%;width:${w}%;background:${r.dead?'transparent':r.noisy?'var(--yellow)':'var(--mint)'};border-radius:999px;"></div></div>
+        <div class="mono" style="font-size:11.5px;color:var(--tx-5);text-align:right;">${r.f} detected · ${r.m} merged</div>
+      </div>`;}).join('')}
+    <div style="margin-top:14px;font-size:12.5px;color:var(--tx-5);line-height:1.5;">
+      ${I.info('#918B9C',13)} Two rules stand out for opposite reasons.
+      <b style="color:var(--pink);font-weight:600;">TS-04</b> has detected no violations here — it is dead weight in your codebase.
+      <b style="color:var(--yellow);font-weight:600;">TS-01</b> detects constantly and gets merged anyway, which means your team disagrees with it. Turn either one off without leaving the package.</div>`;
+}
+
+/* ---------- W5 · changelog ---------- */
+function changelogBodyHTML(p){
+  const kind={added:['#87F5D8','Added'],changed:['#89CDF3','Changed'],removed:['#F92672','Removed']};
+  return `<p class="hint">Updates apply on their own — you are always on the latest version and there is nothing to approve. Rules you turned off stay off. This list is here so you can see what happened after the fact.</p>
+    ${p.changelog.map(c=>`<div style="display:grid;grid-template-columns:110px 100px 1fr;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);align-items:start;">
+      <div class="mono" style="font-size:11.5px;color:var(--tx-6);padding-top:2px;">${c.d}</div>
+      <div><span class="pill" style="color:${kind[c.k][0]};border-color:${kind[c.k][0]}66;">${kind[c.k][1]} ${c.n}</span></div>
+      <div style="font-size:13.5px;color:var(--tx-4);line-height:1.6;">${c.items.map(i=>`<div>${i}</div>`).join('')}</div>
+    </div>`).join('')}
+    <div style="margin-top:14px;font-size:12.5px;color:var(--tx-5);">
+      ${I.info('#918B9C',13)} The 3 rules added on 6 Aug arrived active. Nothing you turned off was turned back on.</div>`;
+}
+
+/* ---------- W3 · rules table ---------- */
+function rulesTabHTML(){
+  const libRules = live().filter(p=>S.adopted[p.id]).flatMap(p=>p.rules.map(r=>({...r,pkg:p})));
+  const own = [
+    {id:'OWN-1',t:'Add new raw PostgreSQL connection pooling',c:'Maintainability',s:'warning',st:'Repository File',src:'CLAUDE.md',scope:'1 repo'},
+    {id:'OWN-2',t:'Adhere to project coding standards',c:'Maintainability',s:'warning',st:'Repository File',src:'.cursorrules',scope:'1 repo'},
+    {id:'OWN-3',t:'Avoid leaking secrets in log output',c:'Security',s:'error',st:'Org Policy',src:'Security baseline',scope:'8 repos'},
+  ];
+  const rows = S.libOnly ? libRules.map(r=>({...r,st:'Qodo Library',src:r.pkg.name,scope:'34 repos',lib:true}))
+    : [...own, ...libRules.slice(0,6).map(r=>({...r,st:'Qodo Library',src:r.pkg.name,scope:'34 repos',lib:true}))];
+  const cols='44px 2fr 1.1fr 1fr 1.3fr 1.2fr 0.8fr 88px 118px 124px';
+
+  return `<div style="text-align:right;font-size:13px;color:var(--tx-6);margin-bottom:14px;">Last 30 days analytics</div>
+    <div class="stats" style="margin-bottom:30px;">
+      <div class="stat"><div class="lab"><div class="ico">${I.check('#87F5D8')}</div><span>Passed (no violations)</span>${I.info('#5E5969',12)}</div><div class="num">14K</div></div>
+      <div class="stat"><div class="lab"><div class="ico">${I.ban('#F92672')}</div><span>Detected violations</span>${I.info('#5E5969',12)}</div><div class="num">104</div></div>
+      <div class="stat"><div class="lab"><div class="ico">${I.merge('#998CFA')}</div><span>Merged violations</span>${I.info('#5E5969',12)}</div><div class="num">50</div></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;">
+      <div style="display:flex;background:var(--surf-2);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:3px;">
+        ${['list','groups'].map(m=>`<div class="mono" onclick="S.rulesMode='${m}';render()" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;background:${S.rulesMode===m?'var(--surf-3)':'transparent'};color:${S.rulesMode===m?'#fff':'var(--tx-6)'};">${m}</div>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;font-size:13px;background:var(--mint-wash);border:1px solid rgba(135,245,216,0.25);border-radius:999px;padding:5px 12px;">
+        ${I.star('#87F5D8','#87F5D8',14)}<span style="color:var(--mint);">${live().filter(p=>S.adopted[p.id]).reduce((a,p)=>a+p.count,0)+9} company-approved</span></div>
+      <div onclick="S.libOnly=!S.libOnly;render()" style="cursor:pointer;display:flex;align-items:center;gap:7px;font-size:13px;border-radius:999px;padding:5px 12px;
+        background:${S.libOnly?'var(--purple-wash)':'var(--surf-3)'};border:1px solid ${S.libOnly?'var(--purple-line)':'var(--line-2)'};color:${S.libOnly?'var(--purple)':'var(--tx-3)'};">
+        ${I.filter(S.libOnly?'#998CFA':'#918B9C',14)} Source type: Qodo Library ${S.libOnly?'✕':''}</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:14px;">
+        <div style="display:flex;align-items:center;gap:9px;background:var(--surf-2);border:1px solid var(--line-2);border-radius:10px;padding:9px 14px;width:240px;color:var(--tx-6);font-size:14px;">${I.search('#777184')} Search...</div>
+        <button class="btn">Generate rule</button></div>
+    </div>
+
+    ${S.rulesMode==='list'?`
+      <div class="tblhead" style="grid-template-columns:${cols};">
+        <div></div><div>Rule name (${S.libOnly?rows.length:'1,284'})</div><div>Category</div><div>Severity</div><div>Source type ${I.info('#5E5969')}</div><div>Source ${I.info('#5E5969')}</div><div>Scope</div>
+        <div>Passed (no violations)</div><div>Detected violations</div><div>Merged violations</div></div>
+      ${rows.map(r=>`<div style="display:grid;grid-template-columns:${cols};gap:12px;padding:16px 8px;border-bottom:1px solid rgba(255,255,255,0.06);align-items:center;">
+        <div class="star">${I.star('#87F5D8','#87F5D8',19)}</div>
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--mint);flex:none;"></span>
+          <span style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.t}</span></div>
+        <div style="font-size:14px;color:var(--tx-3);">${r.c}</div>
+        <div><span class="sev ${r.s}">${r.s[0].toUpperCase()+r.s.slice(1)}</span></div>
+        <div style="font-size:14px;color:${r.lib?'var(--mint)':'var(--tx-3)'};display:flex;align-items:center;gap:6px;">
+          ${r.lib?I.qodo(14):''}${r.st}</div>
+        <div style="font-size:14px;color:var(--tx-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.src}</div>
+        <div class="link" style="font-size:14px;">${r.scope}</div>
+        <div class="mono" style="font-size:13px;color:var(--tx-4);">${num(RTRUST[r.id]?RTRUST[r.id].pa:103)}</div>
+        <div class="mono" style="font-size:13px;color:${r.f?'var(--pink)':'var(--tx-7)'};">${r.f||0}</div>
+        <div class="mono" style="font-size:13px;color:${r.m?'var(--purple)':'var(--tx-7)'};">${r.m||0}</div></div>`).join('')}
+    `:`
+      <div data-tour="rules-groups">
+      <div class="tblhead" style="grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;">
+        <div></div><div>Group</div><div>Rules</div><div>Passed (no violations)</div><div>Detected violations</div><div>Merged violations</div></div>
+      ${live().filter(p=>S.adopted[p.id]).map(p=>`
+        <div style="display:grid;grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;gap:12px;padding:16px 8px;border-bottom:1px solid var(--line);align-items:center;background:var(--surf-hi);">
+          <div class="star">${I.star('#87F5D8','#87F5D8',20)}</div>
+          <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+            ${I.chev('#918B9C',15)}${I.qodo(17)}
+            <span style="font-size:15.5px;font-weight:600;">${p.name}</span>
+            <span class="pill mint">Qodo Library</span></div>
+          <div class="mono" style="font-size:13px;color:var(--tx-5);">${p.count - Object.keys(S.off[p.id]||{}).length} active</div>
+          <div class="mono" style="font-size:13px;color:var(--tx-3);">${num(p.impact.passed)}</div>
+          <div class="mono" style="font-size:13px;color:var(--pink);">${p.impact.detected}</div>
+          <div class="mono" style="font-size:13px;color:var(--purple);">${p.impact.merged}</div></div>`).join('')}
+      ${['Authentication & Secrets','Code Style & Formatting','Observability'].map(g=>`
+        <div style="display:grid;grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;gap:12px;padding:16px 8px;border-bottom:1px solid var(--line);align-items:center;">
+          <div class="star">${I.star('none','#5E5969',20)}</div>
+          <div style="display:flex;align-items:center;gap:11px;">${I.chev('#918B9C',15)}${I.folder('#998CFA')}
+            <span style="font-size:15.5px;font-weight:600;">${g}</span></div>
+          <div class="mono" style="font-size:13px;color:var(--tx-5);">2 active</div>
+          <div class="mono" style="font-size:13px;color:var(--tx-3);">—</div><div class="mono" style="font-size:13px;color:var(--tx-3);">—</div><div class="mono" style="font-size:13px;color:var(--tx-3);">—</div></div>`).join('')}
+      <div style="margin-top:16px;font-size:12.5px;color:var(--tx-5);">
+        ${I.info('#918B9C',13)} A package is one row, not ${live().filter(p=>S.adopted[p.id]).reduce((a,p)=>a+p.count,0)} scattered rules. Expand it to reach the rules inside.</div>
+      </div>
+    `}`;
+}
+
+/* ---------- PRD walkthrough — the acceptance flow, in the customer's voice ----------
+   Fourteen steps, one decision each, in the order the PRD makes them:
+   matched → judged (sources, battle test, security, agent conformance) → adopted →
+   scoped → filed → measured → pruned → maintained → handed to the other side.
+   Every step sets the full state it needs, so Back works from anywhere, and every
+   tooltip ends by naming the button that moves the story on. */
+function startTour(){
+  tourStart([
+    /* ---- matched ---- */
+    { sel:'[data-tour="tab-sug"]', title:'Day one — nothing adopted', hat:'Tech lead',
+      before:()=>{ closeModal(); S.tab='company'; S.screen='grid'; S.adopted={}; S.off={}; S.observe={}; S.sec={}; },
+      say:`Day one. 61 repositories, nothing adopted — review only checks what my team thought to write down. <b>Open Suggestions.</b>`,
+      cta:'Next: Suggestions' },
+
+    { sel:'[data-tour="sug-node"]', title:'It matched my stack', hat:'Tech lead',
+      before:()=>{ closeModal(); S.tab='sug'; S.screen='grid'; S.adopted={}; S.sec={}; },
+      say:`No catalog to browse — it read my stack. Node.js, 34 repositories, 65 rules. <b>I am not switching those on for a promise. Open it.</b>`,
+      note:'PRD acceptance steps 2–3: technology detected, library shown under it.',
+      cta:'Next: the package' },
+
+    /* ---- judged: four questions, four sections ---- */
+    { sel:'[data-tour="pkg-head"]', title:'Four questions, one line', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={}; S.off={}; S.observe={}; openPkg('node'); S.sec={}; },
+      say:`Four questions answered before I scroll: consensus, safety, context cost, whether agents obey. <b>Start with where the rules came from.</b>`,
+      cta:'Next: the sources' },
+
+    { sel:'[data-acc="sources"]', title:'Where the rules came from', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={}; S.tab='company'; S.screen='detail'; S.pkg='node'; S.sec={sources:true}; },
+      say:`Reputable, battle-tested sources — books, the official documentation, a repository with 110k stars — which is why I trust them. <b>But reputable is not proven.</b>`,
+      note:'Each source names how many rules it backs and quotes the line it came from.',
+      cta:'Next: the battle test' },
+
+    { sel:'[data-acc="bt"]', title:'Proven on real pull requests', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={}; S.tab='company'; S.screen='detail'; S.pkg='node'; S.sec={bt:true}; },
+      say:`412 real pull requests, 189 detected violations, openable down to the line. <b>A rule that caught nothing never ships. But is it safe to install?</b>`,
+      cta:'Next: the security scan' },
+
+    { sel:'[data-acc="scan"]', title:'Safe to put in my reviewer', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={}; S.tab='company'; S.screen='detail'; S.pkg='node'; S.sec={scan:true}; },
+      say:`These become instructions inside my review agent, so they are scanned like code: 412 checks, 0 findings. <b>Safe — but will the agent follow them?</b>`,
+      cta:'Next: agent conformance' },
+
+    { sel:'[data-acc="conf"]', title:'Agents actually obey it', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={}; S.tab='company'; S.screen='detail'; S.pkg='node'; S.sec={conf:true}; },
+      say:`84% of generated code respects these practices with it on, 39% without — 2,400 runs, 11 models, 725 tokens. <b>Sourced, proven, safe, obeyed. Adopt it.</b>`,
+      cta:'Next: go to Adopt' },
+
+    /* ---- adopted ---- */
+    { sel:'[data-tour="adopt"]', title:'One button, 65 rules', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={}; S.tab='company'; S.screen='detail'; S.pkg='node'; S.sec={}; },
+      say:`One button and 65 rules review every pull request as a company standard. <b>It asks where first.</b>`,
+      cta:'Next: adopt it', next:"openScope('node');tourGo(8)" },
+
+    { sel:'[data-tour="scope"]', title:'Where it applies', hat:'Tech lead',
+      before:()=>{ S.adopted={}; S.observe={}; S.tab='company'; S.screen='detail'; S.pkg='node';
+                   if(!document.getElementById('scrim').classList.contains('show')) openScope('node'); },
+      say:`Not everywhere by default. All 34, or tick a few and start small — and new Node.js repositories stay covered. <b>All 34.</b>`,
+      cta:'Next: adopt on all 34', next:"confirmAdopt('node');tourGo(9)" },
+
+    /* ---- filed ---- */
+    { sel:'[data-tour="rules-groups"]', title:'One row, not 65', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={node:true}; S.off={node:{}}; S.observe={};
+                   S.tab='rules'; S.screen='grid'; S.rulesMode='groups'; S.libOnly=false; },
+      say:`My rules list did not gain 65 rows. The library is <b>one row I can expand</b>, labelled as Qodo's and removable in one click. <b>Now let it run.</b>`,
+      note:'PRD W3: the library never dilutes the customer’s own rules.',
+      cta:'Next: one week later' },
+
+    /* ---- measured ---- */
+    { sel:'[data-tour="metrics"]', title:'One week later', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={node:true}; S.off={node:{}}; S.observe={}; openPkg('node'); S.sec={}; },
+      say:`One week on: <b>157 detected, 61 merged anyway</b>, 12 pull requests held until a fix. The rules stop code and the team fixes it. <b>Did every rule earn its place?</b>`,
+      note:'The product’s own three counters, rolled up per package.',
+      cta:'Next: the impact' },
+
+    /* ---- pruned ---- */
+    { sel:'[data-acc="impact"]', title:'Which rules earned their place', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={node:true}; S.tab='company'; S.screen='detail'; S.pkg='node'; S.sec={impact:true}; },
+      say:`Two stand out: one caught nothing on my code, one fires constantly and gets merged anyway. <b>Turn either off — the other 63 keep running.</b>`,
+      cta:'Next: what changed' },
+
+    /* ---- maintained ---- */
+    { sel:'[data-acc="log"]', title:'It stays current on its own', hat:'Tech lead',
+      before:()=>{ closeModal(); S.adopted={node:true}; S.tab='company'; S.screen='detail'; S.pkg='node'; S.sec={log:true}; },
+      say:`Never on an old copy: 3 rules added, 1 narrowed, 1 retired — applied on their own, <b>and my turned-off rules stayed off.</b> So who maintains this, and how do they know it works?`,
+      cta:'Next: the other side' },
+
+    /* ---- handed over ---- */
+    { sel:null, title:'The other side of the library', hat:'Hand-off',
+      before:()=>{ closeModal(); },
+      say:`That is the customer half: matched, judged, adopted, scoped, measured, pruned, kept current. <b>The other half is Qodo's own dashboard</b> — which libraries work across all 214 customers.`,
+      note:'Next: the internal cross-customer view.',
+      cta:'Next: the library manager →', next:"location.href='d-library-manager.html?tour=1'" },
+  ]);
+}
+
+/* ---------- Suggestions tab — where the walkthrough starts ---------- */
+function sugTabHTML(){
+  const TECH = [
+    { tech:'Node.js', det:'Node 20 · Express · Fastify', repos:34, pkg:'node' },
+    { tech:'React',   det:'React 19 · Vitest · Testing Library', repos:3, pkg:'fetest' },
+    { tech:'Coding agents', det:'.claude · .cursor · agent skills', repos:12, pkg:'sdlc' },
+  ];
+  return `<div style="margin-bottom:26px;max-width:680px;">
+      <h2 class="page">Suggestions</h2>
+      <p class="sub">We read the stack in your repositories and matched it against the Qodo library. Nothing here is running yet — accept what fits.</p>
+    </div>
+    ${TECH.map(t=>{
+      const p = byId(t.pkg), sg = SUGGEST[t.pkg], on = !!S.adopted[t.pkg];
+      return `<div style="margin-bottom:26px;">
+        <div class="secthead">
+          <div class="sectico" style="background:var(--surf-3);">${I.repo}</div>
+          <h3 class="sect">${t.tech}</h3>
+          <span class="mono" style="font-size:11px;color:var(--tx-7);">DETECTED IN ${t.repos} ${t.repos===1?'REPOSITORY':'REPOSITORIES'} · ${t.det}</span>
+        </div>
+        <div class="sug" data-tour="sug-${t.pkg}"${on?' style="border-color:var(--mint-line);"':''}>
+          <div class="sectico" style="width:40px;height:40px;border-radius:10px;background:${on?'var(--mint-wash)':'var(--surf-3)'};">${I.shield(on?'#87F5D8':'#918B9C',20)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+              <span style="font-size:16px;font-weight:600;">${p.name} rules library</span>
+              <span class="pill mint">Qodo Library</span>
+              <span class="pill">${p.count} rules</span>
+              ${on?`<span class="pill mint solid-mint">Adopted</span>`:''}
+            </div>
+            <div class="why" style="margin-top:7px;">${I.spark('#998CFA',14)} ${sg.why}</div>
+            <div style="font-size:13.5px;color:var(--tx-4);line-height:1.5;margin-top:7px;max-width:70ch;">${p.desc}</div>
+            <div class="mono" style="font-size:11px;color:var(--tx-6);margin-top:9px;">
+              APPLIES TO ${sg.scope.toUpperCase()} · TESTED ON ${p.bt.prs} PULL REQUESTS · ${TRUST[p.id].sources.length} SOURCES</div>
+          </div>
+          <div class="acts">
+            <button class="btn ${on?'mint':''}" onclick="toggleAdopt('${p.id}',event)">${on?'Adopted':'Adopt'}</button>
+            <button class="btn ghost sm" onclick="openPkg('${p.id}')">See the evidence</button>
+            <span class="link mono" style="font-size:10px;text-align:center;">Dismiss</span>
+          </div>
+        </div></div>`;
+    }).join('')}
+    <div class="card" style="padding:16px 20px;font-size:13px;color:var(--tx-5);line-height:1.55;">
+      ${I.info('#918B9C',13)} Nothing matched for Go, Kafka or Postgres yet — those libraries are still in mining. You will see them here when they ship.</div>`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  const keep = document.querySelector('.scrollarea')?.scrollTop || 0;
+  let body;
+  if(S.tab==='company') body = S.screen==='detail' ? detailHTML() : gridHTML();
+  else if(S.tab==='rules') body = rulesTabHTML();
+  else if(S.tab==='sug') body = sugTabHTML();
+  else body = placeholderTab(S.tab==='skills'?'Skills':'Manage');
+
+  document.getElementById('root').innerHTML = railHTML() +
+    `<main class="app">${topbarHTML()}<div class="scrollarea">${tabsHTML(S.tab,'go')}${body}</div></main>` + navHTML();
+  const sa = document.querySelector('.scrollarea'); if(sa) sa.scrollTop = keep;
+}
+
+function navHTML(){
+  return navigator_([
+    {label:'W1 · Library section', items:[
+      {k:'w1a',t:'Zero state — nothing adopted',fn:"S.tab='company';S.screen='grid';S.adopted={};render();markNav('w1a')"},
+      {k:'w1b',t:'One adopted + recommended + updated',fn:"S.tab='company';S.screen='grid';S.adopted={node:true};render();markNav('w1b')"},
+      {k:'w1c',t:'All three adopted',fn:"S.tab='company';S.screen='grid';S.adopted={node:true,fetest:true,sdlc:true};render();markNav('w1c')"},
+    ]},
+    {label:'W2 · Package detail', items:[
+      {k:'w2a',t:'Not adopted — the trust screen',fn:"S.adopted={};S.off={};openPkg('node');markNav('w2a')"},
+      {k:'w2b',t:'Adopted',fn:"S.adopted={node:true};S.off={node:{}};openPkg('node');markNav('w2b')"},
+      {k:'w2c',t:'Adopted, 3 rules turned off',fn:"S.adopted={node:true};S.off={node:{'TS-04':1,'TS-01':1,'STR-02':1}};openPkg('node');markNav('w2c')"},
+      {k:'w2d',t:'Evidence open on a rule',fn:"S.adopted={node:true};openPkg('node');S.open='API-01';render();markNav('w2d')"},
+      {k:'w2e',t:'Trust stack — all expanded',fn:"S.adopted={};openPkg('node');allSec(true);markNav('w2e')"},
+      {k:'w2f',t:'Trust stack — all collapsed',fn:"S.adopted={};openPkg('node');allSec(false);markNav('w2f')"},
+    ]},
+    {label:'W3 · Rules table', items:[
+      {k:'w3a',t:'List view, mixed sources',fn:"S.tab='rules';S.rulesMode='list';S.libOnly=false;S.adopted={node:true};render();markNav('w3a')"},
+      {k:'w3b',t:'Groups view — package as one row',fn:"S.tab='rules';S.rulesMode='groups';S.adopted={node:true,fetest:true};render();markNav('w3b')"},
+      {k:'w3c',t:'Filtered to Library only',fn:"S.tab='rules';S.rulesMode='list';S.libOnly=true;S.adopted={node:true};render();markNav('w3c')"},
+    ]},
+    {label:'W4 · W5 · W6', items:[
+      {k:'w4',t:'Impact — dead rule + noisy rule',fn:"S.adopted={node:true};openPkg('node');markNav('w4')"},
+      {k:'w5',t:'Update visibility — changelog',fn:"S.adopted={node:true};openPkg('node');markNav('w5')"},
+      {k:'w6a',t:'Observe mode — observing',fn:"S.adopted={node:true};S.observe={node:true};openPkg('node');markNav('w6a')"},
+      {k:'w6b',t:'Observe mode — commenting',fn:"S.adopted={node:true};S.observe={};openPkg('node');markNav('w6b')"},
+    ]},
+    {label:'Guided tour', items:[
+      {k:'tour',t:'Run the whole walkthrough',fn:"markNav('tour');startTour()"},
+    ]},
+    {label:'Also draw', items:[
+      {k:'ov',t:'Overlap — related rules found',fn:"S.adopted={node:true};openPkg('node');showOverlap('node','SEC-09');markNav('ov')"},
+      {k:'un',t:'Un-adopt confirmation',fn:"S.adopted={node:true};S.off={node:{'TS-04':1,'TS-01':1,'STR-02':1}};openPkg('node');toggleAdopt('node');markNav('un')"},
+    ]},
+  ]);
+}
+
+mount(render);
+</script>
+</body>
+</html>

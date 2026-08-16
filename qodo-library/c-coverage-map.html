@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qodo Library — Wireframe C · Blind-spot map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .matrix{display:grid;gap:8px;}
+  .mrow{display:grid;grid-template-columns:220px repeat(6,1fr);gap:8px;align-items:stretch;}
+  .mhead{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--tx-6);padding:0 0 4px;display:flex;align-items:flex-end;}
+  .stackcell{display:flex;flex-direction:column;justify-content:center;padding:10px 0;}
+  .cell{border-radius:10px;padding:12px 10px;min-height:66px;display:flex;flex-direction:column;
+    justify-content:space-between;cursor:default;transition:transform .12s,border-color .12s;}
+  .cell.own{background:var(--surf-3);border:1px solid var(--line-2);}
+  .cell.qodo{background:rgba(135,245,216,.10);border:1px solid var(--mint-line);}
+  .cell.gap{background:transparent;border:1px dashed rgba(153,140,250,.5);cursor:pointer;}
+  .cell.gap:hover{background:var(--purple-wash);transform:translateY(-1px);}
+  .cell.void{background:rgba(255,255,255,.012);border:1px dashed var(--line-2);}
+  .cell .n{font-size:19px;font-weight:600;line-height:1;}
+  .cell .k{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--tx-6);}
+  .gaprow{display:grid;grid-template-columns:1fr 190px 210px 220px;gap:16px;align-items:center;
+    padding:16px 18px;border-bottom:1px solid var(--line);}
+  .gaprow:hover{background:var(--surf-hi);}
+  /* drawer */
+  #dscrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;display:none;}
+  #dscrim.show{display:block;}
+  #drawer{position:fixed;top:0;right:0;bottom:0;width:660px;max-width:94vw;background:#111014;
+    border-left:1px solid var(--line-2);z-index:100;display:none;flex-direction:column;
+    box-shadow:-24px 0 60px rgba(0,0,0,.55);animation:slideIn 200ms cubic-bezier(.2,.8,.3,1);}
+  #drawer.show{display:flex;}
+  #drawer .dh{padding:20px 24px 16px;border-bottom:1px solid var(--line);flex:none;}
+  #drawer .db{overflow-y:auto;flex:1;min-height:0;padding:20px 24px 40px;display:flex;flex-direction:column;gap:20px;}
+  .drow{display:grid;grid-template-columns:40px 1fr 84px 78px;gap:10px;align-items:center;
+    padding:11px 6px;border-bottom:1px solid var(--line);}
+  .drow.off{opacity:.4;}
+  .blk{border:1px solid var(--line-2);border-radius:12px;padding:16px 18px;background:var(--surf);}
+  .blk h5{margin:0 0 10px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;}
+</style>
+</head>
+<body>
+<div id="root" style="display:contents"></div>
+<script src="shared.js"></script>
+<script>
+/* ============================================================
+   VARIATION C — blind-spot map, adopt with a dry run
+   Leads with the problem the PRD names: the gap is invisible
+   from inside, nothing tells you what you are NOT checking.
+   The catalog is a consequence of the map, not the entrance,
+   and every adoption is preceded by a run against the
+   customer's own pull requests.
+   ============================================================ */
+const STACK = [
+  { id:'node',  label:'Node.js & TypeScript', meta:'34 repositories · detected' },
+  { id:'fe',    label:'React & frontend',     meta:'22 repositories · detected' },
+  { id:'pg',    label:'PostgreSQL',           meta:'18 repositories · detected' },
+  { id:'agent', label:'Agent tooling',        meta:'11 repositories · .claude/' },
+];
+const CONCERNS = ['Security','Correctness','Performance','Testing','Process','Compliance'];
+
+/* what the customer's own rules already cover — mined or imported */
+const OWN = {
+  node:{Security:3,Correctness:6,Process:2},
+  fe:{Correctness:4,Performance:1,Process:2},
+  pg:{Security:1,Correctness:2},
+  agent:{},
+};
+/* what each package would cover */
+const COVER = {
+  node:{ node:{Security:17,Correctness:21,Performance:6,Testing:6} },
+  fetest:{ fe:{Testing:22,Correctness:4} },
+  sdlc:{ agent:{Security:9,Process:14,Correctness:6} },
+  owasp:{ node:{Security:9,Compliance:8}, fe:{Security:6,Compliance:3}, pg:{Security:4,Compliance:3} },
+  pg:{ pg:{Performance:19,Correctness:12} },
+  soc2:{ node:{Compliance:5}, agent:{Compliance:7} },
+};
+/* what a dry run against the customer's own recent PRs found */
+const DRY = {
+  node:{ prs:318, repos:34, found:157, top:[['API-01',31],['API-02',24],['ASY-03',18],['ERR-04',12]], window:'last 30 days' },
+  fetest:{ prs:210, repos:22, found:62, top:[['ANAT-01',14],['ANAT-15',11],['ASRT-02',8],['DOM-03',7]], window:'last 30 days' },
+  sdlc:{ prs:96, repos:11, found:44, top:[['SKILL-31',9],['SKILL-32',8],['HOOK-02',7],['SKILL-09',6]], window:'last 30 days' },
+};
+
+const S = {
+  tab:'company', view:'coverage', drawer:null, dsec:'rules',
+  adopted:{}, off:{}, observe:{}, openEv:null,
+  rulesMode:'list', libOnly:false, expand:{},
+};
+
+/* ---------- coverage maths ---------- */
+function cellState(row, col){
+  const own = (OWN[row]||{})[col] || 0;
+  let qodo = 0, from = null;
+  for (const p of PKGS) if (S.adopted[p.id]) {
+    const v = ((COVER[p.id]||{})[row]||{})[col];
+    if (v){ qodo += v - Object.keys(S.off[p.id]||{}).length * 0; from = p; }
+  }
+  if (qodo) return { k:'qodo', n:own+qodo, from };
+  if (own)  return { k:'own',  n:own };
+  const avail = PKGS.filter(p => ((COVER[p.id]||{})[row]||{})[col]);
+  if (avail.length) return { k:'gap', n:avail.reduce((a,p)=>a+((COVER[p.id]||{})[row]||{})[col],0), pkg:avail[0] };
+  return { k:'void', n:0 };
+}
+function coverage(){
+  let covered = 0;
+  for (const r of STACK) for (const c of CONCERNS){ const s = cellState(r.id,c); if (s.k==='own'||s.k==='qodo') covered++; }
+  return Math.round(covered / (STACK.length*CONCERNS.length) * 100);
+}
+function gapsClosedBy(pid){
+  let n = 0;
+  for (const r of STACK) for (const c of CONCERNS){
+    if (((COVER[pid]||{})[r.id]||{})[c] && cellState(r.id,c).k === 'gap') n++;
+  }
+  return n;
+}
+
+/* ---------- interactions ---------- */
+function go(t){ S.tab=t; render(); }
+function openDrawer(pid, sec){ S.drawer=pid; S.dsec=sec||'rules'; S.openEv=null; render(); }
+function closeDrawer(){ S.drawer=null; render(); }
+function setDsec(s){ S.dsec=s; render(); }
+function setView(v){ S.view=v; render(); }
+
+function adopt(pid, observeMode){
+  const p=byId(pid); const closed=gapsClosedBy(pid);
+  S.adopted[pid]=true; S.off[pid]=S.off[pid]||{}; if(observeMode) S.observe[pid]=true;
+  toast(observeMode
+    ? `Adopted “${p.name}” in observe mode — counting violations, no comments posted yet`
+    : `Adopted “${p.name}” — ${p.count} rules now running, ${closed} blind spot${closed===1?'':'s'} closed`);
+  render();
+}
+function unadopt(pid){
+  const p=byId(pid);
+  const cells=[]; for(const r of STACK) for(const c of CONCERNS){
+    if(((COVER[pid]||{})[r.id]||{})[c] && !((OWN[r.id]||{})[c])) cells.push(`${r.label} × ${c}`);
+  }
+  const offN=Object.keys(S.off[pid]||{}).length;
+  modal(`<h4>Un-adopt ${p.name}?</h4>
+    <p><b style="color:var(--tx-2)">${p.count-offN} active rules stop running</b> on ${DRY[pid]?DRY[pid].repos:34} repositories. They are gone from the next review — nothing is deleted, and comments already posted stay.</p>
+    <p style="margin-top:14px;">These go back to being blind spots:</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;">
+      ${cells.map(c=>`<span class="pill purple" style="font-size:10px;">${c}</span>`).join('')}</div>
+    <p style="margin-top:14px;">Your ${offN} per-rule opt-out${offN===1?'':'s'} stay remembered, so re-adopting restores this exact configuration.</p>
+    <div class="acts"><button class="btn ghost" onclick="closeModal()">Keep it adopted</button>
+      <button class="btn danger" onclick="confirmUnadopt('${pid}')">Un-adopt, reopen the gaps</button></div>`);
+}
+function confirmUnadopt(pid){ const p=byId(pid); delete S.adopted[pid]; delete S.observe[pid];
+  closeModal(); render();
+  toast(`Removed “${p.name}” — its rules no longer run, coverage is back to ${coverage()}%`); }
+function toggleRule(pid,rid){
+  S.off[pid]=S.off[pid]||{};
+  const was=S.off[pid][rid]; if(was) delete S.off[pid][rid]; else S.off[pid][rid]=true;
+  const r=byId(pid).rules.find(x=>x.id===rid);
+  toast(was?`“${r.t}” is back on`:`“${r.t}” turned off — the rest of ${byId(pid).name} keeps running`); render();
+}
+function toggleObserve(pid){ const p=byId(pid); S.observe[pid]=!S.observe[pid];
+  toast(S.observe[pid]?`“${p.name}” is now observing — it counts violations, developers see nothing`
+                      :`“${p.name}” is now commenting on pull requests`); render(); }
+function toggleEv(rid){ S.openEv=S.openEv===rid?null:rid; render(); }
+function showOverlap(pid,rid){
+  const r=byId(pid).rules.find(x=>x.id===rid);
+  modal(`<h4>Related rules found</h4>
+    <p>The Library rule <b style="color:var(--tx-2)">“${r.t}”</b> overlaps a rule you already have — it is one of the 3 that already cover Node.js × Security.</p>
+    <div class="card" style="padding:14px 16px;margin:16px 0;background:var(--surf-3);">
+      <div style="display:flex;align-items:center;gap:10px;font-size:14px;">${I.star('#87F5D8','#87F5D8',16)}<span>Avoid leaking secrets in log output</span></div>
+      <div class="mono" style="font-size:11px;color:var(--tx-6);margin-top:8px;">Org Policy · Security baseline · 8 repos · added 9 Jun 2026</div></div>
+    <p>Both will run. The Library version narrows to structured loggers, so it fires on fewer lines than yours.</p>
+    <div class="acts"><button class="btn ghost" onclick="closeModal()">Keep both</button>
+      <button class="btn mint" onclick="closeModal();toggleRule('${pid}','${rid}')">Turn the Library one off</button></div>`);
+}
+
+/* ---------- the map ---------- */
+function matrixHTML(){
+  const impactView = S.view==='impact';
+  const head = `<div class="mrow"><div class="mhead"></div>${
+    CONCERNS.map(c=>`<div class="mhead">${c}</div>`).join('')}</div>`;
+  const rows = STACK.map(r=>`<div class="mrow">
+    <div class="stackcell">
+      <div style="font-size:14px;font-weight:600;">${r.label}</div>
+      <div class="mono" style="font-size:10px;color:var(--tx-6);margin-top:4px;">${r.meta}</div></div>
+    ${CONCERNS.map(c=>{
+      const s = cellState(r.id,c);
+      if (impactView){
+        const on = s.k==='qodo';
+        const fixed = on ? Math.round(s.from.impact.detected*0.6/2) : 0;
+        return `<div class="cell ${on?'qodo':s.k==='own'?'own':'void'}" ${on?`onclick="openDrawer('${s.from.id}','impact')" style="cursor:pointer"`:''}>
+          <div class="n" style="${on?'color:var(--mint)':'color:var(--tx-6)'}">${on?fixed:'—'}</div>
+          <div class="k">${on?'fixed before merge':s.k==='own'?'not measured':'no coverage'}</div></div>`;
+      }
+      if (s.k==='gap') return `<div class="cell gap" onclick="openDrawer('${s.pkg.id}')">
+        <div class="n" style="color:var(--purple);">+${s.n}</div>
+        <div class="k" style="color:var(--purple);">available</div></div>`;
+      if (s.k==='void') return `<div class="cell void"><div class="n" style="color:var(--tx-7);">—</div>
+        <div class="k">nothing yet</div></div>`;
+      return `<div class="cell ${s.k}" ${s.k==='qodo'?`onclick="openDrawer('${s.from.id}')" style="cursor:pointer"`:''}>
+        <div class="n" style="${s.k==='qodo'?'color:var(--mint)':''}">${s.n}</div>
+        <div class="k">${s.k==='qodo'?'incl. '+s.from.name.split(' ')[0]:'your rules'}</div></div>`;
+    }).join('')}
+  </div>`).join('');
+  return `<div class="matrix">${head}${rows}</div>`;
+}
+
+function legendHTML(){
+  const L=(sw,t)=>`<span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx-5);">${sw}${t}</span>`;
+  const box=(bg,br)=>`<span style="width:13px;height:13px;border-radius:4px;background:${bg};border:1px ${br};display:inline-block;"></span>`;
+  return `<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;">
+    ${L(box('var(--surf-3)','solid var(--line-2)'),'Covered by your own rules')}
+    ${L(box('rgba(135,245,216,.10)','solid var(--mint-line)'),'Covered by an adopted Qodo package')}
+    ${L(box('transparent','dashed rgba(153,140,250,.5)'),'Blind spot — a package covers this')}
+    ${L(box('rgba(255,255,255,.012)','dashed var(--line-2)'),'Blind spot — nothing published yet')}</div>`;
+}
+
+/* ---------- gap-ordered package list ---------- */
+function gapListHTML(){
+  // available packages first — a gap you can close today outranks one you cannot
+  const list=[...PKGS].sort((a,b)=>
+    (a.status==='live'?0:1)-(b.status==='live'?0:1) || gapsClosedBy(b.id)-gapsClosedBy(a.id));
+  return `<div class="card" style="padding:0;overflow:hidden;">
+    <div style="display:grid;grid-template-columns:1fr 190px 210px 220px;gap:16px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--surf-hi);"
+      class="mono"><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);">Package</div>
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);">Blind spots closed</div>
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);">On your code, ${DRY.node.window}</div>
+      <div></div></div>
+    ${list.map(p=>{
+      const on=!!S.adopted[p.id], mining=p.status==='mining', d=DRY[p.id], closed=gapsClosedBy(p.id);
+      return `<div class="gaprow" style="${mining?'opacity:.5;':''}">
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+            <span style="font-size:15px;font-weight:600;">${p.name}</span>
+            ${on?`<span class="pill mint solid-mint">Adopted</span>`:''}
+            ${mining?`<span class="pill">In mining</span>`:''}
+            ${p.updatedOn?`<span class="pill blue">Updated ${p.updatedOn}</span>`:''}</div>
+          <div class="mono" style="font-size:10.5px;color:var(--tx-6);margin-top:5px;">${p.count} rules · ${p.cat}${mining?' · '+p.eta:' · tested on '+p.bt.prs+' pull requests'}</div></div>
+        <div>${closed?`<div style="display:flex;align-items:center;gap:7px;"><span style="font-size:20px;font-weight:600;color:var(--purple);">${closed}</span>
+            <span class="mono" style="font-size:10px;color:var(--tx-6);line-height:1.3;">of your<br>24 cells</span></div>`
+          :`<span class="mono" style="font-size:11px;color:var(--tx-7);">${on?'already closed':'none open'}</span>`}</div>
+        <div>${d?`<div style="font-size:13.5px;color:var(--tx-3);"><b style="color:${on?'var(--mint)':'var(--tx)'};">${d.found}</b> violations</div>
+            <div class="mono" style="font-size:10.5px;color:var(--tx-6);margin-top:3px;">across ${d.prs} of your merged PRs</div>`
+          :`<span class="mono" style="font-size:11px;color:var(--tx-7);">not runnable yet</span>`}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          ${mining?`<span class="mono" style="font-size:10.5px;color:var(--tx-7);">Not published</span>`
+            :`<button class="btn ghost sm" onclick="openDrawer('${p.id}')">${on?'Open':'Preview on my code'}</button>
+              ${on?'':`<button class="btn sm" onclick="adopt('${p.id}',false)">Adopt</button>`}`}</div>
+      </div>`;}).join('')}
+  </div>`;
+}
+
+/* ---------- drawer ---------- */
+function drawerHTML(){
+  if(!S.drawer) return `<div id="dscrim"></div><div id="drawer"></div>`;
+  const p=byId(S.drawer), on=!!S.adopted[p.id], obs=!!S.observe[p.id];
+  const d=DRY[p.id], offN=Object.keys(S.off[p.id]||{}).length, closed=gapsClosedBy(p.id);
+  const sec=(k,l)=>`<div class="dtab" onclick="setDsec('${k}')" style="font-size:13px;padding-bottom:9px;cursor:pointer;color:${S.dsec===k?'#fff':'var(--tx-6)'};border-bottom:2px solid ${S.dsec===k?'var(--mint)':'transparent'};margin-bottom:-1px;">${l}</div>`;
+  return `<div id="dscrim" class="show" onclick="closeDrawer()"></div>
+  <div id="drawer" class="show">
+    <div class="dh">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div class="sectico" style="width:38px;height:38px;border-radius:10px;background:${on?'var(--mint-wash)':'var(--purple-wash)'};">${I.shield(on?'#87F5D8':'#998CFA',20)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+            <span style="font-size:18px;font-weight:600;">${p.name}</span>
+            <span class="pill mint">Rule package</span>
+            ${p.updatedOn?`<span class="pill blue">Updated ${p.updatedOn}</span>`:''}</div>
+          <div class="mono" style="font-size:10.5px;color:var(--tx-6);margin-top:5px;">
+            ${p.count} rules · ${p.cat}${offN?` · ${offN} turned off`:''} · maintained by Qodo</div></div>
+        <div class="star" onclick="closeDrawer()" style="color:var(--tx-6);font-size:20px;line-height:1;padding:2px 4px;">✕</div>
+      </div>
+      <div style="display:flex;gap:20px;margin-top:16px;border-bottom:1px solid var(--line);">
+        ${sec('rules','Rules')}${sec('evidence','Evidence')}${sec('impact',on?'Impact':'Coverage')}${sec('changelog','Changelog')}</div>
+    </div>
+    <div class="db">
+      ${S.dsec==='rules'?dryRunHTML(p,d,on,closed)+adoptBarHTML(p,on,obs)+drawerRulesHTML(p):''}
+      ${S.dsec==='evidence'?drawerEvidenceHTML(p):''}
+      ${S.dsec==='impact'?drawerImpactHTML(p,on,closed):''}
+      ${S.dsec==='changelog'?drawerChangelogHTML(p):''}
+    </div></div>`;
+}
+
+function dryRunHTML(p,d,on,closed){
+  if(!d) return '';
+  const max=Math.max(...d.top.map(t=>t[1]));
+  return `<div class="blk" style="border-color:${on?'var(--mint-line)':'var(--purple-line)'};background:${on?'rgba(135,245,216,.05)':'rgba(153,140,250,.05)'};">
+    <h5>${I.spark(on?'#87F5D8':'#998CFA',15)} ${on?'What it found on your code':'What it would have found on your code'}</h5>
+    <div style="font-size:13px;color:var(--tx-4);line-height:1.55;margin-bottom:14px;">
+      We ran this package over <b style="color:var(--tx-2)">${d.prs} of your merged pull requests</b> from the ${d.window},
+      across ${d.repos} repositories. Nobody was notified — this is a dry run against history.</div>
+    <div style="display:flex;gap:12px;margin-bottom:16px;">
+      ${[['Violations found',d.found,on?'var(--mint)':'var(--purple)'],['Blind spots closed',closed,'var(--purple)'],['Rules that fired','9 of '+p.count,'var(--tx)']]
+        .map(([l,v,c])=>`<div style="flex:1;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:12px 14px;">
+          <div class="mono" style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);">${l}</div>
+          <div style="font-size:22px;font-weight:600;margin-top:5px;color:${c};">${v}</div></div>`).join('')}</div>
+    <div class="mono" style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);margin-bottom:9px;">Which rules did the firing</div>
+    ${d.top.map(([rid,n])=>{const r=p.rules.find(x=>x.id===rid);
+      return `<div style="display:grid;grid-template-columns:1fr 120px 42px;gap:12px;align-items:center;padding:6px 0;">
+        <div style="font-size:12.5px;color:var(--tx-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r?r.t:rid}</div>
+        <div style="height:5px;background:var(--surf-3);border-radius:999px;overflow:hidden;">
+          <div style="height:100%;width:${Math.round(n/max*100)}%;background:${on?'var(--mint)':'var(--purple)'};border-radius:999px;"></div></div>
+        <div class="mono" style="font-size:11.5px;color:var(--tx-5);text-align:right;">${n}</div></div>`;}).join('')}
+    <div style="margin-top:12px;font-size:12px;color:var(--tx-5);line-height:1.5;">
+      ${I.info('#918B9C',12)} A dry run is history, not a promise — but it is your history, not ours.</div>
+  </div>`;
+}
+
+function adoptBarHTML(p,on,obs){
+  if(!on) return `<div style="display:flex;gap:10px;align-items:center;">
+    <button class="btn" onclick="adopt('${p.id}',false)">${I.star('#fff','#fff',15)} Adopt and start commenting</button>
+    <button class="btn ghost" onclick="adopt('${p.id}',true)">${I.eye('#C5C2CB',15)} Adopt in observe mode</button>
+    <span class="mono" style="font-size:10.5px;color:var(--tx-6);line-height:1.4;max-width:150px;">Observe mode counts violations without posting a single comment.</span></div>`;
+  return `<div class="blk" style="border-color:${obs?'rgba(210,229,52,.35)':'var(--mint-line)'};display:flex;align-items:center;gap:12px;">
+    ${obs?I.eye('#D2E534',18):I.check('#87F5D8',18)}
+    <div style="flex:1;">
+      <div style="font-size:13.5px;font-weight:600;color:${obs?'var(--yellow)':'var(--mint)'};">
+        ${obs?'Observing — no developer has seen these comments':'Commenting on pull requests'}</div>
+      <div style="font-size:12px;color:var(--tx-5);margin-top:2px;">
+        ${obs?`It would have posted <b style="color:var(--tx-3)">${p.impact.detected} comments</b> in the last 30 days.`
+             :'Every rule below posts review comments where this standard applies.'}</div></div>
+    <button class="btn ghost sm" onclick="toggleObserve('${p.id}')">${obs?'Start commenting':'Observe only'}</button>
+    <button class="btn danger sm" onclick="unadopt('${p.id}')">Un-adopt</button></div>`;
+}
+
+function drawerRulesHTML(p){
+  const offMap=S.off[p.id]||{};
+  return `<div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <h5 style="margin:0;font-size:14px;font-weight:600;">Rules</h5>
+      <span class="mono" style="font-size:10px;color:var(--tx-7);">SHOWING 12 OF ${p.count}</span></div>
+    <p style="font-size:12.5px;color:var(--tx-6);margin:0 0 10px;">Turn one off now or later — it never leaves the package, and an update will not switch it back on.</p>
+    ${p.rules.map(r=>{const isOff=!!offMap[r.id], open=S.openEv===r.id, ev=p.evidence[r.id];
+      return `<div><div class="drow${isOff?' off':''}">
+        <div class="sw${isOff?'':' on'}" onclick="toggleRule('${p.id}','${r.id}')"><i></i></div>
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+            <span class="mono" style="font-size:10px;color:var(--tx-7);">${r.id}</span>
+            <span style="font-size:13px;">${r.t}</span>
+            ${r.overlap?`<span class="pill purple solid-purple" style="cursor:pointer" onclick="showOverlap('${p.id}','${r.id}')">Related rule found</span>`:''}
+            ${r.dead?`<span class="pill pink">Never fired here</span>`:''}
+            ${r.noisy?`<span class="pill yellow">Merged anyway ${Math.round(r.m/r.f*100)}%</span>`:''}</div></div>
+        <div><span class="sev ${r.s}" style="font-size:11px;padding:3px 8px;">${r.s}</span></div>
+        <div style="text-align:right;">${ev?`<span class="link" style="font-size:11.5px;" onclick="toggleEv('${r.id}')">${open?'hide':r.f+' hits'}</span>`
+          :`<span class="mono" style="font-size:11.5px;color:${r.f?'var(--tx-6)':'var(--pink)'};">${r.f} hits</span>`}</div></div>
+        ${open&&ev?`<div style="background:rgba(0,0,0,.3);border-left:2px solid var(--mint-line);margin:0 0 10px;padding:12px 14px;border-radius:0 8px 8px 0;">
+          ${ev.map(e=>`<div style="display:flex;gap:9px;margin-bottom:9px;">
+            <span style="width:4px;height:4px;border-radius:50%;background:var(--mint);margin-top:6px;flex:none;"></span>
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;">
+                <a href="${e.url}" target="_blank" class="mono" style="font-size:11px;color:var(--blue);text-decoration:none;">${e.repo}#${e.pr}</a>${I.ext('#89CDF3',10)}
+                <span class="mono" style="font-size:10px;color:var(--tx-6);">${e.file.split('/').slice(-1)[0]}:${e.line}</span></div>
+              <div style="font-size:12px;color:var(--tx-4);line-height:1.5;">${e.what}</div></div></div>`).join('')}
+        </div>`:''}</div>`;}).join('')}</div>`;
+}
+
+function drawerEvidenceHTML(p){
+  return `<div class="blk">
+      <h5>${I.check('#87F5D8',15)} Battle-tested before it shipped</h5>
+      <div style="display:flex;gap:12px;margin-bottom:12px;">
+        ${[['Repositories',p.bt.repos],['PRs reviewed',p.bt.prs],['Findings',p.bt.findings],['Rules that never fired',0]]
+          .map(([l,v],i)=>`<div style="flex:1;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:11px 13px;">
+            <div class="mono" style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);">${l}</div>
+            <div style="font-size:20px;font-weight:600;margin-top:4px;${i===3?'color:var(--mint);':''}">${v}</div></div>`).join('')}</div>
+      <div style="font-size:12.5px;color:var(--tx-4);line-height:1.55;">
+        Run against <span class="mono" style="color:var(--tx-2);">${p.btRepos.join(' · ')}</span>.
+        This is separate from the dry run on your own code — it is how the package qualified in the first place.</div></div>
+    ${pipelineHTML(true)}
+    <div class="blk">
+      <h5>${I.ext('#87F5D8',14)} Example findings</h5>
+      ${Object.entries(p.evidence).map(([rid,list])=>{const r=p.rules.find(x=>x.id===rid);
+        return `<div style="padding:10px 0;border-top:1px solid var(--line);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+            <span class="mono" style="font-size:10px;color:var(--tx-7);">${rid}</span>
+            <span style="font-size:13px;font-weight:600;">${r.t}</span></div>
+          ${list.map(e=>`<div style="display:flex;gap:9px;margin-bottom:8px;">
+            <span style="width:4px;height:4px;border-radius:50%;background:var(--mint);margin-top:6px;flex:none;"></span>
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;">
+                <a href="${e.url}" target="_blank" class="mono" style="font-size:11px;color:var(--blue);text-decoration:none;">${e.repo}#${e.pr}</a>${I.ext('#89CDF3',10)}
+                <span class="mono" style="font-size:10px;color:var(--tx-6);">${e.file}:${e.line}</span></div>
+              <div style="font-size:12px;color:var(--tx-4);line-height:1.5;">${e.what}</div></div></div>`).join('')}
+        </div>`;}).join('')}</div>`;
+}
+
+function drawerImpactHTML(p,on,closed){
+  const cells=[]; for(const r of STACK) for(const c of CONCERNS){ if(((COVER[p.id]||{})[r.id]||{})[c]) cells.push([r.label,c,cellState(r.id,c).k]); }
+  const cov=`<div class="blk"><h5>${I.spark('#998CFA',15)} What this covers on your map</h5>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;">
+      ${cells.map(([r,c,k])=>`<span class="pill ${k==='qodo'?'mint solid-mint':'purple solid-purple'}" style="font-size:10px;">${r} × ${c}${k==='qodo'?' ✓':''}</span>`).join('')}</div>
+    <div style="margin-top:12px;font-size:12.5px;color:var(--tx-5);line-height:1.5;">
+      ${on?`Adopting this moved your coverage to <b style="color:var(--mint)">${coverage()}%</b> of the surface your stack exposes.`
+          :`Adopting this closes <b style="color:var(--purple)">${closed}</b> blind spot${closed===1?'':'s'} and moves coverage to <b style="color:var(--purple)">${Math.min(100,coverage()+Math.round(closed/24*100))}%</b>.`}</div></div>`;
+  if(!on) return cov;
+  const im=p.impact, fixed=im.detected-im.merged;
+  const ordered=[...p.rules].sort((a,b)=>b.f-a.f), max=Math.max(...ordered.map(r=>r.f),1);
+  return cov+`<div class="blk">
+    <h5>${I.check('#87F5D8',15)} Impact since you adopted it — last 30 days</h5>
+    <div style="display:flex;gap:12px;margin-bottom:14px;">
+      ${[['Passed',num(im.passed),''],['Detected',im.detected,'var(--pink)'],['Merged anyway',im.merged,'var(--purple)'],['Fixed before merge',fixed,'var(--mint)']]
+        .map(([l,v,c])=>`<div style="flex:1;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:11px 13px;">
+          <div class="mono" style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);">${l}</div>
+          <div style="font-size:20px;font-weight:600;margin-top:4px;${c?`color:${c};`:''}">${v}</div></div>`).join('')}</div>
+    <div class="mono" style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);margin-bottom:8px;">Per rule, ordered by findings</div>
+    ${ordered.map(r=>`<div style="display:grid;grid-template-columns:1fr 110px 96px;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);">
+      <div style="display:flex;align-items:center;gap:7px;min-width:0;">
+        <span style="font-size:12.5px;color:var(--tx-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.t}</span>
+        ${r.dead?`<span class="pill pink" style="flex:none;font-size:9px;">Dead</span>`:''}
+        ${r.noisy?`<span class="pill yellow" style="flex:none;font-size:9px;">Noisy</span>`:''}</div>
+      <div style="height:5px;background:var(--surf-3);border-radius:999px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round(r.f/max*100)}%;background:${r.dead?'transparent':r.noisy?'var(--yellow)':'var(--mint)'};border-radius:999px;"></div></div>
+      <div class="mono" style="font-size:11px;color:var(--tx-5);text-align:right;">${r.f}f · ${r.f-r.m}fx</div></div>`).join('')}
+    <div style="margin-top:12px;font-size:12px;color:var(--tx-5);line-height:1.5;">
+      ${I.info('#918B9C',12)} <b style="color:var(--pink)">TS-04</b> never fires in your code — dead weight.
+      <b style="color:var(--yellow)">TS-01</b> fires constantly and ships anyway — your team disagrees with it. Turn either off above.</div></div>`;
+}
+
+function drawerChangelogHTML(p){
+  if(!p.changelog.length) return `<div class="blk" style="text-align:center;padding:30px;">
+    <div style="font-size:14px;color:var(--tx-3);margin-bottom:6px;">No updates since you adopted it</div>
+    <div style="font-size:12.5px;color:var(--tx-5);line-height:1.55;">When we improve this package you get it automatically — nothing to approve. What changed shows up here afterwards.</div></div>`;
+  const kind={added:['#87F5D8','Added'],changed:['#89CDF3','Changed'],removed:['#F92672','Removed']};
+  return `<div class="blk" style="display:flex;align-items:flex-start;gap:10px;">
+      ${I.info('#87F5D8',15)}<div style="font-size:12.5px;color:var(--tx-4);line-height:1.55;">
+      Updates apply on their own — you are always on the latest version. <b style="color:var(--tx-2)">Rules you turned off stay off.</b> Rules added in an update arrive active.</div></div>
+    <div class="blk">${p.changelog.map(c=>`<div style="display:grid;grid-template-columns:96px 96px 1fr;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:start;">
+      <div class="mono" style="font-size:11px;color:var(--tx-6);padding-top:3px;">${c.d}</div>
+      <div><span class="pill" style="color:${kind[c.k][0]};border-color:${kind[c.k][0]}66;">${kind[c.k][1]} ${c.n}</span></div>
+      <div style="font-size:12.5px;color:var(--tx-4);line-height:1.55;">${c.items.map(i=>`<div>${i}</div>`).join('')}</div></div>`).join('')}</div>`;
+}
+
+/* ---------- W3 rules table ---------- */
+function rulesTabHTML(){
+  const adoptedPkgs=live().filter(p=>S.adopted[p.id]);
+  const own=[
+    {id:'OWN-1',t:'Add new raw PostgreSQL connection pooling',c:'Maintainability',s:'warning',st:'Repository File',src:'CLAUDE.md',scope:'1 repo'},
+    {id:'OWN-2',t:'Adhere to project coding standards',c:'Maintainability',s:'warning',st:'Repository File',src:'.cursorrules',scope:'1 repo'},
+    {id:'OWN-3',t:'Avoid leaking secrets in log output',c:'Security',s:'error',st:'Org Policy',src:'Security baseline',scope:'8 repos'},
+  ];
+  const lib=adoptedPkgs.flatMap(p=>p.rules.slice(0,4).map(r=>({...r,st:'Qodo Library',src:p.name,scope:'34 repos',lib:true})));
+  const rows=S.libOnly?lib:[...own,...lib];
+  const cols='44px 2fr 1.1fr 1fr 1.3fr 1.2fr .8fr';
+  return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;">
+      <div style="display:flex;background:var(--surf-2);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:3px;">
+        ${['list','groups'].map(m=>`<div class="mono" onclick="S.rulesMode='${m}';render()" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;background:${S.rulesMode===m?'var(--surf-3)':'transparent'};color:${S.rulesMode===m?'#fff':'var(--tx-6)'};">${m}</div>`).join('')}</div>
+      <div onclick="S.libOnly=!S.libOnly;render()" style="cursor:pointer;display:flex;align-items:center;gap:7px;font-size:13px;border-radius:999px;padding:5px 12px;
+        background:${S.libOnly?'var(--mint-wash)':'var(--surf-3)'};border:1px solid ${S.libOnly?'var(--mint-line)':'var(--line-2)'};color:${S.libOnly?'var(--mint)':'var(--tx-3)'};">
+        ${I.filter(S.libOnly?'#87F5D8':'#918B9C',14)} Source type: Qodo Library ${S.libOnly?'✕':''}</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:14px;">
+        <div style="display:flex;align-items:center;gap:9px;background:var(--surf-2);border:1px solid var(--line-2);border-radius:10px;padding:9px 14px;width:240px;color:var(--tx-6);font-size:14px;">${I.search('#777184')} Search...</div>
+        <button class="btn">Generate rule</button></div></div>
+    ${S.rulesMode==='list'?`
+      <div style="display:grid;grid-template-columns:${cols};gap:12px;padding:0 8px 14px;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx-5);">
+        <div></div><div>Rule name (${S.libOnly?rows.length:'1,284'})</div><div>Category</div><div>Severity</div><div>Source type</div><div>Source</div><div>Scope</div></div>
+      ${rows.length?rows.map(r=>`<div style="display:grid;grid-template-columns:${cols};gap:12px;padding:16px 8px;border-bottom:1px solid rgba(255,255,255,.06);align-items:center;">
+        <div class="star">${I.star('#87F5D8','#87F5D8',19)}</div>
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--mint);flex:none;"></span>
+          <span style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.t}</span></div>
+        <div style="font-size:14px;color:var(--tx-3);">${r.c}</div>
+        <div><span class="sev ${r.s}">${r.s[0].toUpperCase()+r.s.slice(1)}</span></div>
+        <div style="font-size:14px;color:${r.lib?'var(--mint)':'var(--tx-3)'};display:flex;align-items:center;gap:6px;">${r.lib?I.qodo(14):''}${r.st}</div>
+        <div style="font-size:14px;color:var(--tx-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.src}</div>
+        <div class="link" style="font-size:14px;">${r.scope}</div></div>`).join('')
+      :`<div style="padding:40px;text-align:center;color:var(--tx-6);font-size:14px;">No Library rules yet — nothing adopted.</div>`}`
+    :`<div style="display:grid;grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;gap:12px;padding:0 8px 14px;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx-5);">
+        <div></div><div>Group</div><div>Rules</div><div>Passed</div><div>Detected</div><div>Merged</div></div>
+      ${adoptedPkgs.map(p=>{const ex=!!S.expand[p.id];
+        return `<div><div style="display:grid;grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;gap:12px;padding:16px 8px;border-bottom:1px solid var(--line);align-items:center;background:var(--surf-hi);cursor:pointer;" onclick="S.expand['${p.id}']=!S.expand['${p.id}'];render()">
+          <div class="star">${I.star('#87F5D8','#87F5D8',20)}</div>
+          <div style="display:flex;align-items:center;gap:11px;min-width:0;">${I.chev('#918B9C',15,ex?'down':'right')}${I.qodo(17)}
+            <span style="font-size:15.5px;font-weight:600;">${p.name}</span><span class="pill mint">Qodo Library</span></div>
+          <div class="mono" style="font-size:13px;color:var(--tx-5);">${p.count-Object.keys(S.off[p.id]||{}).length} active</div>
+          <div class="mono" style="font-size:13px;color:var(--tx-3);">${num(p.impact.passed)}</div>
+          <div class="mono" style="font-size:13px;color:var(--pink);">${p.impact.detected}</div>
+          <div class="mono" style="font-size:13px;color:var(--purple);">${p.impact.merged}</div></div>
+          ${ex?p.rules.slice(0,5).map(r=>`<div style="display:grid;grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;gap:12px;padding:12px 8px 12px 52px;border-bottom:1px solid rgba(255,255,255,.05);align-items:center;">
+            <div></div><div style="font-size:14px;color:var(--tx-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.t}</div>
+            <div><span class="sev ${r.s}" style="font-size:11px;padding:3px 8px;">${r.s}</span></div>
+            <div class="mono" style="font-size:12.5px;color:var(--tx-6);">—</div>
+            <div class="mono" style="font-size:12.5px;color:var(--tx-3);">${r.f}</div>
+            <div class="mono" style="font-size:12.5px;color:var(--tx-3);">${r.m}</div></div>`).join(''):''}</div>`;}).join('')
+      ||`<div style="padding:40px;text-align:center;color:var(--tx-6);font-size:14px;">Nothing adopted — no Library groups to show.</div>`}`}`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  const cov=coverage(), blind=STACK.length*CONCERNS.length-Math.round(cov/100*24);
+  const body = S.tab==='company' ? `
+    <div style="margin-bottom:24px;max-width:760px;">
+      <h2 class="page">Qodo library</h2>
+      <p class="sub">Rule packages built and battle-tested by Qodo. Start from what you are <em>not</em> checking.</p>
+    </div>
+
+    <div class="card" style="padding:22px 24px;margin-bottom:20px;">
+      <div style="display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:20px;">
+        <div style="flex:1;min-width:280px;">
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <span style="font-size:38px;font-weight:600;letter-spacing:-.03em;color:${cov>60?'var(--mint)':'var(--tx)'};">${cov}%</span>
+            <span style="font-size:15px;color:var(--tx-3);">of the surface your stack exposes is being reviewed</span></div>
+          <div style="font-size:13.5px;color:var(--tx-5);margin-top:8px;line-height:1.55;max-width:64ch;">
+            Your rules were written by hand or mined from your own pull request history — both are mirrors.
+            <b style="color:var(--tx-3);font-weight:600;">${blind} of 24 areas have no rule at all</b>, and nothing inside your codebase would ever tell you that.</div>
+        </div>
+        <div style="display:flex;background:var(--surf-2);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:3px;">
+          ${[['coverage','Coverage'],['impact','Impact']].map(([k,l])=>`<div class="mono" onclick="setView('${k}')" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;background:${S.view===k?'var(--surf-3)':'transparent'};color:${S.view===k?'#fff':'var(--tx-6)'};">${l}</div>`).join('')}</div>
+      </div>
+      ${matrixHTML()}
+      ${legendHTML()}
+      ${S.view==='impact'?`<div style="margin-top:16px;font-size:12.5px;color:var(--tx-5);line-height:1.5;">
+        ${I.info('#918B9C',13)} Findings acted on — detected minus merged — for each area an adopted package covers. Your own rules are not broken out this way yet.</div>`:''}
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+      <h3 class="sect">Packages, ordered by how much of your map they close</h3></div>
+    <p class="hint">Every one has already been run against your own merged pull requests. Preview the result before you commit to anything.</p>
+    ${gapListHTML()}
+    <div style="height:40px"></div>`
+    : S.tab==='rules' ? rulesTabHTML()
+    : placeholderTab(S.tab==='sug'?'Suggestions':S.tab==='skills'?'Skills':'Manage');
+
+  document.getElementById('root').innerHTML = railHTML() +
+    `<main class="app">${topbarHTML()}<div class="scrollarea">${tabsHTML(S.tab,'go')}${body}</div></main>` +
+    drawerHTML() + navHTML();
+}
+
+function navHTML(){
+  return navigator_([
+    {label:'W1 · Blind-spot map', items:[
+      {k:'w1a',t:'Zero state — 42% covered',fn:"S.tab='company';S.view='coverage';S.adopted={};S.off={};S.drawer=null;render();markNav('w1a')"},
+      {k:'w1b',t:'One adopted — gaps closing',fn:"S.tab='company';S.view='coverage';S.adopted={node:true};S.drawer=null;render();markNav('w1b')"},
+      {k:'w1c',t:'All three adopted',fn:"S.tab='company';S.view='coverage';S.adopted={node:true,fetest:true,sdlc:true};S.drawer=null;render();markNav('w1c')"},
+    ]},
+    {label:'W2 · Adopt drawer', items:[
+      {k:'w2a',t:'Not adopted — dry run first',fn:"S.adopted={};S.off={};openDrawer('node','rules');markNav('w2a')"},
+      {k:'w2b',t:'Evidence — real PRs + pipeline',fn:"S.adopted={};openDrawer('node','evidence');markNav('w2b')"},
+      {k:'w2c',t:'Adopted, 3 rules turned off',fn:"S.adopted={node:true};S.off={node:{'TS-04':1,'TS-01':1,'STR-02':1}};openDrawer('node','rules');markNav('w2c')"},
+      {k:'w2d',t:'Evidence open on a rule',fn:"S.adopted={node:true};openDrawer('node','rules');S.openEv='API-01';render();markNav('w2d')"},
+    ]},
+    {label:'W3 · Rules table', items:[
+      {k:'w3a',t:'List view, mixed sources',fn:"S.tab='rules';S.drawer=null;S.rulesMode='list';S.libOnly=false;S.adopted={node:true};render();markNav('w3a')"},
+      {k:'w3b',t:'Groups — collapsed',fn:"S.tab='rules';S.drawer=null;S.rulesMode='groups';S.expand={};S.adopted={node:true,fetest:true};render();markNav('w3b')"},
+      {k:'w3c',t:'Groups — expanded',fn:"S.tab='rules';S.drawer=null;S.rulesMode='groups';S.adopted={node:true,fetest:true};S.expand={node:true};render();markNav('w3c')"},
+      {k:'w3d',t:'Filtered to Library only',fn:"S.tab='rules';S.drawer=null;S.rulesMode='list';S.libOnly=true;S.adopted={node:true};render();markNav('w3d')"},
+    ]},
+    {label:'W4 · W5 · W6', items:[
+      {k:'w4a',t:'Impact map — findings acted on',fn:"S.tab='company';S.view='impact';S.adopted={node:true,fetest:true,sdlc:true};S.drawer=null;render();markNav('w4a')"},
+      {k:'w4b',t:'Impact — dead + noisy rule',fn:"S.adopted={node:true};openDrawer('node','impact');markNav('w4b')"},
+      {k:'w5a',t:'Changelog — recently updated',fn:"S.adopted={node:true};openDrawer('node','changelog');markNav('w5a')"},
+      {k:'w5b',t:'Changelog — never updated',fn:"S.adopted={fetest:true};openDrawer('fetest','changelog');markNav('w5b')"},
+      {k:'w6a',t:'Observe mode — observing',fn:"S.adopted={node:true};S.observe={node:true};openDrawer('node','rules');markNav('w6a')"},
+      {k:'w6b',t:'Observe mode — commenting',fn:"S.adopted={node:true};S.observe={};openDrawer('node','rules');markNav('w6b')"},
+    ]},
+    {label:'Also draw', items:[
+      {k:'ov',t:'Overlap — related rules found',fn:"S.adopted={node:true};openDrawer('node','rules');showOverlap('node','SEC-09');markNav('ov')"},
+      {k:'un',t:'Un-adopt — gaps reopen',fn:"S.adopted={node:true};S.off={node:{'TS-04':1,'TS-01':1,'STR-02':1}};openDrawer('node','rules');unadopt('node');markNav('un')"},
+    ]},
+  ]);
+}
+
+mount(render);
+</script>
+</body>
+</html>

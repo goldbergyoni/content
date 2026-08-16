@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qodo Library — Wireframe B · Split catalog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .scrollarea.nopad{overflow:hidden;display:flex;flex-direction:column;padding-bottom:0;}
+  .split{display:grid;grid-template-columns:312px 1fr;flex:1;min-height:0;
+    border:1px solid var(--line-2);border-radius:16px;overflow:hidden;background:var(--surf);}
+  .catalog{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:rgba(0,0,0,.18);}
+  .catalog .top{padding:14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px;}
+  .srch{display:flex;align-items:center;gap:9px;background:var(--surf-2);border:1px solid var(--line-2);
+    border-radius:9px;padding:8px 12px;color:var(--tx-6);font-size:13.5px;}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    border:1px solid var(--line-2);border-radius:999px;padding:5px 10px;color:var(--tx-6);cursor:pointer;}
+  .chip:hover{color:var(--tx-3);border-color:var(--line-3);}
+  .chip.on{color:var(--mint);border-color:var(--mint-line);background:var(--mint-wash);}
+  .catlist{overflow-y:auto;flex:1;min-height:0;}
+  .prow{display:flex;gap:11px;padding:14px 15px;border-bottom:1px solid var(--line);cursor:pointer;
+    border-left:2px solid transparent;align-items:flex-start;}
+  .prow:hover{background:var(--surf-2);}
+  .prow.sel{background:var(--surf-3);border-left-color:var(--mint);}
+  .prow.mining{opacity:.5;}
+  .prow .dot{width:7px;height:7px;border-radius:50%;flex:none;margin-top:6px;}
+  .detail{display:flex;flex-direction:column;min-height:0;}
+  .dhead{padding:20px 24px 0;border-bottom:1px solid var(--line);flex:none;}
+  .dtabs{display:flex;gap:24px;margin-top:16px;}
+  .dtab{font-size:14px;padding-bottom:11px;cursor:pointer;color:var(--tx-6);
+    border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px;}
+  .dtab:hover{color:var(--tx-3);}
+  .dtab.on{color:#fff;border-bottom-color:var(--mint);}
+  .dbody{overflow-y:auto;flex:1;min-height:0;padding:22px 24px 40px;}
+  .rrow{display:grid;grid-template-columns:44px 1fr 140px 92px 120px;gap:12px;align-items:center;
+    padding:13px 8px;border-bottom:1px solid var(--line);}
+  .rrow:hover{background:var(--surf-hi);}
+  .rrow.off{opacity:.4;}
+  .findcard{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:rgba(0,0,0,.2);
+    display:flex;flex-direction:column;gap:8px;}
+  .findcard:hover{border-color:var(--line-3);}
+</style>
+</head>
+<body>
+<div id="root" style="display:contents"></div>
+<script src="shared.js"></script>
+<script>
+/* ============================================================
+   VARIATION B — split catalog
+   One screen. The catalog never leaves the left rail and the
+   trust evidence is docked on the right, so choosing between
+   packages and checking our work are the same motion. No
+   navigation, no losing your place, no back button.
+   ============================================================ */
+const S = {
+  tab:'company', sel:'node', dtab:'rules',
+  adopted:{ node:true }, off:{ node:{} }, observe:{},
+  filter:'all', openEv:null,
+  rulesMode:'list', libOnly:false, expand:{},
+};
+
+function go(t){ S.tab=t; render(); }
+function pick(id){ S.sel=id; S.dtab='rules'; S.openEv=null; render(); }
+function setD(t){ S.dtab=t; render(); }
+function setFilter(f){ S.filter=f; render(); }
+
+function toggleAdopt(id, ev){
+  ev?.stopPropagation();
+  const p=byId(id);
+  if(S.adopted[id]){
+    const offN=Object.keys(S.off[id]||{}).length;
+    modal(`<h4>Un-adopt ${p.name}?</h4>
+      <p><b style="color:var(--tx-2)">${p.count-offN} active rules stop running</b> on every repository they applied to. They are gone from the next review — nothing is deleted, and comments already posted stay.</p>
+      <p>Your ${offN} per-rule opt-out${offN===1?'':'s'} stay remembered, so re-adopting restores this exact configuration.</p>
+      <div class="acts"><button class="btn ghost" onclick="closeModal()">Keep it adopted</button>
+      <button class="btn danger" onclick="confirmUnadopt('${id}')">Un-adopt, stop reviewing</button></div>`);
+    return;
+  }
+  S.adopted[id]=true; S.off[id]=S.off[id]||{};
+  toast(`Adopted “${p.name}” — ${p.count} rules published to company standards`); render();
+}
+function confirmUnadopt(id){ const p=byId(id); delete S.adopted[id]; delete S.observe[id]; closeModal();
+  toast(`Removed “${p.name}” — its rules no longer run in review`); render(); }
+function toggleRule(pid,rid){
+  S.off[pid]=S.off[pid]||{};
+  const was=S.off[pid][rid]; if(was) delete S.off[pid][rid]; else S.off[pid][rid]=true;
+  const r=byId(pid).rules.find(x=>x.id===rid);
+  toast(was?`“${r.t}” is back on`:`“${r.t}” turned off — the rest of ${byId(pid).name} keeps running`); render();
+}
+function toggleObserve(id){ const p=byId(id); S.observe[id]=!S.observe[id];
+  toast(S.observe[id]?`“${p.name}” is now observing — it counts violations, developers see nothing`
+                     :`“${p.name}” is now commenting on pull requests`); render(); }
+function showOverlap(pid,rid){
+  const r=byId(pid).rules.find(x=>x.id===rid);
+  modal(`<h4>Related rules found</h4>
+    <p>The Library rule <b style="color:var(--tx-2)">“${r.t}”</b> overlaps a rule you already have.</p>
+    <div class="card" style="padding:14px 16px;margin:16px 0;background:var(--surf-3);">
+      <div style="display:flex;align-items:center;gap:10px;font-size:14px;">${I.star('#87F5D8','#87F5D8',16)}<span>Avoid leaking secrets in log output</span></div>
+      <div class="mono" style="font-size:11px;color:var(--tx-6);margin-top:8px;">Org Policy · Security baseline · 8 repos · added 9 Jun 2026</div></div>
+    <p>Both will run. The Library version narrows to structured loggers, so it fires on fewer lines than yours.</p>
+    <div class="acts"><button class="btn ghost" onclick="closeModal()">Keep both</button>
+    <button class="btn mint" onclick="closeModal();toggleRule('${pid}','${rid}')">Turn the Library one off</button></div>`);
+}
+
+/* ---------- left: catalog ---------- */
+function catalogHTML(){
+  const f=S.filter;
+  const list=PKGS.filter(p=>
+    f==='all'?true : f==='rec'?!!p.rec : f==='adopted'?!!S.adopted[p.id] : p.status==='live');
+  const row=p=>{
+    const on=!!S.adopted[p.id], mining=p.status==='mining';
+    const dot=mining?'var(--tx-7)':on?'var(--mint)':p.rec?'var(--purple)':'var(--tx-7)';
+    return `<div class="prow${S.sel===p.id?' sel':''}${mining?' mining':''}" onclick="${mining?'':`pick('${p.id}')`}">
+      <span class="dot" style="background:${dot};"></span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:${on?600:500};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        <div class="mono" style="font-size:10.5px;color:var(--tx-6);margin-top:4px;">
+          ${p.count} rules · ${p.cat}${mining?' · in mining':''}</div>
+        ${p.rec&&!mining?`<div class="mono" style="font-size:9.5px;color:var(--purple);margin-top:5px;letter-spacing:.05em;text-transform:uppercase;">Recommended</div>`:''}
+        ${p.updatedOn?`<div class="mono" style="font-size:9.5px;color:var(--blue);margin-top:5px;letter-spacing:.05em;text-transform:uppercase;">Updated ${p.updatedOn}</div>`:''}
+      </div>
+      ${mining?'':`<div class="star" style="margin-top:1px;" onclick="toggleAdopt('${p.id}',event)">${I.star(on?'#87F5D8':'none',on?'#87F5D8':'#5E5969',17)}</div>`}
+    </div>`;};
+  const chip=(k,l)=>`<span class="chip${S.filter===k?' on':''}" onclick="setFilter('${k}')">${l}</span>`;
+  return `<div class="catalog">
+    <div class="top">
+      <div class="srch">${I.search('#777184')} Search packages…</div>
+      <div class="chips">${chip('all','All '+PKGS.length)}${chip('rec','Recommended')}${chip('adopted','Adopted '+Object.keys(S.adopted).length)}${chip('live','Available now')}</div>
+    </div>
+    <div class="catlist">${list.map(row).join('')}
+      <div style="padding:16px 15px;font-size:11.5px;color:var(--tx-7);line-height:1.5;" class="mono">
+        v1 ships three packages. Depth over breadth — a short catalog of trusted packages beats a long one of untested ones.</div>
+    </div></div>`;
+}
+
+/* ---------- right: detail ---------- */
+function detailHTML(){
+  const p=byId(S.sel), on=!!S.adopted[p.id], obs=!!S.observe[p.id];
+  const offN=Object.keys(S.off[p.id]||{}).length;
+  const dtab=(k,l,badge)=>`<div class="dtab${S.dtab===k?' on':''}" onclick="setD('${k}')">${l}${badge?`<span class="pill ${badge[1]}">${badge[0]}</span>`:''}</div>`;
+  return `<div class="detail">
+    <div class="dhead">
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <div class="sectico" style="width:40px;height:40px;border-radius:10px;background:${on?'var(--mint-wash)':'var(--surf-3)'};">${I.shield(on?'#87F5D8':'#918B9C',21)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+            <span style="font-size:20px;font-weight:600;letter-spacing:-.02em;">${p.name}</span>
+            <span class="pill mint">Rule package</span><span class="pill">${p.cat}</span>
+            <span class="mono" style="font-size:11px;color:var(--tx-6);">${p.count} rules${offN?` · ${offN} off`:''}</span>
+          </div>
+          <div style="font-size:13.5px;color:var(--tx-4);margin-top:7px;line-height:1.55;max-width:78ch;">${p.desc}</div>
+          ${p.rec?`<div style="display:flex;align-items:center;gap:7px;margin-top:10px;font-size:12.5px;color:var(--purple);">
+            ${I.spark('#998CFA',14)} Recommended — ${p.rec}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex:none;">
+          <button class="btn ${on?'mint':''} sm" onclick="toggleAdopt('${p.id}',event)">
+            ${I.star(on?'#87F5D8':'#fff',on?'#87F5D8':'#fff',15)} ${on?'Adopted':'Adopt for the company'}</button>
+          ${on?`<button class="btn ghost sm" onclick="toggleObserve('${p.id}')">${obs?'Start commenting':'Switch to observe only'}</button>`:''}
+        </div>
+      </div>
+      ${on&&obs?`<div style="margin-top:14px;display:flex;align-items:center;gap:10px;background:rgba(210,229,52,0.09);
+        border:1px solid rgba(210,229,52,0.3);border-radius:10px;padding:10px 14px;">
+        ${I.eye('#D2E534',16)}<div style="font-size:13px;color:var(--yellow);font-weight:600;">Observing — no developer has seen these comments</div>
+        <div style="font-size:12.5px;color:var(--tx-5);">It would have posted <b style="color:var(--tx-3)">${p.impact.detected} comments</b> in the last 30 days.</div></div>`:''}
+      <div class="dtabs">
+        ${dtab('rules','Rules')}
+        ${dtab('evidence','Evidence',[p.bt.findings+' findings','mint'])}
+        ${dtab('impact','Impact', on?null:['after adoption',''])}
+        ${dtab('changelog','Changelog', p.updatedOn?['1 update','blue']:null)}
+      </div>
+    </div>
+    <div class="dbody">${
+      S.dtab==='rules'?rulesPaneHTML(p):
+      S.dtab==='evidence'?evidencePaneHTML(p):
+      S.dtab==='impact'?impactPaneHTML(p,on):changelogPaneHTML(p)}</div>
+  </div>`;
+}
+
+function rulesPaneHTML(p){
+  const offMap=S.off[p.id]||{};
+  return `<p class="hint" style="margin-bottom:14px;">Turn a rule off before you adopt, or any time after — it never leaves the package, and an update will not turn it back on. The hit count is what the rule found during battle testing.</p>
+    <div class="rrow" style="background:var(--surf-hi);color:var(--tx-5);font-size:12.5px;border-radius:8px 8px 0 0;">
+      <div>On</div><div>Rule</div><div>Category</div><div>Severity</div><div>Battle-test hits</div></div>
+    ${p.rules.map(r=>{
+      const isOff=!!offMap[r.id];
+      return `<div class="rrow${isOff?' off':''}">
+        <div class="sw${isOff?'':' on'}" onclick="toggleRule('${p.id}','${r.id}')"><i></i></div>
+        <div style="min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="mono" style="font-size:10.5px;color:var(--tx-7);">${r.id}</span>
+          <span style="font-size:14px;">${r.t}</span>
+          ${r.overlap?`<span class="pill purple solid-purple" style="cursor:pointer" onclick="showOverlap('${p.id}','${r.id}')">Related rule found</span>`:''}
+          ${r.dead?`<span class="pill pink">Never fired here</span>`:''}
+        </div>
+        <div style="font-size:13px;color:var(--tx-3);">${r.c}</div>
+        <div><span class="sev ${r.s}">${r.s[0].toUpperCase()+r.s.slice(1)}</span></div>
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span class="mono" style="font-size:12.5px;color:${r.f?'var(--tx-3)':'var(--pink)'};">${r.f}</span>
+          ${p.evidence[r.id]?`<span class="link" style="font-size:11.5px;" onclick="S.dtab='evidence';S.openEv='${r.id}';render()">see them</span>`:''}
+        </div></div>`;}).join('')}
+    <div style="margin-top:16px;font-size:12.5px;color:var(--tx-5);">
+      ${I.info('#918B9C',13)} Showing 12 of ${p.count}. Every one of them fired at least once on real code — that is the bar for shipping.</div>`;
+}
+
+function evidencePaneHTML(p){
+  const rows=Object.entries(p.evidence);
+  return `<div style="display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap;">
+      ${[['Repositories',p.bt.repos],['Pull requests reviewed',p.bt.prs],['Findings recorded',p.bt.findings],['Rules that never fired',0]]
+        .map(([l,v],i)=>`<div class="card" style="flex:1;min-width:150px;padding:16px 18px;${i===3?'border-color:var(--mint-line);':''}">
+          <div class="mono" style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-6);">${l}</div>
+          <div style="font-size:26px;font-weight:600;margin-top:6px;${i===3?'color:var(--mint);':''}">${v}</div></div>`).join('')}
+    </div>
+    <div class="card" style="padding:14px 18px;margin-bottom:20px;font-size:13px;color:var(--tx-4);">
+      Run against <span class="mono" style="color:var(--tx-2);">${p.btRepos.join(' · ')}</span> — public repositories, real merged pull requests, nothing synthetic.</div>
+    ${pipelineHTML(false)}
+    <h3 class="sect" style="margin:24px 0 4px;">Example findings</h3>
+    <p class="hint">Up to five per rule. Each one links to the pull request, file and line it was found on, so you can check our work before adopting.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${rows.map(([rid,list])=>{
+        const r=p.rules.find(x=>x.id===rid);
+        return `<div class="findcard"${S.openEv===rid?' style="border-color:var(--mint-line)"':''}>
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+            <span class="mono" style="font-size:10.5px;color:var(--tx-7);">${rid}</span>
+            <span style="font-size:14px;font-weight:600;">${r.t}</span>
+            <span class="sev ${r.s}" style="font-size:11px;padding:3px 8px;">${r.s}</span>
+            <span class="mono" style="margin-left:auto;font-size:11px;color:var(--tx-6);">${r.f} findings · showing ${list.length}</span></div>
+          ${list.map(e=>`<div style="display:flex;gap:11px;padding-top:8px;border-top:1px solid var(--line);">
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--mint);margin-top:7px;flex:none;"></span>
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+                <a href="${e.url}" target="_blank" class="mono" style="font-size:11.5px;color:var(--blue);text-decoration:none;">${e.repo}#${e.pr}</a>${I.ext('#89CDF3',11)}
+                <span class="mono" style="font-size:11px;color:var(--tx-6);">${e.file}:${e.line}</span></div>
+              <div style="font-size:12.5px;color:var(--tx-4);line-height:1.5;">${e.what}</div></div></div>`).join('')}
+        </div>`;}).join('')}
+    </div>`;
+}
+
+function impactPaneHTML(p,on){
+  if(!on) return `<div class="card" style="padding:34px;text-align:center;">
+    <div style="font-size:15px;color:var(--tx-3);margin-bottom:6px;">Nothing to measure yet</div>
+    <div style="font-size:13.5px;color:var(--tx-5);max-width:52ch;margin:0 auto 18px;line-height:1.55;">
+      Impact starts counting the moment you adopt. Until then, the Evidence tab is the only honest answer to “is this worth it” — ${p.bt.findings} findings on ${p.bt.prs} real pull requests.</div>
+    <button class="btn" onclick="toggleAdopt('${p.id}',event)">${I.star('#fff','#fff',15)} Adopt for the company</button></div>`;
+  const im=p.impact, fixed=im.detected-im.merged;
+  const ordered=[...p.rules].sort((a,b)=>b.f-a.f), max=Math.max(...ordered.map(r=>r.f),1);
+  return `<div class="stats" style="margin-bottom:18px;">
+      <div class="stat"><div class="lab"><div class="ico">${I.check('#87F5D8')}</div><span>Passed</span></div><div class="num">${num(im.passed)}</div></div>
+      <div class="stat"><div class="lab"><div class="ico">${I.ban('#F92672')}</div><span>Detected</span></div><div class="num">${im.detected}</div></div>
+      <div class="stat"><div class="lab"><div class="ico">${I.merge('#998CFA')}</div><span>Merged anyway</span></div><div class="num">${im.merged}</div></div>
+      <div class="stat" style="border-color:var(--mint-line);"><div class="lab"><div class="ico">${I.star('#87F5D8','#87F5D8',18)}</div><span>Fixed before merge</span></div><div class="num" style="color:var(--mint);">${fixed}</div></div>
+    </div>
+    <p class="hint">Detected minus merged is the number that matters: the rule was respected and the code changed.</p>
+    <div class="card" style="padding:18px 20px;">
+      <div class="eyebrow" style="margin-bottom:14px;">Per rule, ordered by findings</div>
+      ${ordered.map(r=>{const w=Math.round(r.f/max*100), fx=r.f-r.m;
+        return `<div style="display:grid;grid-template-columns:1fr 180px 120px;gap:14px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+            <span class="mono" style="font-size:10.5px;color:var(--tx-7);flex:none;">${r.id}</span>
+            <span style="font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.t}</span>
+            ${r.dead?`<span class="pill pink" style="flex:none;">Dead</span>`:''}
+            ${r.noisy?`<span class="pill yellow" style="flex:none;">Noisy · ${Math.round(r.m/r.f*100)}% merged anyway</span>`:''}</div>
+          <div style="height:6px;background:var(--surf-3);border-radius:999px;overflow:hidden;">
+            <div style="height:100%;width:${w}%;background:${r.dead?'transparent':r.noisy?'var(--yellow)':'var(--mint)'};border-radius:999px;"></div></div>
+          <div class="mono" style="font-size:11.5px;color:var(--tx-5);text-align:right;">${r.f} found · ${fx} fixed</div></div>`;}).join('')}
+      <div style="margin-top:14px;font-size:12.5px;color:var(--tx-5);line-height:1.5;">
+        ${I.info('#918B9C',13)} <b style="color:var(--pink);font-weight:600;">TS-04</b> has never fired in your code — dead weight.
+        <b style="color:var(--yellow);font-weight:600;">TS-01</b> fires constantly and ships anyway, which means your team disagrees with it. Turn either off from the Rules tab.</div>
+    </div>`;
+}
+
+function changelogPaneHTML(p){
+  if(!p.changelog.length) return `<div class="card" style="padding:34px;text-align:center;">
+    <div style="font-size:15px;color:var(--tx-3);margin-bottom:6px;">No updates since you adopted it</div>
+    <div style="font-size:13.5px;color:var(--tx-5);max-width:52ch;margin:0 auto;line-height:1.55;">
+      When we improve this package you get it automatically — nothing to approve, nothing to merge. What changed shows up here afterwards.</div></div>`;
+  const kind={added:['#87F5D8','Added'],changed:['#89CDF3','Changed'],removed:['#F92672','Removed']};
+  return `<div class="card" style="padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
+      ${I.info('#87F5D8',16)}<div style="font-size:13px;color:var(--tx-4);line-height:1.5;">
+      Updates apply on their own — you are always on the latest version. <b style="color:var(--tx-2)">Rules you turned off stay off.</b> Rules added in an update arrive active.</div></div>
+    ${p.changelog.map(c=>`<div style="display:grid;grid-template-columns:110px 110px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);align-items:start;">
+      <div class="mono" style="font-size:11.5px;color:var(--tx-6);padding-top:3px;">${c.d}</div>
+      <div><span class="pill" style="color:${kind[c.k][0]};border-color:${kind[c.k][0]}66;">${kind[c.k][1]} ${c.n}</span></div>
+      <div style="font-size:13.5px;color:var(--tx-4);line-height:1.6;">${c.items.map(i=>`<div>${i}</div>`).join('')}</div></div>`).join('')}`;
+}
+
+/* ---------- W3 rules table (groups row actually expands here) ---------- */
+function rulesTabHTML(){
+  const adoptedPkgs=live().filter(p=>S.adopted[p.id]);
+  const own=[
+    {id:'OWN-1',t:'Add new raw PostgreSQL connection pooling',c:'Maintainability',s:'warning',st:'Repository File',src:'CLAUDE.md',scope:'1 repo'},
+    {id:'OWN-2',t:'Adhere to project coding standards',c:'Maintainability',s:'warning',st:'Repository File',src:'.cursorrules',scope:'1 repo'},
+    {id:'OWN-3',t:'Avoid leaking secrets in log output',c:'Security',s:'error',st:'Org Policy',src:'Security baseline',scope:'8 repos'},
+  ];
+  const lib=adoptedPkgs.flatMap(p=>p.rules.slice(0,4).map(r=>({...r,st:'Qodo Library',src:p.name,scope:'34 repos',lib:true})));
+  const rows=S.libOnly?lib:[...own,...lib];
+  const cols='44px 2fr 1.1fr 1fr 1.3fr 1.2fr .8fr';
+  return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;">
+      <div style="display:flex;background:var(--surf-2);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:3px;">
+        ${['list','groups'].map(m=>`<div class="mono" onclick="S.rulesMode='${m}';render()" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;background:${S.rulesMode===m?'var(--surf-3)':'transparent'};color:${S.rulesMode===m?'#fff':'var(--tx-6)'};">${m}</div>`).join('')}
+      </div>
+      <div onclick="S.libOnly=!S.libOnly;render()" style="cursor:pointer;display:flex;align-items:center;gap:7px;font-size:13px;border-radius:999px;padding:5px 12px;
+        background:${S.libOnly?'var(--mint-wash)':'var(--surf-3)'};border:1px solid ${S.libOnly?'var(--mint-line)':'var(--line-2)'};color:${S.libOnly?'var(--mint)':'var(--tx-3)'};">
+        ${I.filter(S.libOnly?'#87F5D8':'#918B9C',14)} Source type: Qodo Library ${S.libOnly?'✕':''}</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:14px;">
+        <div style="display:flex;align-items:center;gap:9px;background:var(--surf-2);border:1px solid var(--line-2);border-radius:10px;padding:9px 14px;width:240px;color:var(--tx-6);font-size:14px;">${I.search('#777184')} Search...</div>
+        <button class="btn">Generate rule</button></div></div>
+    ${S.rulesMode==='list'?`
+      <div style="display:grid;grid-template-columns:${cols};gap:12px;padding:0 8px 14px;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx-5);">
+        <div></div><div>Rule name (${S.libOnly?rows.length:'1,284'})</div><div>Category</div><div>Severity</div><div>Source type</div><div>Source</div><div>Scope</div></div>
+      ${rows.map(r=>`<div style="display:grid;grid-template-columns:${cols};gap:12px;padding:16px 8px;border-bottom:1px solid rgba(255,255,255,.06);align-items:center;">
+        <div class="star">${I.star('#87F5D8','#87F5D8',19)}</div>
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--mint);flex:none;"></span>
+          <span style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.t}</span></div>
+        <div style="font-size:14px;color:var(--tx-3);">${r.c}</div>
+        <div><span class="sev ${r.s}">${r.s[0].toUpperCase()+r.s.slice(1)}</span></div>
+        <div style="font-size:14px;color:${r.lib?'var(--mint)':'var(--tx-3)'};display:flex;align-items:center;gap:6px;">${r.lib?I.qodo(14):''}${r.st}</div>
+        <div style="font-size:14px;color:var(--tx-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.src}</div>
+        <div class="link" style="font-size:14px;">${r.scope}</div></div>`).join('')}`
+    :`<div style="display:grid;grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;gap:12px;padding:0 8px 14px;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx-5);">
+        <div></div><div>Group</div><div>Rules</div><div>Passed</div><div>Detected</div><div>Merged</div></div>
+      ${adoptedPkgs.map(p=>{const ex=!!S.expand[p.id];
+        return `<div><div style="display:grid;grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;gap:12px;padding:16px 8px;border-bottom:1px solid var(--line);align-items:center;background:var(--surf-hi);cursor:pointer;" onclick="S.expand['${p.id}']=!S.expand['${p.id}'];render()">
+          <div class="star">${I.star('#87F5D8','#87F5D8',20)}</div>
+          <div style="display:flex;align-items:center;gap:11px;min-width:0;">${I.chev('#918B9C',15,ex?'down':'right')}${I.qodo(17)}
+            <span style="font-size:15.5px;font-weight:600;">${p.name}</span><span class="pill mint">Qodo Library</span></div>
+          <div class="mono" style="font-size:13px;color:var(--tx-5);">${p.count-Object.keys(S.off[p.id]||{}).length} active</div>
+          <div class="mono" style="font-size:13px;color:var(--tx-3);">${num(p.impact.passed)}</div>
+          <div class="mono" style="font-size:13px;color:var(--pink);">${p.impact.detected}</div>
+          <div class="mono" style="font-size:13px;color:var(--purple);">${p.impact.merged}</div></div>
+          ${ex?p.rules.slice(0,5).map(r=>`<div style="display:grid;grid-template-columns:44px 2fr 1fr 1fr 1fr 1fr;gap:12px;padding:12px 8px;border-bottom:1px solid rgba(255,255,255,.05);align-items:center;padding-left:52px;">
+            <div></div><div style="font-size:14px;color:var(--tx-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.t}</div>
+            <div><span class="sev ${r.s}" style="font-size:11px;padding:3px 8px;">${r.s}</span></div>
+            <div class="mono" style="font-size:12.5px;color:var(--tx-6);">—</div>
+            <div class="mono" style="font-size:12.5px;color:var(--tx-3);">${r.f}</div>
+            <div class="mono" style="font-size:12.5px;color:var(--tx-3);">${r.m}</div></div>`).join(''):''}
+        </div>`;}).join('')}
+      <div style="margin-top:16px;font-size:12.5px;color:var(--tx-5);">
+        ${I.info('#918B9C',13)} A package is one collapsible row with rolled-up counters — not ${adoptedPkgs.reduce((a,p)=>a+p.count,0)} rules scattered through your list.</div>`}`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  const isCompany=S.tab==='company';
+  const inner = isCompany
+    ? `<div style="margin-bottom:18px;display:flex;align-items:flex-end;gap:14px;flex:none;">
+        <div><h2 class="page">Qodo library</h2>
+        <p class="sub" style="font-size:14px;">Rule packages built and battle-tested by Qodo. Pick one on the left; the evidence for it is always on the right.</p></div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:7px;font-size:13px;background:var(--mint-wash);border:1px solid rgba(135,245,216,.25);border-radius:999px;padding:6px 13px;">
+          ${I.star('#87F5D8','#87F5D8',14)}<span style="color:var(--mint);">${Object.keys(S.adopted).length} of ${live().length} adopted</span></div>
+      </div>
+      <div class="split">${catalogHTML()}${detailHTML()}</div>`
+    : S.tab==='rules' ? rulesTabHTML() : placeholderTab(S.tab==='sug'?'Suggestions':S.tab==='skills'?'Skills':'Manage');
+
+  document.getElementById('root').innerHTML = railHTML() +
+    `<main class="app">${topbarHTML()}
+      <div class="scrollarea${isCompany?' nopad':''}">${tabsHTML(S.tab,'go')}${inner}</div>
+      ${isCompany?'<div style="height:20px;flex:none"></div>':''}</main>` + navHTML();
+}
+
+function navHTML(){
+  return navigator_([
+    {label:'W1 · Library catalog', items:[
+      {k:'w1a',t:'Zero state — nothing adopted',fn:"S.tab='company';S.adopted={};S.off={};S.sel='node';S.dtab='rules';render();markNav('w1a')"},
+      {k:'w1b',t:'One adopted, recommended + updated',fn:"S.tab='company';S.adopted={node:true};S.sel='node';S.dtab='rules';render();markNav('w1b')"},
+      {k:'w1c',t:'Filtered to recommended',fn:"S.tab='company';S.filter='rec';render();markNav('w1c')"},
+      {k:'w1d',t:'All three adopted',fn:"S.tab='company';S.filter='all';S.adopted={node:true,fetest:true,sdlc:true};render();markNav('w1d')"},
+    ]},
+    {label:'W2 · Trust panel', items:[
+      {k:'w2a',t:'Not adopted — rules',fn:"S.tab='company';S.adopted={};S.sel='node';S.dtab='rules';render();markNav('w2a')"},
+      {k:'w2b',t:'Evidence tab — real PRs',fn:"S.tab='company';S.sel='node';S.dtab='evidence';render();markNav('w2b')"},
+      {k:'w2c',t:'Adopted, 3 rules turned off',fn:"S.tab='company';S.adopted={node:true};S.off={node:{'TS-04':1,'TS-01':1,'STR-02':1}};S.sel='node';S.dtab='rules';render();markNav('w2c')"},
+      {k:'w2d',t:'Second package, side by side',fn:"S.tab='company';S.sel='fetest';S.dtab='evidence';render();markNav('w2d')"},
+    ]},
+    {label:'W3 · Rules table', items:[
+      {k:'w3a',t:'List view, mixed sources',fn:"S.tab='rules';S.rulesMode='list';S.libOnly=false;S.adopted={node:true};render();markNav('w3a')"},
+      {k:'w3b',t:'Groups — collapsed',fn:"S.tab='rules';S.rulesMode='groups';S.expand={};S.adopted={node:true,fetest:true};render();markNav('w3b')"},
+      {k:'w3c',t:'Groups — expanded',fn:"S.tab='rules';S.rulesMode='groups';S.adopted={node:true,fetest:true};S.expand={node:true};render();markNav('w3c')"},
+      {k:'w3d',t:'Filtered to Library only',fn:"S.tab='rules';S.rulesMode='list';S.libOnly=true;S.adopted={node:true};render();markNav('w3d')"},
+    ]},
+    {label:'W4 · W5 · W6', items:[
+      {k:'w4a',t:'Impact — before adoption',fn:"S.tab='company';S.adopted={};S.sel='node';S.dtab='impact';render();markNav('w4a')"},
+      {k:'w4b',t:'Impact — dead + noisy rule',fn:"S.tab='company';S.adopted={node:true};S.sel='node';S.dtab='impact';render();markNav('w4b')"},
+      {k:'w5a',t:'Changelog — recently updated',fn:"S.tab='company';S.adopted={node:true};S.sel='node';S.dtab='changelog';render();markNav('w5a')"},
+      {k:'w5b',t:'Changelog — never updated',fn:"S.tab='company';S.adopted={fetest:true};S.sel='fetest';S.dtab='changelog';render();markNav('w5b')"},
+      {k:'w6a',t:'Observe mode — observing',fn:"S.tab='company';S.adopted={node:true};S.observe={node:true};S.sel='node';S.dtab='rules';render();markNav('w6a')"},
+      {k:'w6b',t:'Observe mode — commenting',fn:"S.tab='company';S.adopted={node:true};S.observe={};S.sel='node';S.dtab='rules';render();markNav('w6b')"},
+    ]},
+    {label:'Also draw', items:[
+      {k:'ov',t:'Overlap — related rules found',fn:"S.tab='company';S.adopted={node:true};S.sel='node';S.dtab='rules';render();showOverlap('node','SEC-09');markNav('ov')"},
+      {k:'un',t:'Un-adopt confirmation',fn:"S.tab='company';S.adopted={node:true};S.off={node:{'TS-04':1,'TS-01':1,'STR-02':1}};S.sel='node';render();toggleAdopt('node');markNav('un')"},
+    ]},
+  ]);
+}
+
+mount(render);
+</script>
+</body>
+</html>

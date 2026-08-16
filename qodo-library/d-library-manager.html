@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cross-customer rules library stats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .lrow{display:grid;grid-template-columns:1.7fr 108px 116px 104px 118px 122px 128px;gap:12px;align-items:center;
+    padding:13px 12px;border-bottom:1px solid var(--line);}
+  .lrow:hover{background:var(--surf-hi);}
+  .lrow .n{font-family:var(--mono);font-size:13px;text-align:right;font-feature-settings:'tnum';}
+  .lrow.head{background:var(--surf-hi);color:var(--tx-5);font-size:12px;}
+  .lrow.head .n{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+  .lrow.hot{background:rgba(249,38,114,0.05);}
+  .colon{color:var(--mint)!important;}
+  .bar{height:5px;background:var(--surf-3);border-radius:999px;overflow:hidden;margin-top:5px;}
+  .bar i{display:block;height:100%;border-radius:999px;}
+  .att{background:var(--surf);border:1px solid var(--line-2);border-left:2px solid var(--pink);
+    border-radius:0 14px 14px 0;padding:16px 18px;display:flex;flex-direction:column;gap:7px;}
+  .att.warn{border-left-color:var(--yellow);}
+  .att.ok{border-left-color:var(--mint);}
+  .attgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .seg{display:flex;background:var(--surf-2);border:1px solid var(--line-2);border-radius:8px;padding:3px;}
+  .seg div{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    padding:7px 13px;border-radius:6px;cursor:pointer;color:var(--tx-6);}
+  .seg div.on{background:var(--surf-3);color:#fff;}
+  .irail{width:238px;flex:none;background:var(--bg-rail);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;padding:18px 14px;}
+</style>
+</head>
+<body>
+<div id="root" style="display:contents"></div>
+<script src="shared.js"></script>
+<script>
+/* ============================================================
+   VARIATION D — the other side of the library.
+   Not a customer screen: this is how Qodo tells whether a
+   library it published is working. One lifecycle, four
+   questions: is it suggested, accepted, firing, respected?
+   ============================================================ */
+
+const LIBS = [
+  { id:'node',  name:'Node.js & TypeScript', cat:'Backend', rules:65, since:'Apr 2026',
+    sugg:186, acc:121, repos:3410, detected:12480, merged:4550, optout:6 },
+  { id:'owasp', name:'OWASP Top 10 essentials', cat:'Compliance', rules:14, since:'May 2026',
+    sugg:204, acc:96, repos:2870, detected:6900, merged:2070, optout:4 },
+  { id:'fetest',name:'Frontend testing', cat:'Testing', rules:26, since:'Jun 2026',
+    sugg:142, acc:78, repos:1240, detected:4120, merged:1480, optout:9 },
+  { id:'go',    name:'Go services', cat:'Backend', rules:38, since:'Jun 2026',
+    sugg:74, acc:40, repos:610, detected:2010, merged:690, optout:7 },
+  { id:'sdlc',  name:'SDLC & ADLC', cat:'Process', rules:29, since:'Jul 2026',
+    sugg:96, acc:31, repos:340, detected:1180, merged:660, optout:22 },
+  { id:'kafka', name:'Kafka & messaging', cat:'Technology', rules:19, since:'May 2026',
+    sugg:63, acc:21, repos:180, detected:210, merged:149, optout:14 },
+  { id:'pg',    name:'PostgreSQL & data access', cat:'Data', rules:31, since:'Jul 2026',
+    sugg:141, acc:12, repos:96, detected:380, merged:166, optout:5 },
+  { id:'soc2',  name:'SOC 2 control themes', cat:'Compliance', rules:12, since:'Jul 2026',
+    sugg:88, acc:8, repos:41, detected:140, merged:44, optout:3 },
+];
+
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+const accRate = l => pct(l.acc, l.sugg);
+const mergedRate = l => pct(l.merged, l.detected);
+const perRepo = l => l.repos ? (l.detected/l.repos).toFixed(1) : '0';
+
+const VIEWS = [
+  { k:'acc',  t:'Accepted',        sort:l=>-l.acc,      hint:'How many customers said yes. The libraries carrying the catalog.' },
+  { k:'conv', t:'Suggested → accepted', sort:l=>-accRate(l), hint:'Suggested to many customers, accepted by few: the match is right but the pitch is not landing.' },
+  { k:'thin', t:'Least adopted',   sort:l=>l.acc,       hint:'Live but barely running at any customer. Enhance it, or retire it.' },
+  { k:'fire', t:'Detected violations', sort:l=>-l.detected, hint:'Whether the rules actually meet real code once they are on, across every customer.' },
+  { k:'fix',  t:'Merged violations',  sort:l=>-mergedRate(l), hint:'The number that matters, worst first: violations the author merged anyway. High means customers disagree with the rule.' },
+];
+
+const S = { view:'acc' };
+function setView(k){ S.view=k; render(); }
+
+/* ---------- the funnel table ---------- */
+function tableHTML(){
+  const v = VIEWS.find(x=>x.k===S.view);
+  const rows = [...LIBS].sort((a,b)=>v.sort(a)-v.sort(b));
+  const hot = l => (S.view==='conv' && accRate(l)<20) || (S.view==='thin' && l.acc<15)
+    || (S.view==='fix' && mergedRate(l)>60) || (S.view==='fire' && +perRepo(l)<1.5);
+  const col = k => S.view===k ? ' colon' : '';
+
+  return `<div class="card" style="padding:0;overflow:hidden;">
+    <div class="lrow head">
+      <div>Library</div>
+      <div class="n">Customers suggested</div><div class="n">Customers accepted</div><div class="n">Accept %</div>
+      <div class="n">Detected violations</div><div class="n">Detected per repo</div><div class="n">Merged violations</div></div>
+    ${rows.map(l=>`<div class="lrow${hot(l)?' hot':''}">
+      <div style="min-width:0;">
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+          <span style="font-size:14.5px;">${l.name}</span>
+          <span class="pill">${l.rules} rules</span>
+          ${l.optout>15?`<span class="pill yellow">${l.optout}% turned off</span>`:''}
+        </div>
+        <div class="mono" style="font-size:10.5px;color:var(--tx-7);margin-top:4px;">
+          ${l.cat.toUpperCase()} · SHIPPED ${l.since.toUpperCase()} · ${num(l.repos)} REPOSITORIES</div>
+      </div>
+      <div class="n" style="color:var(--tx-4);">${l.sugg}</div>
+      <div class="n${col('acc')}" style="color:var(--tx-3);">${l.acc}</div>
+      <div class="n${col('conv')}" style="color:${accRate(l)<20?'var(--pink)':'var(--tx-3)'};">${accRate(l)}%
+        <div class="bar"><i style="width:${accRate(l)}%;background:${accRate(l)<20?'var(--pink)':'var(--mint)'};"></i></div></div>
+      <div class="n${col('fire')}" style="color:var(--tx-4);">${num(l.detected)}</div>
+      <div class="n" style="color:${+perRepo(l)<1.5?'var(--yellow)':'var(--tx-4)'};">${perRepo(l)}</div>
+      <div class="n${col('fix')}" style="color:${mergedRate(l)>60?'var(--yellow)':'var(--tx-4)'};">${num(l.merged)}
+        <span style="color:var(--tx-6);"> · ${mergedRate(l)}%</span>
+        <div class="bar"><i style="width:${mergedRate(l)}%;background:${mergedRate(l)>60?'var(--yellow)':'var(--purple)'};"></i></div></div>
+    </div>`).join('')}
+  </div>
+  <div style="margin-top:12px;font-size:12.5px;color:var(--tx-5);line-height:1.55;">
+    ${I.info('#918B9C',13)} ${v.hint}</div>`;
+}
+
+/* ---------- what to do about it ---------- */
+function attentionHTML(){
+  const card = (kind, lib, verdict, act) => `<div class="att ${kind}">
+    <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+      <span style="font-size:14.5px;font-weight:600;">${lib}</span></div>
+    <div style="font-size:13px;color:var(--tx-4);line-height:1.55;">${verdict}</div>
+    <div style="display:flex;gap:8px;margin-top:4px;">${act}</div></div>`;
+  const btn = t => `<button class="btn ghost sm">${t}</button>`;
+
+  return `<div class="attgrid" data-tour="attention">
+    ${card('', 'PostgreSQL & data access',
+      `Suggested to <b style="color:var(--tx-2)">141 customers</b>, accepted by 12. The match is right — the trust screen is not doing its job. It ships with 2 sources and 38 example violations, half of what Node.js carries.`,
+      btn('Add sources') + btn('Re-run battle testing'))}
+    ${card('', 'SOC 2 control themes',
+      `Live on <b style="color:var(--tx-2)">41 repositories across 8 customers</b> — the least adopted library we publish, and it detects 3.4 violations per repository per month. Compliance buyers are not the people seeing the suggestion.`,
+      btn('Retarget the suggestion') + btn('Consider retiring'))}
+    ${card('warn', 'Kafka & messaging',
+      `Adopted by 21 customers and detecting, but <b style="color:var(--tx-2)">71% of its detected violations get merged anyway</b> and 14% of rules are turned off. Customers see these comments and disagree with them.`,
+      btn('Review the noisy rules') + btn('Tighten qualification'))}
+    ${card('warn', 'SDLC & ADLC',
+      `Accepted at a healthy rate, then <b style="color:var(--tx-2)">22% of its rules are turned off</b> within a month — the highest opt-out in the catalog. The package is broader than what teams want enforced.`,
+      btn('Split the package') + btn('See which rules go off'))}
+    ${card('ok', 'Node.js & TypeScript',
+      `The benchmark across 121 customers: 65% of suggestions accepted, 3.7 detected violations per repository, and <b style="color:var(--mint)">only 36% merged</b>. Whatever it is doing on the trust screen is what the others should copy.`,
+      btn('Use as the template'))}
+    ${card('ok', 'OWASP Top 10 essentials',
+      `Lowest merged rate in the catalog at <b style="color:var(--mint)">30%</b> — security violations rarely get argued with. Worth suggesting to more customers than we do.`,
+      btn('Widen the match'))}
+  </div>`;
+}
+
+/* ---------- shell ---------- */
+function railHTML_internal(){
+  const item = (ico,label,active) => `<div class="navitem${active?' active':''}">${ico}<span>${label}</span></div>`;
+  return `<aside class="irail">
+    <div style="display:flex;align-items:center;gap:9px;padding:4px 8px 22px;">
+      ${I.qodo(30)}<span style="font-size:22px;font-weight:600;letter-spacing:-0.04em;">qodo</span>
+      <span class="pill purple solid-purple" style="margin-left:auto;">Internal</span></div>
+    <nav>
+      ${item(I.chart,'Cross-customer stats',true)}
+      ${item(I.bookmark('currentColor',20),'Catalog')}
+      ${item(I.flask,'Mining runs')}
+      ${item(I.bug,'Rule health')}
+      ${item(I.people,'Customers')}
+    </nav>
+    <div style="margin-top:auto;padding:10px 8px 4px;border-top:1px solid var(--line);font-size:12px;color:var(--tx-6);line-height:1.5;">
+      Qodo staff only. Every figure is pooled across customers — no single account is identifiable here.</div>
+  </aside>`;
+}
+
+function render(){
+  const keep = document.querySelector('.scrollarea')?.scrollTop || 0;
+  const totalSugg = LIBS.reduce((a,l)=>a+l.sugg,0), totalAcc = LIBS.reduce((a,l)=>a+l.acc,0);
+  const totalDetected = LIBS.reduce((a,l)=>a+l.detected,0), totalMerged = LIBS.reduce((a,l)=>a+l.merged,0);
+
+  document.getElementById('root').innerHTML = railHTML_internal() + `<main class="app">
+    <header class="top">${I.chart}
+      <span style="font-size:19px;font-weight:600;">Cross-customer rules library stats</span>
+      <span class="pill purple" style="font-size:9.5px;padding:2px 8px;">Qodo internal</span>
+      <span class="mono" style="font-size:11px;color:var(--tx-6);">LAST 30 DAYS · EVERY CUSTOMER · 214 ORGANIZATIONS</span></header>
+    <div class="scrollarea">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin:26px 0 22px;flex-wrap:wrap;">
+        <div style="max-width:640px;">
+          <h2 class="page">Is each library working across our customers?</h2>
+          <p class="sub">Every number here is summed over all 214 customers who have the library — not one account. One lifecycle per library: suggested to a customer, accepted, detecting violations, and whether those violations get merged anyway. A library that stalls at any of those is a library to enhance or replace.</p>
+        </div>
+      </div>
+
+      <div class="stats" style="margin-bottom:26px;">
+        <div class="stat"><div class="lab"><div class="ico">${I.spark('#998CFA',18)}</div><span>Suggested to customers</span></div><div class="num">${num(totalSugg)}</div></div>
+        <div class="stat"><div class="lab"><div class="ico">${I.star('#87F5D8','#87F5D8',18)}</div><span>Accepted by customers</span></div><div class="num">${num(totalAcc)}<span style="font-size:16px;color:var(--tx-6);font-weight:500;"> · ${pct(totalAcc,totalSugg)}%</span></div></div>
+        <div class="stat"><div class="lab"><div class="ico">${I.ban('#F92672')}</div><span>Detected violations</span></div><div class="num">${num(totalDetected)}</div></div>
+        <div class="stat"><div class="lab"><div class="ico">${I.merge('#998CFA')}</div><span>Merged violations</span></div><div class="num">${num(totalMerged)}<span style="font-size:16px;color:var(--tx-6);font-weight:500;"> · ${pct(totalMerged,totalDetected)}%</span></div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;" data-tour="views">
+        <div class="seg">${VIEWS.map(v=>`<div class="${S.view===v.k?'on':''}" onclick="setView('${v.k}')">${v.t}</div>`).join('')}</div>
+        <span class="mono" style="font-size:11px;color:var(--tx-7);margin-left:auto;">8 LIVE LIBRARIES · 3 IN MINING · SUMMED ACROSS EVERY CUSTOMER</span>
+      </div>
+
+      <div data-tour="table">${tableHTML()}</div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:34px 0 4px;">
+        <h3 class="sect">Enhance or replace</h3>
+        <span class="mono" style="font-size:11px;color:var(--tx-7);">WHERE A LIBRARY STALLS, AND WHAT TO DO ABOUT IT</span></div>
+      <p class="hint">Every card names the stage the library fails at — suggested, accepted, detecting violations, merged anyway — so the fix is obvious rather than a guess.</p>
+      ${attentionHTML()}
+      <div style="height:48px"></div>
+    </div></main>` + navHTML();
+
+  const sa = document.querySelector('.scrollarea'); if(sa) sa.scrollTop = keep;
+}
+
+function navHTML(){
+  return navigator_([
+    {label:'Views', items: VIEWS.map(v=>({k:v.k, t:v.t, fn:`setView('${v.k}');markNav('${v.k}')`}))},
+    {label:'Guided tour', items:[{k:'tour',t:'The manager’s read',fn:"markNav('tour');startTour()"}]},
+    {label:'Back', items:[{k:'back',t:'← Customer wireframe A',fn:"location.href='a-card-grid.html'"}]},
+  ]);
+}
+
+/* ---------- PRD walkthrough — the manager's read ---------- */
+function startTour(){
+  tourStart([
+    { sel:'[data-tour="table"]', title:'Which libraries are not working', hat:'Qodo staff', before:()=>{ S.view='conv'; },
+      say:`The other end of the telescope: all 214 customers at once, so I can tell <b>which libraries are not working — and enhance or replace them.</b> Start where the funnel leaks first.`,
+      note:'PostgreSQL: suggested to 141 customers, accepted by 12.',
+      cta:'Next: least adopted' },
+    { sel:'[data-tour="views"]', title:'Published, but barely running', hat:'Qodo staff', before:()=>{ S.view='thin'; },
+      say:`SOC 2 is live on 41 repositories across 8 customers — published, matched, barely running. Wrong audience, or not worth keeping. <b>But adoption is only half of it.</b>`,
+      cta:'Next: merged violations' },
+    { sel:'[data-tour="table"]', title:'Accepted is not respected', hat:'Qodo staff', before:()=>{ S.view='fix'; },
+      say:`Acceptance is not success. Kafka detects violations and <b>71% get merged anyway</b> — customers read those comments and disagree. Node.js and OWASP actually change code.`,
+      cta:'Next: what to do' },
+    { sel:'[data-tour="attention"]', title:'Enhance or replace', hat:'Qodo staff',
+      say:`Every card names the stage a library stalls at and the fix: add sources, retarget, split, retire. <b>The tech lead trusts the library because someone here keeps pruning it.</b>`,
+      note:'Both sides of the PRD are now covered.',
+      cta:'Finish' },
+  ]);
+}
+
+mount(render);
+if (new URLSearchParams(location.search).get('tour') === '1') setTimeout(startTour, 260);
+</script>
+</body>
+</html>

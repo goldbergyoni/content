@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qodo Library — three wireframe options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  body{display:block;overflow:auto;}
+  .wrap{max-width:1080px;margin:0 auto;padding:56px 28px 90px;}
+  .opt{display:grid;grid-template-columns:78px 1fr;gap:22px;padding:26px 0;border-top:1px solid var(--line);}
+  .badge{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    font-size:24px;font-weight:600;font-family:var(--mono);}
+  .opt h3{margin:0 0 4px;font-size:20px;font-weight:600;letter-spacing:-.02em;}
+  .opt .lede{font-size:15px;color:var(--tx-4);line-height:1.6;margin:0 0 16px;max-width:74ch;}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+  .cols h6{margin:0 0 8px;font-family:var(--mono);font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--tx-6);}
+  .cols ul{margin:0;padding-left:17px;font-size:13.5px;color:var(--tx-4);line-height:1.65;}
+  .cols li{margin:3px 0;}
+  table.cov{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px;}
+  table.cov th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--tx-6);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--line);}
+  table.cov td{padding:11px 12px;border-bottom:1px solid var(--line);color:var(--tx-4);vertical-align:top;}
+  table.cov td b{color:var(--tx-2);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px;">
+    <svg width="34" height="34" viewBox="0 0 40 40"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#87F5D8"/><stop offset="1" stop-color="#7968FA"/></linearGradient></defs><circle cx="20" cy="20" r="20" fill="url(#g)"/><path d="M20 9a11 11 0 1 0 6.6 19.8l3 3 2.4-2.4-3-3A11 11 0 0 0 20 9Zm0 4.6a6.4 6.4 0 1 1 0 12.8 6.4 6.4 0 0 1 0-12.8Z" fill="#0B0C0D"/></svg>
+    <span style="font-size:24px;font-weight:600;letter-spacing:-.04em;">qodo</span>
+  </div>
+
+  <div class="eyebrow" style="color:var(--mint);margin-bottom:10px;">Qodo Library · PRD Appendix A</div>
+  <h1 style="font-size:38px;font-weight:650;letter-spacing:-.035em;margin:0 0 14px;line-height:1.1;">Three wireframe options</h1>
+  <p style="font-size:16px;color:var(--tx-4);line-height:1.65;max-width:74ch;margin:0 0 10px;">
+    All three cover the same brief — W1 to W6 plus the overlap and un-adopt moments — and all three use the
+    <b style="color:var(--tx-2);font-weight:600;">unchanged design system</b> from the Standards vision prototype:
+    same shell, same tabs, same card and star-to-adopt pattern, same toast copy, same palette and type.
+    What differs is the information architecture: where the catalog lives, where the proof lives, and what you
+    are looking at when you decide.</p>
+  <p style="font-size:16px;color:var(--tx-4);line-height:1.65;max-width:74ch;margin:0 0 30px;">
+    Content is real. Rule titles come from the mined Node.js, frontend-testing and SDLC rule sets, and the
+    example findings link to actual pull requests from the battle-testing runs.</p>
+
+  <div class="card" style="padding:18px 22px;margin-bottom:38px;">
+    <div class="eyebrow" style="margin-bottom:12px;">Every option answers the same screens</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <span class="pill mint solid-mint">W1 Library section</span>
+      <span class="pill mint solid-mint">W2 Package detail — the trust screen</span>
+      <span class="pill mint solid-mint">W3 Library rules in the Rules table</span>
+      <span class="pill mint solid-mint">W4 Package impact</span>
+      <span class="pill mint solid-mint">W5 Update visibility</span>
+      <span class="pill mint solid-mint">W6 Observe mode</span>
+      <span class="pill purple solid-purple">Related rules found</span>
+      <span class="pill purple solid-purple">Un-adopt confirmation</span>
+    </div>
+    <div style="margin-top:14px;font-size:13px;color:var(--tx-5);line-height:1.55;">
+      Open any file and use the <b style="color:var(--purple);font-weight:600;">Wireframe states</b> panel in the
+      bottom-right corner to jump straight to a named state. Everything is clickable — stars adopt, toggles turn
+      single rules off, findings link out to the real pull requests.</div>
+  </div>
+
+  <div class="opt">
+    <div><div class="badge" style="background:rgba(153,140,250,0.12);border:1px solid rgba(153,140,250,0.5);color:#998CFA;">D</div></div>
+    <div>
+      <h3>Library manager dashboard <span class="pill purple solid-purple" style="vertical-align:middle;">Qodo internal</span></h3>
+      <p class="lede">Not a customer screen. The other side of the library: one lifecycle per published package —
+        suggested, accepted, firing in pull requests, respected by the author — so it is obvious which library to
+        enhance and which to replace. Views for accepted, suggested-but-rarely-accepted, least adopted, firing, and
+        respected and fixed, plus an <em>Enhance or replace</em> panel naming the stage each weak library stalls at.</p>
+      <p style="font-size:14px;margin:0 0 8px;"><a href="d-library-manager.html" style="color:#87F5D8;">Open d-library-manager.html →</a>
+        <span style="color:var(--tx-6);font-size:13px;"> · reached at the end of the guided tour in variation A</span></p>
+    </div>
+  </div>
+
+  <!-- A -->
+  <div class="opt">
+    <div><div class="badge" style="background:var(--surf-3);border:1px solid var(--line-2);color:var(--tx-3);">A</div></div>
+    <div>
+      <h3>Card grid + detail page <span class="pill" style="vertical-align:middle;">the existing version</span></h3>
+      <p class="lede">The wireframe that already exists, drawn out and extended with exactly the two things W1 asks for:
+        a <em>Recommended for you</em> marker with its reason in one phrase, and a way into the package before adopting.
+        The Library stays a card grid on the Company standards tab; the trust screen, impact and changelog live on a
+        full page you navigate to and come back from.</p>
+      <div class="cols">
+        <div><h6>Why it holds up</h6><ul>
+          <li>Zero new shell — it is the prototype plus two affordances</li>
+          <li>Cards read well at a catalog of three to six packages</li>
+          <li>The detail page has room for evidence, pipeline, impact and changelog without cramming</li>
+          <li>Cheapest to build and lowest risk of the three</li>
+        </ul></div>
+        <div><h6>What it costs</h6><ul>
+          <li>Deciding between two packages means navigating back and forth</li>
+          <li>The proof is one click away from the decision, not next to it</li>
+          <li>The card grid stops scaling once the catalog grows past a screen</li>
+          <li>Leads with the catalog, so it never tells you what you are missing</li>
+        </ul></div>
+      </div>
+      <a class="btn" href="a-card-grid.html" style="text-decoration:none;">Open option A →</a>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="opt">
+    <div><div class="badge" style="background:var(--mint-wash);border:1px solid var(--mint-line);color:var(--mint);">B</div></div>
+    <div>
+      <h3>Split catalog — list left, evidence docked right</h3>
+      <p class="lede">One screen, two panes. The catalog never leaves the left rail; the package's trust panel is
+        docked on the right with sub-tabs for Rules, Evidence, Impact and Changelog. Choosing between packages and
+        checking our work become the same motion — click a different package and the proof swaps under you. No
+        navigation, no back button, no losing your place.</p>
+      <div class="cols">
+        <div><h6>Why it is better</h6><ul>
+          <li>The decision and the evidence are never separated</li>
+          <li>Comparing packages is one click, not a round trip</li>
+          <li>Filters (recommended / adopted / available) make the catalog scale past a card grid</li>
+          <li>Per-rule toggles sit next to the hit counts that justify them</li>
+        </ul></div>
+        <div><h6>What it costs</h6><ul>
+          <li>Needs a fixed-height, internally scrolling layout — new for this tab</li>
+          <li>The right pane gets narrow on smaller screens</li>
+          <li>Still catalog-first: it answers "is this good" better than "what am I missing"</li>
+        </ul></div>
+      </div>
+      <a class="btn" href="b-split-view.html" style="text-decoration:none;">Open option B →</a>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="opt">
+    <div><div class="badge" style="background:var(--purple-wash);border:1px solid var(--purple-line);color:var(--purple);">C</div></div>
+    <div>
+      <h3>Blind-spot map — adopt after a dry run on your own code</h3>
+      <p class="lede">Leads with the problem the PRD actually names: <em>the gap is invisible from inside, and nothing
+        tells you what you are not checking.</em> The entrance is a coverage matrix — your detected stack down the side,
+        concerns across the top, blind spots drawn as dashed empty cells. Packages are ranked by how much of your map
+        they close, and every one is presented with a dry run: what it would have caught on your own merged pull
+        requests, before you commit to anything.</p>
+      <div class="cols">
+        <div><h6>Why it is better</h6><ul>
+          <li>Creates the demand instead of waiting to be browsed — the empty cells do the selling</li>
+          <li>Adoption is backed by <em>your</em> history, not only our benchmark repos</li>
+          <li>Observe mode becomes a first-class adoption choice, not a phase-2 setting buried in a header</li>
+          <li>Un-adopting shows exactly which cells go dark again</li>
+          <li>The same matrix, re-coloured, answers "was it worth it"</li>
+        </ul></div>
+        <div><h6>What it costs</h6><ul>
+          <li>Depends on stack detection and a dry-run capability — the most backend work of the three</li>
+          <li>A matrix of your own rules implies a category taxonomy the product does not have yet</li>
+          <li>Furthest from the existing prototype, so the most to review with design</li>
+        </ul></div>
+      </div>
+      <a class="btn" href="c-coverage-map.html" style="text-decoration:none;">Open option C →</a>
+    </div>
+  </div>
+
+  <div style="margin-top:44px;">
+    <h3 style="font-size:17px;font-weight:600;margin:0 0 14px;">Where the three differ</h3>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="cov">
+        <thead><tr><th></th><th>A · Card grid</th><th>B · Split catalog</th><th>C · Blind-spot map</th></tr></thead>
+        <tbody>
+          <tr><td><b>Entry point</b></td><td>Card grid of packages</td><td>Filterable package list</td><td>Coverage matrix of your stack</td></tr>
+          <tr><td><b>Where evidence lives</b></td><td>A page you navigate to</td><td>Docked beside the catalog</td><td>A drawer, after the dry run</td></tr>
+          <tr><td><b>What convinces you</b></td><td>Findings on our benchmark repos</td><td>Same, one click closer</td><td>Findings on <em>your</em> pull requests</td></tr>
+          <tr><td><b>Observe mode</b></td><td>A toggle after adopting</td><td>A toggle after adopting</td><td>A way to adopt</td></tr>
+          <tr><td><b>Impact</b></td><td>Section on the detail page</td><td>A sub-tab</td><td>The map, re-coloured</td></tr>
+          <tr><td><b>Scales to 20 packages</b></td><td>No</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td><b>Build cost</b></td><td>Low</td><td>Medium</td><td>High</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
